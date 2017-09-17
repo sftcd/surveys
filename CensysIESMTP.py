@@ -64,11 +64,21 @@ c = censys.export.CensysExport(UID,SECRET)
                 #'p110.pop3.starttls.tls.certificate.parsed.extensions.signed_certificate_timestamps.timestamp '
                 #'   > TIMESTAMP("2017-01-01 00:00:00")')
 
-# Try get just ip etc and that pesky timestamp
+# Attempt to partition the set in case the bug depends on the
+# result-size, ~7500 with "IS NOT NULL" in the case below but 
+# same old error happens for both subsets
+# Noteworthy that it's a different value that trips us up
+# this time
+# first one is error when "IS NOT NULL" for https
+# invalidQuery: Invalid timestamp value: 1501499263544000000
+# second one is error when "IS NULL" for https
+# invalidQuery: Invalid timestamp value: 1477924637155000000
+# second timestamp value repeated with 2nd run of test
 res = c.new_job('select * '
                 'from ipv4.20170914 where ' 
                 'location.country_code="IE" and '
-                'p25.smtp.starttls.banner IS NOT NULL')
+                'p25.smtp.starttls.banner IS NOT NULL and '
+                'p443.https.tls.version IS NULL')
 
 job_id = res["job_id"]
 
