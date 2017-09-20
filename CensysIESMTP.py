@@ -74,6 +74,8 @@ c = censys.export.CensysExport(UID,SECRET)
 # second one is error when "IS NULL" for https
 # invalidQuery: Invalid timestamp value: 1477924637155000000
 # second timestamp value repeated with 2nd run of test
+# and same again some days later
+#                                        1477924637155000000
 res = c.new_job('select * '
                 'from ipv4.20170914 where ' 
                 'location.country_code="IE" and '
