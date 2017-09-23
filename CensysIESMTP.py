@@ -76,11 +76,14 @@ c = censys.export.CensysExport(UID,SECRET)
 # second timestamp value repeated with 2nd run of test
 # and same again some days later
 #                                        1477924637155000000
+
+# yay! censys.io team fixed the bug after a few days, so the
+# query now works as expected
+
 res = c.new_job('select * '
-                'from ipv4.20170914 where ' 
+                'from ipv4.20170921 where ' 
                 'location.country_code="IE" and '
-                'p25.smtp.starttls.banner IS NOT NULL and '
-                'p443.https.tls.version IS NULL')
+                'p25.smtp.starttls.banner IS NOT NULL') 
 
 job_id = res["job_id"]
 
