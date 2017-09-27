@@ -87,3 +87,4 @@ if not os.path.isfile(fname):
             print "Error downloading ",fname,"Maybe some content in ",tfname
 else:
     print "Already had ",fname,"not fetching again"
+print "Finished ",sys.argv[0:],"at",time.asctime(time.localtime(time.time()))
