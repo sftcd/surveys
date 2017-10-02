@@ -40,7 +40,7 @@ For SMTP speakers apparently in Ireland:
 
     12496   total
 
-For SMTP speakers apparently in Ireland:
+For SMTP speakers apparently in Estonia:
 
       832   good
      7420   medium
