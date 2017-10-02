@@ -11,16 +11,7 @@ in my case from IE and EE (the latter for comparison).
 
 ## Analysis
 
-Initially, I want to analyse the mail speakers into the following classes:
-
-- good-looking
-- medium-looking
-- self-signed
-- bad-looking
-- dunno 
-- exceptions (in the try/catch sense)
-
-First cut will be to define these as: 
+As a first cut, I've analysed the mail speakers into the following classes:
 
 - "good-looking" : Talks SMTPTLS with certs that chain to a browser-trusted root 
 - "medium-looking" : Talks STARTTLS ok but without a cert like the above (maybe a local root)
