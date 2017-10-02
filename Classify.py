@@ -39,7 +39,27 @@ def medium(p25):
         return True
     else:
         return False
-    
+
+def selfsigned(p25):
+    if 'smtp' not in p25:
+        return False
+    if 'starttls' not in p25['smtp']:
+        return False
+    if 'tls' not in p25['smtp']['starttls']:
+        return False
+    if 'certificate' not in p25['smtp']['starttls']['tls']:
+        return False
+    if 'parsed' not in p25['smtp']['starttls']['tls']['certificate']:
+        return False
+    if 'signature' not in p25['smtp']['starttls']['tls']['certificate']['parsed']:
+        return False
+    if 'self_signed' not in p25['smtp']['starttls']['tls']['certificate']['parsed']['signature']:
+        return False
+    if p25['smtp']['starttls']['tls']['certificate']['parsed']['signature']['self_signed'] == True:
+        return True
+    else:
+        return False
+
 def bad(p25):
     if 'smtp' not in p25:
         return True
@@ -49,7 +69,6 @@ def bad(p25):
         return True
     else:
         return False
-    
 
 with open(sys.argv[1],'r') as f:
     f1=open('outs/good.json', 'w')
@@ -57,9 +76,11 @@ with open(sys.argv[1],'r') as f:
     f3=open('outs/bad.json', 'w')
     f4=open('outs/dunno.json', 'w')
     f5=open('outs/exception.json', 'w')
+    f6=open('outs/selfsigned.json', 'w')
     overallcount=0
     goodcount=0
     mediumcount=0
+    selfsignedcount=0
     badcount=0
     dunnocount=0
     exceptioncount=0
@@ -73,6 +94,9 @@ with open(sys.argv[1],'r') as f:
             elif medium(p25):
                 f2.write(json.dumps(j_content) + '\n')
                 mediumcount += 1
+            elif selfsigned(p25):
+                f6.write(json.dumps(j_content) + '\n')
+                selfsignedcount += 1
             elif bad(p25):
                 f3.write(json.dumps(j_content) + '\n')
                 badcount += 1
@@ -91,6 +115,7 @@ with open(sys.argv[1],'r') as f:
 
 print "good: " + str(goodcount)
 print "medium: " + str(mediumcount)
+print "selfsigned: " + str(selfsignedcount)
 print "bad: " + str(badcount)
 print "dunno: " + str(dunnocount)
 print "exception: " + str(exceptioncount)

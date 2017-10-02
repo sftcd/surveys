@@ -15,6 +15,7 @@ Initially, I want to analyse the mail speakers into the following classes:
 
 - good-looking
 - medium-looking
+- self-signed
 - bad-looking
 - dunno 
 - exceptions (in the try/catch sense)
@@ -23,6 +24,7 @@ First cut will be to define these as:
 
 - "good-looking" : Talks SMTPTLS with certs that chain to a browser-trusted root 
 - "medium-looking" : Talks STARTTLS ok but without a cert like the above
+- "self-signed" : Talks STARTTLS ok but with a self-signed cert like the above
 - "bad-looking" : doesn't manage to talk STARTTLS for some reason
 - "dunno" : doesn't fit the above
 - "exceptions" : something else my code didn't catch, figure it out later
