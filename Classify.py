@@ -6,6 +6,16 @@
 import sys
 import json
 
+def starttlsbanner(p25,file):
+    try:
+        if p25['smtp']['starttls']['starttls'] != "220 2.0.0 Ready to start TLS" :
+            file.write(p25['smtp']['starttls']['starttls'] + '\n');
+            return True
+    except:
+        return False
+    return False
+
+
 def good(p25):
     try:
         if p25['smtp']['starttls']['tls']['validation']['browser_trusted'] == True :
@@ -48,6 +58,7 @@ def bad(p25):
     return False
 
 with open(sys.argv[1],'r') as f:
+    f0=open('outs/banner.json', 'w')
     f1=open('outs/good.json', 'w')
     f2=open('outs/medium.json', 'w')
     f3=open('outs/bad.json', 'w')
@@ -56,6 +67,7 @@ with open(sys.argv[1],'r') as f:
     f6=open('outs/badsig.json', 'w')
     overallcount=0
     goodcount=0
+    bannercount=0
     mediumcount=0
     selfsignedcount=0
     badcount=0
@@ -64,6 +76,8 @@ with open(sys.argv[1],'r') as f:
     for line in f:
         j_content = json.loads(line)
         p25=j_content['p25']
+        starttlsbanner(p25,f0)
+        # note that above is independent of this
         if good(p25):
             f1.write(json.dumps(j_content) + '\n')
             goodcount += 1
@@ -89,6 +103,7 @@ with open(sys.argv[1],'r') as f:
             print "Did : " + str(overallcount)
         
 
+print "banner: " + str(bannercount)
 print "good: " + str(goodcount)
 print "medium: " + str(mediumcount)
 print "selfsigned: " + str(selfsignedcount)
