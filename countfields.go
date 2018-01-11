@@ -51,13 +51,28 @@ func main() {
 			fmt.Fprintf(os.Stderr,"json dcode error at line %v\n",lineno)
 			break
 		}
-		ip := dat["ip"]
-		if p25,found := dat["p25"]; found == true {
+		ip,found := dat["ip"]
+		if found != true {
+			fmt.Fprintf(os.Stderr,"no IP address element at line %v\n",lineno)
+			break
+		}
+		p25,found := dat["p25"]
+		if found == true {
 			smtps++
-			fmt.Println(p25)
+			// fmt.Println(p25)
 		} else {
 			nonsmtps++
-		} 
+		}
+		smtp,found := p25["smtp"]
+		if found != true {
+			continue
+		}
+		banner,found := smtp["banner"]
+		if found != true {
+			continue
+		} else {
+			fmt.Println(banner)
+		}
         fmt.Printf("line %v len = %v for %v\n",lineno,len(line),ip)
 		// dump the lot
 		//fmt.Println(dat)
