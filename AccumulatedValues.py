@@ -14,7 +14,7 @@ o_content={}
 with open(sys.argv[1],'r') as f:
     for line in f:
         j_content = json.loads(line)
-        if o_content is not None:
+        if not o_content :
             o_content=j_content.copy()
             #print json.dumps(o_content) + "\n"
         else:
