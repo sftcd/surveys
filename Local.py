@@ -6,6 +6,33 @@
 
 import sys
 import json
+import socket
+
+# figure out what names apply - just printing for now, decide
+# on a winner later
+def p_fqdn(p25,ip):
+    try:
+        try:
+            # name from reverse DNS
+            rdnsrec=socket.gethostbyaddr(ip)
+            rdns=rdnsrec[0]
+            print "FQDN reverse: " + rdns
+        except:
+            print "FQDN reverse exception" + str(e)
+        # try name from banner
+        banner=p25['smtp']['starttls']['banner'] 
+        ts=banner.split()
+        banner_fqdn=ts[1]
+        rip=socket.gethostbyname(banner_fqdn)
+        if rip == ip:
+            print "FQDN (verified): " + banner_fqdn + " (" + rip + ")"
+        else:
+            print "FQDN (failed): " + banner_fqdn + " (" + rip + " != " + ip + ")"
+        return True
+    except Exception as e: 
+        print "FQDN p_fqdn exception" + str(e)
+        return False
+    return False
 
 def p_banner(p25):
     try:
@@ -43,6 +70,8 @@ with open(sys.argv[1],'r') as f:
         p25=j_content['p25']
         print "\nRecord: " + str(overallcount) + ":"
         dodgy=False
+        if not p_fqdn(p25,j_content['ip']):
+            dodgy=True
         if not p_banner(p25):
             dodgy=True
         if not p_starttlsbanner(p25):
