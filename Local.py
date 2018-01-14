@@ -119,6 +119,8 @@ def get_fqdns(count,p25,ip):
         print >> sys.stderr, "FQDN san exception " + str(e) + " for record:" + str(count)
         nameset['san0']=''
 
+    besty=[]
+    nogood=True # assume none are good
     # try verify names a bit
     for k in nameset:
         v=nameset[k]
@@ -128,10 +130,16 @@ def get_fqdns(count,p25,ip):
             try:
                 rip=socket.gethostbyname(v)
                 if rip == ip:
+                    besty.append(k)
+                else:
                     meta[k+'-ip']=rip
+                # some name has an IP, even if not what we expect
+                nogood=False
             except:
                 print >> sys.stderr, "Error making DNS query for " + v + " for record:" + str(count)
 
+    meta['allbad']=nogood
+    meta['besty']=besty
     meta['enddate']=str(datetime.datetime.utcnow())
     meta['orig-ip']=ip
     nameset['meta']=meta
