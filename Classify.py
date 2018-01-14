@@ -5,109 +5,249 @@
 
 import sys
 import json
+import socket
+import datetime
 
-def starttlsbanner(p25,file):
+# Extract a CN= from a DN, if present - moar curses on the X.500 namers!
+# mind you, X.500 names were set in stone in 1988 so it's a bit late. 
+# Pity we still use 'em though. 
+def dn2cn(dn):
     try:
-        if p25['smtp']['starttls']['starttls'] != "220 2.0.0 Ready to start TLS" :
-            file.write(p25['smtp']['starttls']['starttls'] + '\n');
+        start_needle="CN="
+        start_pos=dn.find(start_needle)
+        if start_pos==-1:
+            # no commonName there... bail
+            return ''
+        start_pos += len(start_needle)
+        end_needle=","
+        end_pos=dn.find(end_needle,start_pos)
+        if end_pos==-1:
+            end_pos=len(dn)
+        cnstr=dn[start_pos:end_pos]
+        #print "dn2cn " + cnstr + " d: " + dn + " s: " + str(start_pos) + " e: " + str(end_pos) 
+    except Exception as e: 
+        print >> sys.stderr, "dn2cn exception " + str(e)
+        return ''
+    return cnstr
+
+# check if supposed domain name is a bogon so as to avoid
+# doing e.g. DNS checks
+def fqdn_bogon(dn):
+    try:
+        # if there are no dots, for us, it's bogus
+        if dn.find('.')==-1:
             return True
+        # if it ends-with ".internal" it's bogus
+        if dn.endswith(".internal"):
+            return True
+        # if it ends-with ".example.com" it's bogus
+        if dn.endswith("example.com"):
+            return True
+        # if it ends-with ".localdomain" it's bogus
+        if dn.endswith(".localdomain"):
+            return True
+        # if it ends-with ".local" it's bogus
+        if dn.endswith(".local"):
+            return True
+        # if it ends-with ".arpa" it's bogus
+        if dn.endswith(".arpa"):
+            return True
+        # if it's ESMTP it's bogus
+        if dn=="ESMTP":
+            return True
+        # wildcards are also bogons
+        if dn.find('*') != -1:
+            return True
+    except:
+        return True
+    return False
+    
+
+# figure out what names apply - return the set of names we've found
+# and not found in a dict
+def get_fqdns(count,p25,ip):
+    # make empty dict
+    nameset={}
+    # metadata in our return dict is in here, the rest are names or
+    # empty strings - note the names may well be bogus and not be
+    # real fqdns at this point
+    meta={}
+    # note when we started - since we'll likely be doing DNS queries
+    # the end-start time won't be near-zero;-(
+    meta['startddate']=str(datetime.datetime.utcnow())
+    # name from reverse dns of ip
+    try:
+        # name from reverse DNS
+        rdnsrec=socket.gethostbyaddr(ip)
+        rdns=rdnsrec[0]
+        #print "FQDN reverse: " + rdns
+        nameset['rnds']=rdns
+    except Exception as e: 
+        print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + str(count)
+        nameset['rnds']=''
+    # name from banner
+    try:
+        banner=p25['smtp']['starttls']['banner'] 
+        ts=banner.split()
+        banner_fqdn=ts[1]
+        nameset['banner']=banner_fqdn
+    except Exception as e: 
+        print >> sys.stderr, "FQDN banner exception " + str(e) + " for record:" + str(count)
+        nameset['banner']=''
+    try:
+        dn=p25['smtp']['starttls']['tls']['certificate']['parsed']['subject_dn'] 
+        dn_fqdn=dn2cn(dn)
+        #print "FQDN dn " + dn_fqdn
+        nameset['dn']=dn_fqdn
+    except Exception as e: 
+        print >> sys.stderr, "FQDN dn exception " + str(e) + " for record:" + str(count)
+        nameset['dn']=''
+    # name from cert SAN
+    try:
+        sans=p25['smtp']['starttls']['tls']['certificate']['parsed']['extensions']['subject_alt_name'] 
+        san_fqdns=sans['dns_names']
+        # we ignore all non dns_names - there are very few in our data (maybe 145 / 12000)
+        # and they're mostly otherName with opaque OID/value so not that useful. (A few
+        # are emails but we'll skip 'em for now)
+        #print "FQDN san " + str(san_fqdns) 
+        sancount=0
+        for san in san_fqdns:
+            nameset['san'+str(sancount)]=san_fqdns[sancount]
+            sancount += 1
+    except Exception as e: 
+        print >> sys.stderr, "FQDN san exception " + str(e) + " for record:" + str(count)
+        nameset['san0']=''
+
+    besty=[]
+    nogood=True # assume none are good
+    # try verify names a bit
+    for k in nameset:
+        v=nameset[k]
+        #print "checking: " + k + " " + v
+        # see if we can verify the value as matching our give IP
+        if v != '' and not fqdn_bogon(v):
+            try:
+                rip=socket.gethostbyname(v)
+                if rip == ip:
+                    besty.append(k)
+                else:
+                    meta[k+'-ip']=rip
+                # some name has an IP, even if not what we expect
+                nogood=False
+            except Exception as e: 
+                print >> sys.stderr, "Error making DNS query for " + v + " for record:" + str(count) + " " + str(e)
+
+    meta['allbad']=nogood
+    meta['besty']=besty
+    meta['enddate']=str(datetime.datetime.utcnow())
+    meta['orig-ip']=ip
+    nameset['meta']=meta
+    return nameset
+
+# try guess what product we're dealing with
+def guess_product(banner):
+    try:
+        if banner.lower().find('postfix')!=-1:
+            return 'postfix'
+        if banner.lower().find('icewarp')!=-1:
+            return 'icewarp'
+        if banner.lower().find('exim')!=-1:
+            return 'exim'
+        if banner.lower().find('sendmail')!=-1:
+            return 'sendmail'
+    except Exception as e: 
+        print >> sys.stderr, "guess_product exception: " + str(e)
+        return 'guess_exception'
+    return 'noguess'
+
+def get_banner(count,p25,ip):
+    # we'll try parse the banner according to https://tools.ietf.org/html/rfc5321
+    # and see how we get on, we're using the ABNF for "Greeting" from page 47 of
+    # the RFC
+    banner={}
+    # metadata in our return dict is in here, the rest are names or
+    # empty strings - note the names may well be bogus and not be
+    # real fqdns at this point
+    meta={}
+    # note when we started - since we'll likely be doing DNS queries
+    # the end-start time won't be near-zero;-(
+    meta['startddate']=str(datetime.datetime.utcnow())
+    try:
+        bannerstr=p25['smtp']['starttls']['banner'] 
+        banner['raw']=bannerstr
+        bsplit=bannerstr.split(' ')
+        banner['code']=bsplit[0]
+        banner['name']=bsplit[1]
+        banner['protocol']=bsplit[2]
+        banner['product']=guess_product(bannerstr)
+        #print "get_banner: " + str(bsplit) + " for record: " + str(count)
+    except Exception as e: 
+        print >> sys.stderr, "get_banner error getting SMTP banner for ip: " + ip + " record:" + str(count) + " " + str(e)
+
+    meta['endddate']=str(datetime.datetime.utcnow())
+    banner['meta']=meta
+    return banner
+
+def p_banner(p25):
+    try:
+        print "banner: " + p25['smtp']['starttls']['banner'] ;
+        return True
     except:
         return False
     return False
 
-
-def good(p25):
+def p_ehlo(p25):
     try:
-        if p25['smtp']['starttls']['tls']['validation']['browser_trusted'] == True :
-            return True
+        print "ehlo: " + p25['smtp']['starttls']['ehlo'] ;
+        return True
     except:
         return False
     return False
 
-def medium(p25):
+def p_starttlsbanner(p25):
     try:
-        if p25['smtp']['starttls']['tls']['signature']['valid'] == True :
-            return True
+        print "starttls: " + p25['smtp']['starttls']['starttls'] ;
+        return True
     except:
         return False
     return False
 
-def selfsigned(p25):
-    try:
-        if p25['smtp']['starttls']['tls']['certificate']['parsed']['signature']['self_signed'] == True \
-             and p25['smtp']['starttls']['tls']['certificate']['parsed']['signature']['valid'] == True:
-            return True
-    except:
-        return False
-    return False
-
-def badsig(p25):
-    try:
-        if p25['smtp']['starttls']['tls']['certificate']['parsed']['signature']['valid'] == False:
-            return True
-    except:
-        return False
-    return False
-
-def bad(p25):
-    try:
-        if 'tls' not in p25['smtp']['starttls']:
-            return True
-    except:
-        return False
-    return False
+bads={}
 
 with open(sys.argv[1],'r') as f:
-    f0=open('outs/banner.json', 'w')
-    f1=open('outs/good.json', 'w')
-    f2=open('outs/medium.json', 'w')
-    f3=open('outs/bad.json', 'w')
-    f4=open('outs/dunno.json', 'w')
-    f5=open('outs/selfsigned.json', 'w')
-    f6=open('outs/badsig.json', 'w')
     overallcount=0
+    badcount=0
     goodcount=0
     bannercount=0
-    mediumcount=0
-    selfsignedcount=0
-    badcount=0
-    dunnocount=0
-    badsigcount=0
     for line in f:
         j_content = json.loads(line)
         p25=j_content['p25']
-        starttlsbanner(p25,f0)
-        # note that above is independent of this
-        if good(p25):
-            f1.write(json.dumps(j_content) + '\n')
+        print "\nRecord: " + str(overallcount) + ":"
+        dodgy=False
+        nameset=get_fqdns(overallcount,p25,j_content['ip'])
+        print nameset
+        banner=get_banner(overallcount,p25,j_content['ip'])
+        print banner
+        if not p_banner(p25):
+            dodgy=True
+        if not p_starttlsbanner(p25):
+            dodgy=True
+        if not p_ehlo(p25):
+            dodgy=True
+        if not dodgy:
             goodcount += 1
-        elif badsig(p25):
-            f6.write(json.dumps(j_content) + '\n')
-            badsigcount += 1
-        elif medium(p25):
-            f2.write(json.dumps(j_content) + '\n')
-            mediumcount += 1
-        elif selfsigned(p25):
-            f5.write(json.dumps(j_content) + '\n')
-            selfsignedcount += 1
-        elif bad(p25):
-            f3.write(json.dumps(j_content) + '\n')
-            badcount += 1
         else:
-            f4.write(json.dumps(j_content) + '\n')
-            dunnocount += 1
+            bads[badcount]=j_content
+            badcount += 1
         overallcount += 1
         if overallcount % 100 == 0:
             # exit early for debug purposes
             #break
-            print "Did : " + str(overallcount)
-        
+            print >> sys.stderr, "Did : " + str(overallcount)
 
-print "banner: " + str(bannercount)
-print "good: " + str(goodcount)
-print "medium: " + str(mediumcount)
-print "selfsigned: " + str(selfsignedcount)
-print "badsig: " + str(badsigcount)
-print "bad: " + str(badcount)
-print "dunno: " + str(dunnocount)
-print "overall: " + str(overallcount)
+# this gets crapped on each time (for now)
+badf=open('dodgy.json', 'w')
+badf.write(json.dumps(bads) + '\n')
+badf.close()
+
+print >> sys.stderr, "overall: " + str(overallcount) + " good: " + str(goodcount) + " bad: " + str(badcount) + "\n"
