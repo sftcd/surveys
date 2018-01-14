@@ -81,15 +81,20 @@ def get_fqdns(count,p25,ip):
         rdnsrec=socket.gethostbyaddr(ip)
         rdns=rdnsrec[0]
         #print "FQDN reverse: " + rdns
-        nameset['rnds']=rdns
+        nameset['rdns']=rdns
     except Exception as e: 
         print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + str(count)
-        nameset['rnds']=''
+        nameset['rdns']=''
     # name from banner
     try:
         banner=p25['smtp']['starttls']['banner'] 
         ts=banner.split()
-        banner_fqdn=ts[1]
+        if ts[0]=="220":
+            banner_fqdn=ts[1]
+        elif ts[0].startswith("220-"):
+            banner_fqdn=ts[0][4:]
+        else:
+            banner_fqdn=''
         nameset['banner']=banner_fqdn
     except Exception as e: 
         print >> sys.stderr, "FQDN banner exception " + str(e) + " for record:" + str(count)
@@ -148,13 +153,15 @@ def get_fqdns(count,p25,ip):
 def guess_product(banner):
     try:
         if banner.lower().find('postfix')!=-1:
-            return 'postfix'
+            return 'Postfix'
         if banner.lower().find('icewarp')!=-1:
-            return 'icewarp'
+            return 'Icewarp'
         if banner.lower().find('exim')!=-1:
-            return 'exim'
+            return 'Exim'
         if banner.lower().find('sendmail')!=-1:
-            return 'sendmail'
+            return 'Sendmail'
+        if banner.lower().find('microsoft')!=-1:
+            return 'Microsoft'
     except Exception as e: 
         print >> sys.stderr, "guess_product exception: " + str(e)
         return 'guess_exception'
@@ -176,10 +183,14 @@ def get_banner(count,p25,ip):
         bannerstr=p25['smtp']['starttls']['banner'] 
         banner['raw']=bannerstr
         bsplit=bannerstr.split(' ')
-        banner['code']=bsplit[0]
-        banner['name']=bsplit[1]
-        banner['protocol']=bsplit[2]
-        banner['product']=guess_product(bannerstr)
+        try:
+            censys_meta=p25['smtp']['starttls']['metadata']
+            if censys_meta['product']!='':
+                banner['product']=censys_meta['product']
+            else:
+                banner['product']=guess_product(bannerstr)
+        except:
+            banner['product']=guess_product(bannerstr)
         #print "get_banner: " + str(bsplit) + " for record: " + str(count)
     except Exception as e: 
         print >> sys.stderr, "get_banner error getting SMTP banner for ip: " + ip + " record:" + str(count) + " " + str(e)
@@ -187,6 +198,14 @@ def get_banner(count,p25,ip):
     meta['endddate']=str(datetime.datetime.utcnow())
     banner['meta']=meta
     return banner
+
+def p_metadata(p25):
+    try:
+        print "metadata: " + str(p25['smtp']['starttls']['metadata']) ;
+        return True
+    except:
+        return False
+    return False
 
 def p_banner(p25):
     try:
@@ -228,6 +247,8 @@ with open(sys.argv[1],'r') as f:
         print nameset
         banner=get_banner(overallcount,p25,j_content['ip'])
         print banner
+        if not p_metadata(p25):
+            dodgy=True
         if not p_banner(p25):
             dodgy=True
         if not p_starttlsbanner(p25):
