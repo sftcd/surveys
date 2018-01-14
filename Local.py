@@ -7,68 +7,135 @@
 import sys
 import json
 import socket
+import datetime
 
-# extract a CN= from a DN, if present - moar curses on the X.500 namers!
+# Extract a CN= from a DN, if present - moar curses on the X.500 namers!
+# mind you, X.500 names were set in stone in 1988 so it's a bit late. 
+# Pity we still use 'em though. 
 def dn2cn(dn):
     try:
         start_needle="CN="
-        start_pos=dn.find(start_needle)+len(start_needle)
-        end_needle=";"
+        start_pos=dn.find(start_needle)
+        if start_pos==-1:
+            # no commonName there... bail
+            return ''
+        start_pos += len(start_needle)
+        end_needle=","
         end_pos=dn.find(end_needle,start_pos)
         if end_pos==-1:
             end_pos=len(dn)
         cnstr=dn[start_pos:end_pos]
-        print "dn2cn " + cnstr + " d: " + dn + " s: " + str(start_pos) + " e: " + str(end_pos) 
+        #print "dn2cn " + cnstr + " d: " + dn + " s: " + str(start_pos) + " e: " + str(end_pos) 
     except Exception as e: 
-        print "dn2cn exception " + str(e)
+        print >> sys.stderr, "dn2cn exception " + str(e)
+        return ''
     return cnstr
 
-# figure out what names apply - just printing for now, decide
-# on a winner later
-def p_fqdn(p25,ip):
+# check if supposed domain name is a bogon so as to avoid
+# doing e.g. DNS checks
+def fqdn_bogon(dn):
     try:
-        # name from reverse dns of ip
-        try:
-            # name from reverse DNS
-            rdnsrec=socket.gethostbyaddr(ip)
-            rdns=rdnsrec[0]
-            print "FQDN reverse: " + rdns
-        except Exception as e: 
-            print "FQDN reverse exception " + str(e)
-        # name from banner
-        try:
-            banner=p25['smtp']['starttls']['banner'] 
-            ts=banner.split()
-            banner_fqdn=ts[1]
-            # ip from banner nname
-            rip=socket.gethostbyname(banner_fqdn)
-            if rip == ip:
-                print "FQDN (verified): " + banner_fqdn + " (" + rip + ")"
-            else:
-                print "FQDN (failed): " + banner_fqdn + " (" + rip + " != " + ip + ")"
-        except Exception as e: 
-            print "FQDN banner exception " + str(e)
-        # name from cert CN=
-        try:
-            dn=p25['smtp']['starttls']['tls']['certificate']['parsed']['subject_dn'] 
-            dn_fqdn=dn2cn(dn)
-            print "FQDN dn " + dn_fqdn
-        except Exception as e: 
-            print "FQDN dn exception " + str(e)
-        # name from cert SAN
-        try:
-            sans=p25['smtp']['starttls']['tls']['certificate']['parsed']['extensions']['subject_alt_name'] 
-            san_fqdns=sans['dns_names']
-            # for now we ignore all non dns_names - check if there are reall any
-            # san_overall=str(sans)
-            print "FQDN san " + str(san_fqdns) 
-        except Exception as e: 
-            print "FQDN san exception " + str(e)
+        # if there are no dots, for us, it's bogus
+        if dn.find('.')==-1:
+            return True
+        # if it ends-with ".internal" it's bogus
+        if dn.endswith(".internal"):
+            return True
+        # if it ends-with ".example.com" it's bogus
+        if dn.endswith("example.com"):
+            return True
+        # if it ends-with ".localdomain" it's bogus
+        if dn.endswith(".localdomain"):
+            return True
+        # if it ends-with ".local" it's bogus
+        if dn.endswith(".local"):
+            return True
+        # if it ends-with ".arpa" it's bogus
+        if dn.endswith(".arpa"):
+            return True
+        # if it's ESMTP it's bogus
+        if dn=="ESMTP":
+            return True
+        # wildcards are also bogons
+        if dn.find('*') != -1:
+            return True
+    except:
         return True
-    except Exception as e: 
-        print "FQDN p_fqdn exception " + str(e)
-        return False
     return False
+    
+
+# figure out what names apply - return the set of names we've found
+# and not found in a dict
+def get_fqdns(count,p25,ip):
+    # make empty dict
+    nameset={}
+    # metadata in our return dict is in here, the rest are names or
+    # empty strings - note the names may well be bogus and not be
+    # real fqdns at this point
+    meta={}
+    # note when we started - since we'll likely be doing DNS queries
+    # the end-start time won't be near-zero;-(
+    meta['startddate']=str(datetime.datetime.utcnow())
+    # name from reverse dns of ip
+    try:
+        # name from reverse DNS
+        rdnsrec=socket.gethostbyaddr(ip)
+        rdns=rdnsrec[0]
+        #print "FQDN reverse: " + rdns
+        nameset['rnds']=rdns
+    except Exception as e: 
+        print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + str(count)
+        nameset['rnds']=''
+    # name from banner
+    try:
+        banner=p25['smtp']['starttls']['banner'] 
+        ts=banner.split()
+        banner_fqdn=ts[1]
+        nameset['banner']=banner_fqdn
+    except Exception as e: 
+        print >> sys.stderr, "FQDN banner exception " + str(e) + " for record:" + str(count)
+        nameset['banner']=''
+    try:
+        dn=p25['smtp']['starttls']['tls']['certificate']['parsed']['subject_dn'] 
+        dn_fqdn=dn2cn(dn)
+        #print "FQDN dn " + dn_fqdn
+        nameset['dn']=dn_fqdn
+    except Exception as e: 
+        print >> sys.stderr, "FQDN dn exception " + str(e) + " for record:" + str(count)
+        nameset['dn']=''
+    # name from cert SAN
+    try:
+        sans=p25['smtp']['starttls']['tls']['certificate']['parsed']['extensions']['subject_alt_name'] 
+        san_fqdns=sans['dns_names']
+        # we ignore all non dns_names - there are very few in our data (maybe 145 / 12000)
+        # and they're mostly otherName with opaque OID/value so not that useful. (A few
+        # are emails but we'll skip 'em for now)
+        #print "FQDN san " + str(san_fqdns) 
+        sancount=0
+        for san in san_fqdns:
+            nameset['san'+str(sancount)]=san_fqdns[sancount]
+            sancount += 1
+    except Exception as e: 
+        print >> sys.stderr, "FQDN san exception " + str(e) + " for record:" + str(count)
+        nameset['san0']=''
+
+    # try verify names a bit
+    for k in nameset:
+        v=nameset[k]
+        #print "checking: " + k + " " + v
+        # see if we can verify the value as matching our give IP
+        if v != '' and not fqdn_bogon(v):
+            try:
+                rip=socket.gethostbyname(v)
+                if rip == ip:
+                    meta[k+'-ip']=rip
+            except:
+                print >> sys.stderr, "Error making DNS query for " + v + " for record:" + str(count)
+
+    meta['enddate']=str(datetime.datetime.utcnow())
+    meta['orig-ip']=ip
+    nameset['meta']=meta
+    return nameset
 
 def p_banner(p25):
     try:
@@ -106,8 +173,8 @@ with open(sys.argv[1],'r') as f:
         p25=j_content['p25']
         print "\nRecord: " + str(overallcount) + ":"
         dodgy=False
-        if not p_fqdn(p25,j_content['ip']):
-            dodgy=True
+        nameset=get_fqdns(overallcount,p25,j_content['ip'])
+        print nameset
         if not p_banner(p25):
             dodgy=True
         if not p_starttlsbanner(p25):
