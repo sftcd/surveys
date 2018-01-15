@@ -147,7 +147,6 @@ def get_fqdns(count,p25,ip):
     meta['allbad']=nogood
     meta['besty']=besty
     meta['enddate']=str(datetime.datetime.utcnow())
-    meta['orig-ip']=ip
     nameset['meta']=meta
     return nameset
 
@@ -178,9 +177,6 @@ def get_banner(count,p25,ip):
     # empty strings - note the names may well be bogus and not be
     # real fqdns at this point
     meta={}
-    # note when we started - since we'll likely be doing DNS queries
-    # the end-start time won't be near-zero;-(
-    meta['startddate']=str(datetime.datetime.utcnow())
     try:
         bannerstr=p25['smtp']['starttls']['banner'] 
         banner['raw']=bannerstr
@@ -197,7 +193,6 @@ def get_banner(count,p25,ip):
     except Exception as e: 
         print >> sys.stderr, "get_banner error getting SMTP banner for ip: " + ip + " record:" + str(count) + " " + str(e)
 
-    meta['endddate']=str(datetime.datetime.utcnow())
     banner['meta']=meta
     return banner
 
@@ -206,7 +201,6 @@ def get_banner(count,p25,ip):
 # scandate is needed to check if cert was expired at time of
 # scan
 def get_tls(count,tls,ip,tlsdets,scandate):
-    tlsdets['scandate']=scandate
     try:
         # we'll put each in a try/except to set true/false values
         # would chain work in browser
@@ -231,6 +225,16 @@ def get_tls(count,tls,ip,tlsdets,scandate):
                 tlsdets['validthen']='too-early'
             elif (notafter < scandate):
                 tlsdets['validthen']='expired'
+            tlsdets['validthen-date']=scandate
+
+            now=datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+            if (notbefore <= now and notafter > now):
+                tlsdets['validnow']='good'
+            elif (notbefore > now):
+                tlsdets['validnow']='too-early'
+            elif (notafter < now):
+                tlsdets['validnow']='expired'
+            tlsdets['validnow-date']=now
         except Exception as e: 
             print >> sys.stderr, "get_tls error for ip: " + ip + " record:" + str(count) + " " + str(e)
             tlsdets['validthen']='exception'
@@ -246,7 +250,7 @@ def get_smtpstarttls(count,p25,ip,scandate):
     meta={}
     meta['startddate']=str(datetime.datetime.utcnow())
     try:
-        tlsbanner=p25['smtp']['starttls']['starttls'] ;
+        tlsbanner=p25['smtp']['starttls']['starttls']
         # keep raw banner
         tlsdets['banner']=tlsbanner
         tbsplit=tlsbanner.split()
@@ -301,6 +305,13 @@ def p_starttlsbanner(p25):
         return False
     return False
 
+# hack for dict->json dates as per https://stackoverflow.com/questions/455580/json-datetime-between-python-and-javascript
+date_handler = lambda obj: (
+    obj.isoformat()
+    if isinstance(obj, (datetime.datetime, datetime.date))
+    else None
+)
+
 # this is our main line code, to read a censys output and to 
 # classify it
 
@@ -322,21 +333,25 @@ with open(sys.argv[1],'r') as f:
     bannercount=0
     for line in f:
         j_content = json.loads(line)
+        analysis={}
+        analysis['startdate']=str(datetime.datetime.utcnow())
+        analysis['record']=overallcount
+        analysis['ip']=j_content['ip']
+        analysis['scandate']=scandate
         p25=j_content['p25']
-        print "\nRecord: " + str(overallcount) + ":"
+        #print "\nRecord: " + str(overallcount) + ":"
         dodgy=False
-        nameset=get_fqdns(overallcount,p25,j_content['ip'])
-        print nameset
-        banner=get_banner(overallcount,p25,j_content['ip'])
-        print banner
-        tlsdets=get_smtpstarttls(overallcount,p25,j_content['ip'],scandate)
-        print tlsdets
+        analysis['nameset']=get_fqdns(overallcount,p25,j_content['ip'])
+        analysis['banner']=get_banner(overallcount,p25,j_content['ip'])
+        analysis['tlsdets']=get_smtpstarttls(overallcount,p25,j_content['ip'],scandate)
+        analysis['enddate']=str(datetime.datetime.utcnow())
+        print json.dumps(analysis,default=date_handler) 
         #if not p_metadata(p25):
             #dodgy=True
         #if not p_banner(p25):
             #dodgy=True
-        if not p_starttlsbanner(p25):
-            dodgy=True
+        #if not p_starttlsbanner(p25):
+            #dodgy=True
         #if not p_ehlo(p25):
             #dodgy=True
         if not dodgy:
