@@ -7,6 +7,8 @@ import sys
 import json
 import socket
 import datetime
+from dateutil import parser # for parsing time from comand line and certs
+import pytz # for adding back TZ info to allow comparisons
 
 # Extract a CN= from a DN, if present - moar curses on the X.500 namers!
 # mind you, X.500 names were set in stone in 1988 so it's a bit late. 
@@ -199,6 +201,74 @@ def get_banner(count,p25,ip):
     banner['meta']=meta
     return banner
 
+# analyse the tls details - this ought work for other ports as
+# well as p25
+# scandate is needed to check if cert was expired at time of
+# scan
+def get_tls(count,tls,ip,tlsdets,scandate):
+    tlsdets['scandate']=scandate
+    try:
+        # we'll put each in a try/except to set true/false values
+        # would chain work in browser
+        try:
+            tlsdets['browser_trusted']=str(tls['validation']['browser_trusted'])
+        except:
+            tlsdets['browser_trusted']='exception'
+        try:
+            tlsdets['self_signed']=str(tls['certificate']['parsed']['signature']['self_signed'])
+        except:
+            tlsdets['self_signed']='exception'
+        try:
+            tlsdets['cipher_suite']=tls['cipher_suite']['name']
+        except:
+            tlsdets['cipher_suite']='exception'
+        try:
+            notbefore=parser.parse(tls['certificate']['parsed']['validity']['start'])
+            notafter=parser.parse(tls['certificate']['parsed']['validity']['end'])
+            if (notbefore <= scandate and notafter > scandate):
+                tlsdets['validthen']='good'
+            elif (notbefore > scandate):
+                tlsdets['validthen']='too-early'
+            elif (notafter < scandate):
+                tlsdets['validthen']='expired'
+        except Exception as e: 
+            print >> sys.stderr, "get_tls error for ip: " + ip + " record:" + str(count) + " " + str(e)
+            tlsdets['validthen']='exception'
+    except Exception as e: 
+        print >> sys.stderr, "get_tls error for ip: " + ip + " record:" + str(count) + " " + str(e)
+    return True
+
+# first check out the smtp starttls banner, then, if possible
+# dive into tls details (via get_tls above)
+def get_smtpstarttls(count,p25,ip,scandate):
+    # usual pattern here 
+    tlsdets = {} # tls details
+    meta={}
+    meta['startddate']=str(datetime.datetime.utcnow())
+    try:
+        tlsbanner=p25['smtp']['starttls']['starttls'] ;
+        # keep raw banner
+        tlsdets['banner']=tlsbanner
+        tbsplit=tlsbanner.split()
+        tlsdets['code']=int(tbsplit[0])
+        try:
+            biggie=p25['smtp']['starttls']['tls']
+            get_tls(count,biggie,ip,tlsdets,scandate)
+            tlsdets['tls']=True
+        except Exception as e: 
+            print >> sys.stderr, "get_smtpstarttls error for ip: " + ip + " record:" + str(count) + " " + str(e)
+            tlsdets['tls']=False
+    except Exception as e: 
+        print >> sys.stderr, "get_smtpstarttls error for ip: " + ip + " record:" + str(count) + " " + str(e)
+
+    meta['endddate']=str(datetime.datetime.utcnow())
+    tlsdets['meta']=meta
+    return tlsdets
+
+# basic functions for initially exploring data
+# pattern followed is to print from a sample of 
+# ~200, then classify
+
 def p_metadata(p25):
     try:
         print "metadata: " + str(p25['smtp']['starttls']['metadata']) ;
@@ -231,7 +301,19 @@ def p_starttlsbanner(p25):
         return False
     return False
 
+# this is our main line code, to read a censys output and to 
+# classify it
+
+# this is a dict to hold the set of records we can't classify,
+# it'll be dumped to dodgy.json at the end, we'd like there to
+# be as few of these as possible
 bads={}
+
+scandate=datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+try:
+    scandate=parser.parse(sys.argv[2]).replace(tzinfo=pytz.UTC)
+except:
+    print >> sys.stderr, "No (or bad) scan time provided, using 'now'"
 
 with open(sys.argv[1],'r') as f:
     overallcount=0
@@ -247,14 +329,16 @@ with open(sys.argv[1],'r') as f:
         print nameset
         banner=get_banner(overallcount,p25,j_content['ip'])
         print banner
-        if not p_metadata(p25):
-            dodgy=True
-        if not p_banner(p25):
-            dodgy=True
+        tlsdets=get_smtpstarttls(overallcount,p25,j_content['ip'],scandate)
+        print tlsdets
+        #if not p_metadata(p25):
+            #dodgy=True
+        #if not p_banner(p25):
+            #dodgy=True
         if not p_starttlsbanner(p25):
             dodgy=True
-        if not p_ehlo(p25):
-            dodgy=True
+        #if not p_ehlo(p25):
+            #dodgy=True
         if not dodgy:
             goodcount += 1
         else:
