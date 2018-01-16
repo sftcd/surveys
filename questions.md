@@ -3,8 +3,9 @@
 Plan is to enhance Classify.py to answer these questions...
 
 1. What names go with the record? 
-1. What product is in use?
+1. What product is in use
 1. Which can/can't do SMTP/TLS on port25
+1. Which are using browser-trusted certs
 1. Which are using self-signed certs only
 1. Which are using expired certs (self-signed or not)
 1. Which are using up-to-date/out-of-date software

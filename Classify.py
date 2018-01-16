@@ -249,6 +249,7 @@ def get_smtpstarttls(count,p25,ip,scandate):
     tlsdets = {} # tls details
     meta={}
     meta['startddate']=str(datetime.datetime.utcnow())
+    tlsdets['tls']=False # pessimism
     try:
         tlsbanner=p25['smtp']['starttls']['starttls']
         # keep raw banner
@@ -257,11 +258,10 @@ def get_smtpstarttls(count,p25,ip,scandate):
         tlsdets['code']=int(tbsplit[0])
         try:
             biggie=p25['smtp']['starttls']['tls']
-            get_tls(count,biggie,ip,tlsdets,scandate)
             tlsdets['tls']=True
+            get_tls(count,biggie,ip,tlsdets,scandate)
         except Exception as e: 
             print >> sys.stderr, "get_smtpstarttls error for ip: " + ip + " record:" + str(count) + " " + str(e)
-            tlsdets['tls']=False
     except Exception as e: 
         print >> sys.stderr, "get_smtpstarttls error for ip: " + ip + " record:" + str(count) + " " + str(e)
 
