@@ -30,6 +30,7 @@ with open(sys.argv[1],'r') as f:
         thisone['ip']=j_content['ip']
         thisone['fprints']={}
 
+        fp=''
         try:
             fp=j_content['p25']['smtp']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
             thisone['fprints']['p25']=fp
@@ -37,6 +38,7 @@ with open(sys.argv[1],'r') as f:
         except Exception as e: 
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
+        fp=''
         try:
             fp=j_content['p143']['imap']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
             thisone['fprints']['p143']=fp
@@ -44,6 +46,7 @@ with open(sys.argv[1],'r') as f:
         except Exception as e: 
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
+        fp=''
         try:
             fp=j_content['p443']['https']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
             thisone['fprints']['p443']=fp
@@ -51,6 +54,7 @@ with open(sys.argv[1],'r') as f:
         except Exception as e: 
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
+        fp=''
         try:
             fp=j_content['p993']['imaps']['tls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
             thisone['fprints']['p993']=fp
