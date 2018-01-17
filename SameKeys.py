@@ -31,29 +31,33 @@ with open(sys.argv[1],'r') as f:
         thisone['fprints']={}
 
         try:
-            fp=j_content['p25']['smtp']['starttls']['tls']['certificate']['parsed']['spki_subject_fingerprint'] 
+            fp=j_content['p25']['smtp']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
             thisone['fprints']['p25']=fp
             somekey=True
         except Exception as e: 
-            print >> sys.stderr, "fprint exception " + str(e)
+            #print >> sys.stderr, "fprint exception " + str(e)
+            pass
         try:
-            fp=j_content['p143']['imap']['starttls']['tls']['certificate']['parsed']['spki_subject_fingerprint'] 
+            fp=j_content['p143']['imap']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
             thisone['fprints']['p143']=fp
             somekey=True
         except Exception as e: 
-            print >> sys.stderr, "fprint exception " + str(e)
+            #print >> sys.stderr, "fprint exception " + str(e)
+            pass
         try:
-            fp=j_content['p443']['https']['tls']['certificate']['parsed']['spki_subject_fingerprint'] 
+            fp=j_content['p443']['https']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
             thisone['fprints']['p443']=fp
             somekey=True
         except Exception as e: 
-            print >> sys.stderr, "fprint exception " + str(e)
+            #print >> sys.stderr, "fprint exception " + str(e)
+            pass
         try:
-            fp=j_content['p993']['imaps']['tls']['tls']['certificate']['parsed']['spki_subject_fingerprint'] 
+            fp=j_content['p993']['imaps']['tls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
             thisone['fprints']['p993']=fp
             somekey=True
         except Exception as e: 
-            print >> sys.stderr, "fprint exception " + str(e)
+            #print >> sys.stderr, "fprint exception " + str(e)
+            pass
 
         if somekey:
             goodcount += 1
@@ -65,7 +69,7 @@ with open(sys.argv[1],'r') as f:
         if overallcount % 100 == 0:
             # exit early for debug purposes
             #break
-            print >> sys.stderr, "Did : " + str(overallcount)
+            print >> sys.stderr, "Reading fingerprints, did: " + str(overallcount)
 
 # add info about remote collision
 def addcoll(thetype,l1,k1,l2,k2):
@@ -94,8 +98,8 @@ def commonfps(l1,l2,local):
         for k2 in l2['fprints']:
             if k1!=k2 or not local:
                 if l1['fprints'][k1]==l2['fprints'][k2]:
-                    mstr=str(l1['record']) + ":" + k1 + "==" + str(l2['record']) + ":" + k2
-                    print >> sys.stderr, "Remote collision!!! " + mstr
+                    #mstr=str(l1['record']) + ":" + k1 + "==" + str(l2['record']) + ":" + k2
+                    #print >> sys.stderr, "Remote collision!!! " + mstr
                     if local:
                         addcoll("local_collisions",l2,k2,l1,k1)
                         foundone=True
@@ -105,6 +109,8 @@ def commonfps(l1,l2,local):
                         foundone=True
     return foundone
 
+checkcount=0
+colcount=0
 # loop over fingerprints to see who's sharing
 for f1 in fingerprints:
     for f2 in fingerprints:
@@ -112,15 +118,27 @@ for f1 in fingerprints:
             local_shared=commonfps(f1,f2,True)
         else: # super-dodgy between-host sharing
             remote_shared=commonfps(f1,f2,False)
-            #if remote_shared:
+            if remote_shared:
                 #print "Found a collision between " + f1['ip'] + "/" + str(f1['record']) + " and " + f2['ip'] + "/" + str(f2['record']) 
+                colcount += 1
+    checkcount += 1
+    if checkcount % 100 == 0:
+        # exit early for debug purposes
+        #break
+        print >> sys.stderr, "Checking colissions, did: " + str(checkcount) + " found: " + str(colcount) + " remote collisions"
 
-collisions=[]
 colcount=0
+accumcount=0
+collisions=[]
 for f in fingerprints:
     if 'remote_collisions' in f:
         collisions.append(f)
         colcount += 1
+    accumcount += 1
+    if accumcount % 100 == 0:
+        # exit early for debug purposes
+        #break
+        print >> sys.stderr, "Accumulating colissions, did: " + str(accumcount) + " found: " + str(colcount) + " IP's with remote collisions"
 
 # this gets crapped on each time (for now)
 keyf=open('all-key-fingerprints.json', 'w')
