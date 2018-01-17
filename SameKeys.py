@@ -29,8 +29,6 @@ with open(sys.argv[1],'r') as f:
         thisone['record']=overallcount
         thisone['ip']=j_content['ip']
         thisone['fprints']={}
-        thisone['local_collisions']=[]
-        thisone['remote_collisions']=[]
 
         try:
             fp=j_content['p25']['smtp']['starttls']['tls']['certificate']['parsed']['spki_subject_fingerprint'] 
@@ -69,20 +67,43 @@ with open(sys.argv[1],'r') as f:
             #break
             print >> sys.stderr, "Did : " + str(overallcount)
 
+# add info about remote collision
+def addcoll(thetype,l1,k1,l2,k2):
+    try:
+        rc=l1[thetype]
+    except:
+        l1[thetype]={}
+    rc=l1[thetype]
+    try:
+        rcr=rc[l2['record']]
+    except:
+        rcr=rc[l2['record']]={}
+    rcr=rc[l2['record']]
+    try:
+        kc=rcr[k1]
+    except:
+        rcr[k1]=[]
+    kc=rcr[k1]
+    if k2 not in kc:
+        kc.append(k2)
+
 # check if common fingeprints found
 def commonfps(l1,l2,local):
+    foundone=False
     for k1 in l1['fprints']:
         for k2 in l2['fprints']:
             if k1!=k2 or not local:
                 if l1['fprints'][k1]==l2['fprints'][k2]:
                     mstr=str(l1['record']) + ":" + k1 + "==" + str(l2['record']) + ":" + k2
+                    print >> sys.stderr, "Remote collision!!! " + mstr
                     if local:
-                        l1['local_collisions'].append(mstr)
+                        addcoll("local_collisions",l2,k2,l1,k1)
+                        foundone=True
                     else:
-                        print >> sys.stderr, "Remote collision!!! " + mstr
-                        l1['remote_collisions'].append(mstr)
-                        l2['remote_collisions'].append(mstr)
-
+                        addcoll("remote_collisions",l1,k1,l2,k2)
+                        addcoll("remote_collisions",l2,k2,l1,k1)
+                        foundone=True
+    return foundone
 
 # loop over fingerprints to see who's sharing
 for f1 in fingerprints:
@@ -91,6 +112,8 @@ for f1 in fingerprints:
             local_shared=commonfps(f1,f2,True)
         else: # super-dodgy between-host sharing
             remote_shared=commonfps(f1,f2,False)
+            if remote_shared:
+                print "Found a collision between " + f1['ip'] + "/" + str(f1['record']) + " and " + f2['ip'] + "/" + str(f2['record']) 
 
 # this gets crapped on each time (for now)
 keyf=open('key-fingerprints.json', 'w')
