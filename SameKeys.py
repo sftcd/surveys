@@ -112,13 +112,26 @@ for f1 in fingerprints:
             local_shared=commonfps(f1,f2,True)
         else: # super-dodgy between-host sharing
             remote_shared=commonfps(f1,f2,False)
-            if remote_shared:
-                print "Found a collision between " + f1['ip'] + "/" + str(f1['record']) + " and " + f2['ip'] + "/" + str(f2['record']) 
+            #if remote_shared:
+                #print "Found a collision between " + f1['ip'] + "/" + str(f1['record']) + " and " + f2['ip'] + "/" + str(f2['record']) 
+
+collisions=[]
+colcount=0
+for f in fingerprints:
+    if 'remote_collisions' in f:
+        collisions.append(f)
+        colcount += 1
 
 # this gets crapped on each time (for now)
-keyf=open('key-fingerprints.json', 'w')
+keyf=open('all-key-fingerprints.json', 'w')
 keyf.write(json.dumps(fingerprints) + '\n')
 keyf.close()
+
+# this gets crapped on each time (for now)
+colf=open('collisions.json', 'w')
+colf.write(json.dumps(collisions) + '\n')
+colf.close()
+
 
 # this gets crapped on each time (for now)
 # in this case, these are the hosts with no crypto anywhere (except
@@ -127,4 +140,8 @@ badf=open('dodgy.json', 'w')
 badf.write(json.dumps(bads) + '\n')
 badf.close()
 
-print >> sys.stderr, "overall: " + str(overallcount) + " good: " + str(goodcount) + " bad: " + str(badcount) + "\n"
+print >> sys.stderr, "overall: " + str(overallcount) + \
+        " good: " + str(goodcount) + \
+        " bad: " + str(badcount) + \
+        " remote collisions: " + str(colcount) + \
+        "\n"
