@@ -44,28 +44,28 @@ with open(sys.argv[1],'r') as f:
             countkeytype(spki,counts)
             somekey=True
         except Exception as e: 
-            print >> sys.stderr, "fprint exception " + str(e)
+            #print >> sys.stderr, "fprint exception " + str(e)
             pass
         try:
             spki=j_content['p143']['imap']['starttls']['tls']['certificate']['parsed']['subject_key_info']
             countkeytype(spki,counts)
             somekey=True
         except Exception as e: 
-            print >> sys.stderr, "fprint exception " + str(e)
+            #print >> sys.stderr, "fprint exception " + str(e)
             pass
         try:
             spki=j_content['p443']['https']['tls']['certificate']['parsed']['subject_key_info']
             countkeytype(spki,counts)
             somekey=True
         except Exception as e: 
-            print >> sys.stderr, "fprint exception " + str(e)
+            #print >> sys.stderr, "fprint exception " + str(e)
             pass
         try:
             spki=j_content['p993']['imaps']['tls']['tls']['certificate']['parsed']['subject_key_info']
             countkeytype(spki,counts)
             somekey=True
         except Exception as e: 
-            print >> sys.stderr, "fprint exception " + str(e)
+            #print >> sys.stderr, "fprint exception " + str(e)
             pass
 
         if somekey:
@@ -77,7 +77,7 @@ with open(sys.argv[1],'r') as f:
         if overallcount % 100 == 0:
             # exit early for debug purposes
             #break
-            print >> sys.stderr, "Reading fingerprints, did: " + str(overallcount)
+            print >> sys.stderr, "Reading keys, did: " + str(overallcount)
 
 # this gets crapped on each time (for now)
 # in this case, these are the hosts with no crypto anywhere (except
