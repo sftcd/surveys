@@ -30,7 +30,16 @@ with open(sys.argv[1],'r') as f:
         thisone['ip']=j_content['ip']
         thisone['fprints']={}
 
-        fp=''
+        # amazon is the chief susspect for key sharing, via some 
+        # kind of fronting
+        try:
+            asn=j_content['autonomous_system']['name'].lower()
+            if "amazon" in asn:
+                thisone['amazon']=True
+            thisone['asn']=asn
+        except:
+            pass
+
         try:
             fp=j_content['p25']['smtp']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
             thisone['fprints']['p25']=fp
@@ -38,7 +47,6 @@ with open(sys.argv[1],'r') as f:
         except Exception as e: 
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
-        fp=''
         try:
             fp=j_content['p143']['imap']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
             thisone['fprints']['p143']=fp
@@ -46,7 +54,6 @@ with open(sys.argv[1],'r') as f:
         except Exception as e: 
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
-        fp=''
         try:
             fp=j_content['p443']['https']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
             thisone['fprints']['p443']=fp
@@ -54,7 +61,6 @@ with open(sys.argv[1],'r') as f:
         except Exception as e: 
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
-        fp=''
         try:
             fp=j_content['p993']['imaps']['tls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
             thisone['fprints']['p993']=fp
@@ -134,10 +140,21 @@ for f1 in fingerprints:
 colcount=0
 accumcount=0
 collisions=[]
+amazcolcount=0
+nonamazons=[]
+amaznoncolcount=0
 for f in fingerprints:
     if 'remote_collisions' in f:
         collisions.append(f)
         colcount += 1
+        if 'amazon' in f and f['amazon']==True:
+            amazcolcount += 1
+        else:
+            #print "non-amazon remote collision, asn: " + f['asn'] + " ip: " + f['ip']
+            nonamazons.append(f)
+    else:
+        if 'amazon' in f and f['amazon']==True:
+            amaznoncolcount += 1 
     accumcount += 1
     if accumcount % 100 == 0:
         # exit early for debug purposes
@@ -154,6 +171,11 @@ colf=open('collisions.json', 'w')
 colf.write(json.dumps(collisions) + '\n')
 colf.close()
 
+# let's look at non-amazon collisions
+nas=open('non-amazons.json', 'w')
+nas.write(json.dumps(nonamazons) + '\n')
+nas.close()
+
 
 # this gets crapped on each time (for now)
 # in this case, these are the hosts with no crypto anywhere (except
@@ -166,4 +188,6 @@ print >> sys.stderr, "overall: " + str(overallcount) + \
         " good: " + str(goodcount) + \
         " bad: " + str(badcount) + \
         " remote collisions: " + str(colcount) + \
+        " amazon collisions: " + str(amazcolcount) + \
+        " amazon non-collisions: " + str(amaznoncolcount) + \
         "\n"
