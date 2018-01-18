@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+# set -x
 
 # Use openssl to dump a server cert 
 
@@ -31,5 +31,24 @@ then
 	exit -1
 fi
 
+OUTF=$HOST-$PORT.cert.txt
+
 echo "Getting cert for $HOST:$PORT"
-echo | openssl s_client -connect $HOST:$PORT -starttls smtp | openssl x509 -noout -text >$HOST-$PORT.cert.txt
+if [ "$PORT" == "443" ]
+then
+	echo | openssl s_client -connect $HOST:$PORT | openssl x509 -noout -text >$OUTF 2>/dev/null
+fi
+if [ "$PORT" == "25" ]
+then
+	echo | openssl s_client -connect $HOST:$PORT -starttls smtp | openssl x509 -noout -text >$OUTF 2>/dev/null
+fi
+if [ "$PORT" == "143" ]
+then
+	echo | openssl s_client -connect $HOST:$PORT -starttls imap | openssl x509 -noout -text >$OUTF 2>/dev/null
+fi
+if [ "$PORT" == "993" ]
+then
+	echo | openssl s_client -connect $HOST:$PORT | openssl x509 -noout -text >$OUTF 2>/dev/null
+fi
+
+echo "Output is in $OUTF"
