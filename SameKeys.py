@@ -119,24 +119,24 @@ for i in range(0,fl):
             for k2 in r2.fprints:
                 if r1.fprints[k1]==r2.fprints[k2]:
                     if rec2 not in r1.rcs:
-                       r1.rcs[rec2]={}
-                    r12=r1.rcs[rec2]
-                    r12['ip']=r2.ip
-                    r12['asn']=r2.asn
-                    if k1 not in r12:
-                        r12[k1]=[]
-                    if k2 not in r12[k1]:
-                        r12[k1].append(k2)
-                        colcount += 1
+                        r1.rcs[rec2]={}
+                        r1.rcs[rec2]['ip']=r2.ip
+                        r1.rcs[rec2]['asn']=r2.asn
+                        r1.rcs[rec2]['ports']=k2
+                    else: 
+                        r12=r1.rcs[rec2]
+                        if k2 not in r12['ports']:
+                            r12['ports'] += "," + k2
+                            colcount += 1
                     if rec1 not in r2.rcs:
                         r2.rcs[rec1]={}
-                    r21=r2.rcs[rec1]
-                    r21['ip']=r1.ip
-                    r21['asn']=r1.asn
-                    if k2 not in r21:
-                        r21[k2]=[]
-                    if k1 not in r21[k2]:
-                        r21[k2].append(k1)
+                        r2.rcs[rec1]['ip']=r1.ip
+                        r2.rcs[rec1]['asn']=r1.asn
+                        r2.rcs[rec1]['ports']=k1
+                    else: 
+                        r21=r2.rcs[rec1]
+                        if k1 not in r21['ports']:
+                            r21['ports'] += "," + k1
     checkcount += 1
     if checkcount % 100 == 0:
         print >> sys.stderr, "Checking colisions, did: " + str(checkcount) + " found: " + str(colcount) + " remote collisions"
