@@ -16,6 +16,8 @@ Plan is to enhance Classify.py to answer these questions...
 1. How many named,non-postfix did/didn't do tls
 1. How many non-postfix did/didn't do tls
 
+1. Who's using the same keys and why?
+
 More questions will arise as we go
 
 Questions.py implements the above for now.
