@@ -65,6 +65,13 @@ with open(sys.argv[1],'r') as f:
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
         try:
+            fp=j_content['p110']['pop3']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+            thisone.fprints['p110']=fp
+            somekey=True
+        except Exception as e: 
+            #print >> sys.stderr, "fprint exception " + str(e)
+            pass
+        try:
             fp=j_content['p143']['imap']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
             thisone.fprints['p143']=fp
             somekey=True
@@ -128,7 +135,7 @@ checkcount=0
 colcount=0
 
 # to save memory we'll encode port collision information in a 
-# compact form, we have five ports to consider 22,25,143,443 and 993
+# compact form, we have six ports to consider 22,25,110,143,443 and 993
 # and 25==25 is diferent from 25==143
 # we use five octets, one for each local port;
 # values are bitmasks, a set bit means the key on the remote
@@ -143,23 +150,29 @@ def portindex(p):
         pind=0
     elif k1=='p25':
         pind=1
-    elif k1=='p143':
+    elif k1=='p110':
         pind=2
-    elif k1=='p443':
+    elif k1=='p143':
         pind=3
-    elif k1=='p993':
+    elif k1=='p443':
         pind=4
+    elif k1=='p993':
+        pind=5
     else:
         print >>sys.stderr, "Error - unknown port: " + k1
         sys.exit(-1)
     return pind
 
 def collmask(mask,k1,k2):
-    lp=portindex(k1)
-    rp=portindex(k2)
-    intmask=int(mask,16)
-    intmask |= (1<<rp) * (lp*256)
-    mask="0x%x" % intmask
+    try:
+        lp=portindex(k1)
+        rp=portindex(k2)
+        intmask=int(mask,16)
+        intmask |= (1<<rp) * (lp*256)
+        mask="0x%x" % intmask
+    except Exception as e: 
+        print >> sys.stderr, "collmask exception, k1: " + k1 + " k2: " + k2 + " lp:" + str(lp) + " rp: " + str(rp) + " exception: " + str(e)  
+        pass
     return mask
 
 # this gets crapped on each time (for now)

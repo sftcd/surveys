@@ -27,14 +27,14 @@ do
 		# it takes a wile to do these
 		NOW=`date -u --rfc-3339=s | sed -e 's/ /T/' | sed -e 's/:/-/g'`
 		# place for results
-		resdir=$outdir/$NOW
+		resdir=$outdir/$country-$bname-$NOW
 		# just in case an error causes us to crap out within a second
 		while [ -d $resdir ]
 		do
 			echo "Name collision! Sleeping a bit"
 			sleep 5
 			NOW=`date -u --rfc-3339=s | sed -e 's/ /T/' | sed -e 's/:/-/g'`
-			resdir=$outdir/$country-$NOW
+			resdir=$outdir/$country-$bname-$NOW
 		done
 		mkdir -p $resdir
 		cd $resdir
