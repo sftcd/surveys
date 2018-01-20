@@ -179,6 +179,9 @@ def collmask(mask,k1,k2):
 keyf=open('all-key-fingerprints.json', 'w')
 keyf.write("[\n");
 
+mostcollisions=0
+biggestcollider=-1
+
 fl=len(fingerprints)
 for i in range(0,fl):
     r1=fingerprints[i]
@@ -215,6 +218,13 @@ for i in range(0,fl):
         if r1r2coll==True: # so we remember if there was one
             r1.nrcs += 1
             r2.nrcs += 1
+            if r1.nrcs > mostcollisions:
+                mostcollisions = r1.nrcs
+                biggestcollider = r1.ip_record
+            if r2.nrcs > mostcollisions:
+                mostcollisions = r2.nrcs
+                biggestcollider = r2.ip_record
+
     # print that one
     bstr=jsonpickle.encode(r1,unpicklable=False)
     keyf.write(bstr + ',\n')
@@ -229,16 +239,12 @@ keyf.write('\n')
 keyf.close()
 
 colcount=0
+noncolcount=0
 accumcount=0
-amazcolcount=0
-amaznoncolcount=0
-nonamazcolcount=0
-nonamaznoncolcount=0
+
 
 colf=open('collisions.json', 'w')
 colf.write('[\n')
-nas=open('non-amazons.json', 'w')
-nas.write('[\n')
 for f in fingerprints:
     if f.nrcs!=0:
         #collisions.append(f)
@@ -246,20 +252,8 @@ for f in fingerprints:
         colf.write(bstr + '\n')
         del bstr
         colcount += 1
-        if f.amazon==True:
-            amazcolcount += 1
-        else:
-            #print "non-amazon remote collision, asn: " + f['asn'] + " ip: " + f['ip']
-            #nonamazons.append(f)
-            bstr=jsonpickle.encode(f,unpicklable=False)
-            nas.write(bstr + '\n')
-            del bstr
-            nonamazcolcount += 1
     else:
-        if f.amazon==True:
-            amaznoncolcount += 1 
-        else:
-            nonamaznoncolcount += 1
+        noncolcount += 1
     accumcount += 1
     if accumcount % 100 == 0:
         # exit early for debug purposes
@@ -272,16 +266,9 @@ del fingerprints
 colf.write('\n')
 colf.close()
 
-# let's look at non-amazon collisions
-nas.write('\n')
-nas.close()
-
 print >> sys.stderr, "\toverall: " + str(overallcount) + "\n\t" + \
         "good: " + str(goodcount) + "\n\t" + \
         "bad: " + str(badcount) + "\n\t" + \
         "remote collisions: " + str(colcount) + "\n\t" + \
-        "amazon collisions: " + str(amazcolcount) +"\n\t" +  \
-        "non-amazon collisions: " + str(nonamazcolcount) + "\n\t" + \
-        "amazon non-collisions: " + str(amaznoncolcount) + "\n\t" + \
-        "non-amazon non-collisions: " + str(nonamaznoncolcount) + \
-        "\n"
+        "no collisions: " + str(noncolcount) + "\n\t" + \
+        "most collisions: " + str(mostcollisions) + " for record: " + str(biggestcollider) + "\n"
