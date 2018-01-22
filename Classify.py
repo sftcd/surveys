@@ -85,7 +85,7 @@ def get_fqdns(count,p25,ip):
         #print "FQDN reverse: " + rdns
         nameset['rdns']=rdns
     except Exception as e: 
-        print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + str(count)
+        #print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + str(count)
         nameset['rdns']=''
     # name from banner
     try:
@@ -99,7 +99,7 @@ def get_fqdns(count,p25,ip):
             banner_fqdn=''
         nameset['banner']=banner_fqdn
     except Exception as e: 
-        print >> sys.stderr, "FQDN banner exception " + str(e) + " for record:" + str(count)
+        #print >> sys.stderr, "FQDN banner exception " + str(e) + " for record:" + str(count)
         nameset['banner']=''
     try:
         dn=p25['smtp']['starttls']['tls']['certificate']['parsed']['subject_dn'] 
@@ -107,7 +107,7 @@ def get_fqdns(count,p25,ip):
         #print "FQDN dn " + dn_fqdn
         nameset['dn']=dn_fqdn
     except Exception as e: 
-        print >> sys.stderr, "FQDN dn exception " + str(e) + " for record:" + str(count)
+        #print >> sys.stderr, "FQDN dn exception " + str(e) + " for record:" + str(count)
         nameset['dn']=''
     # name from cert SAN
     try:
@@ -122,7 +122,8 @@ def get_fqdns(count,p25,ip):
             nameset['san'+str(sancount)]=san_fqdns[sancount]
             sancount += 1
     except Exception as e: 
-        print >> sys.stderr, "FQDN san exception " + str(e) + " for record:" + str(count)
+        #these are v. common
+        #print >> sys.stderr, "FQDN san exception " + str(e) + " for record:" + str(count)
         nameset['san0']=''
 
     besty=[]
@@ -142,7 +143,9 @@ def get_fqdns(count,p25,ip):
                 # some name has an IP, even if not what we expect
                 nogood=False
             except Exception as e: 
-                print >> sys.stderr, "Error making DNS query for " + v + " for record:" + str(count) + " " + str(e)
+                #oddly, an NXDOMAIN seems to cause an exception, so these happen
+                #print >> sys.stderr, "Error making DNS query for " + v + " for record:" + str(count) + " " + str(e)
+                pass
 
     meta['allbad']=nogood
     meta['besty']=besty
@@ -261,9 +264,11 @@ def get_smtpstarttls(count,p25,ip,scandate):
             tlsdets['tls']=True
             get_tls(count,biggie,ip,tlsdets,scandate)
         except Exception as e: 
-            print >> sys.stderr, "get_smtpstarttls error for ip: " + ip + " record:" + str(count) + " " + str(e)
+            #print >> sys.stderr, "get_smtpstarttls error for ip: " + ip + " record:" + str(count) + " " + str(e)
+            pass
     except Exception as e: 
-        print >> sys.stderr, "get_smtpstarttls error for ip: " + ip + " record:" + str(count) + " " + str(e)
+        #print >> sys.stderr, "get_smtpstarttls error for ip: " + ip + " record:" + str(count) + " " + str(e)
+        pass
 
     meta['endddate']=str(datetime.datetime.utcnow())
     tlsdets['meta']=meta

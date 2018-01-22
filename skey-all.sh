@@ -41,6 +41,8 @@ do
 		echo "Starting at $NOW" >>$bname.out
 		# now do the long long thing...
 		$BIND/SameKeys.py $file >$bname.out 2>&1 
+		# not yet, too slow 
+		#$BIND/Classify.py $file $bname
 		NOW=`date -u --rfc-3339=s | sed -e 's/ /T/' | sed -e 's/:/-/g'`
 		echo "Finished at $NOW" >>$bname.out
 	done
