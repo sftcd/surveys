@@ -12,7 +12,6 @@ import gc
 # install via  "$ sudo pip install -U jsonpickle"
 import jsonpickle
 
-
 class OneFP():
     __slots__ = ['ip_record','ip','asn','amazon','fprints','nsrc','rcs']
     def __init__(self):
@@ -143,22 +142,22 @@ colcount=0
 # 0x02 local port matches remote p25
 # 0x06 local port matches remote p25 and p143
 # etc
-def portindex(p):
+def portindex(pname):
     pind=-1
-    if k1=='p22':
+    if pname=='p22':
         pind=0
-    elif k1=='p25':
+    elif pname=='p25':
         pind=1
-    elif k1=='p110':
+    elif pname=='p110':
         pind=2
-    elif k1=='p143':
+    elif pname=='p143':
         pind=3
-    elif k1=='p443':
+    elif pname=='p443':
         pind=4
-    elif k1=='p993':
+    elif pname=='p993':
         pind=5
     else:
-        print >>sys.stderr, "Error - unknown port: " + k1
+        print >>sys.stderr, "Error - unknown port: " + pname
         sys.exit(-1)
     return pind
 
@@ -167,12 +166,12 @@ def collmask(mask,k1,k2):
         lp=portindex(k1)
         rp=portindex(k2)
         intmask=int(mask,16)
-        intmask |= (1<<(rp+8*lp)) 
-        mask="0x%x" % intmask
+        intmask |= ((1<<rp)*(256*lp)) 
+        newmask="0x%06x" % intmask
     except Exception as e: 
         print >> sys.stderr, "collmask exception, k1: " + k1 + " k2: " + k2 + " lp:" + str(lp) + " rp: " + str(rp) + " exception: " + str(e)  
         pass
-    return mask
+    return newmask
 
 # this gets crapped on each time (for now)
 keyf=open('all-key-fingerprints.json', 'w')
@@ -195,25 +194,31 @@ for i in range(0,fl):
                     if rec2 not in r1.rcs:
                         r1.rcs[rec2]={}
                         r1.rcs[rec2]['ip']=r2.ip
-                        if r1.asn != r1.asn:
+                        if r2.asn != r1.asn:
                             r1.rcs[rec2]['asn']=r2.asn
-                        r1.rcs[rec2]['ports']=collmask('0x00',k1,k2)
+                        r1.rcs[rec2]['ports']=collmask('0x000000',k1,k2)
+                        #print "A: " + r1.rcs[rec2]['ports']
                         colcount += 1
                         r1r2coll=True # so we remember if there was one
                     else: 
                         r12=r1.rcs[rec2]
+                        #print "B: " + r12['ports'] + " k1: " + k1 + " k2: " + k2
                         r12['ports'] = collmask(r12['ports'],k1,k2)
+                        #print "C: " + r12['ports'] + " k1: " + k1 + " k2: " + k2
                         colcount += 1
                         r1r2coll=True # so we remember if there was one
                     if rec1 not in r2.rcs:
                         r2.rcs[rec1]={}
                         r2.rcs[rec1]['ip']=r1.ip
-                        if r1.asn != r1.asn:
+                        if r2.asn != r1.asn:
                             r2.rcs[rec1]['asn']=r1.asn
-                        r2.rcs[rec1]['ports']=collmask('0x00',k2,k1)
+                        r2.rcs[rec1]['ports']=collmask('0x000000',k2,k1)
+                        #print "D: "+ r2.rcs[rec1]['ports']
                     else: 
                         r21=r2.rcs[rec1]
+                        #print "E: " + r12['ports']
                         r21['ports'] = collmask(r21['ports'],k2,k1)
+                        #print "F: " + r12['ports']
         if r1r2coll==True: # so we remember if there was one
             r1.nrcs += 1
             r2.nrcs += 1
