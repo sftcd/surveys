@@ -3,7 +3,6 @@
 # check who's re-using the same keys 
 # CensysIESMTP.py
 
-# TODO: figure out if we have a commensurate ssh fingerprint
 # TODO: figure out if we can get port 587 ever
 
 import sys
@@ -168,7 +167,7 @@ def collmask(mask,k1,k2):
         lp=portindex(k1)
         rp=portindex(k2)
         intmask=int(mask,16)
-        intmask |= (1<<rp) * (lp*256)
+        intmask |= (1<<(rp+8*lp)) 
         mask="0x%x" % intmask
     except Exception as e: 
         print >> sys.stderr, "collmask exception, k1: " + k1 + " k2: " + k2 + " lp:" + str(lp) + " rp: " + str(rp) + " exception: " + str(e)  
