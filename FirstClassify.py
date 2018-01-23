@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+# a version with some abandoned code
+
 # this starts to classify the output file we got back from
 # CensysIESMTP.py
 
@@ -128,7 +130,6 @@ def get_fqdns(count,p25,ip):
 
     besty=[]
     nogood=True # assume none are good
-    tmp={}
     # try verify names a bit
     for k in nameset:
         v=nameset[k]
@@ -140,15 +141,13 @@ def get_fqdns(count,p25,ip):
                 if rip == ip:
                     besty.append(k)
                 else:
-                    tmp[k+'-ip']=rip
+                    nameset[k+'-ip']=rip
                 # some name has an IP, even if not what we expect
                 nogood=False
             except Exception as e: 
                 #oddly, an NXDOMAIN seems to cause an exception, so these happen
                 #print >> sys.stderr, "Error making DNS query for " + v + " for record:" + str(count) + " " + str(e)
                 pass
-    for k in tmp:
-        nameset[k]=tmp[k]
 
     nameset['allbad']=nogood
     nameset['besty']=besty
@@ -300,6 +299,42 @@ def get_smtpstarttls(count,p25,ip,scandate):
     #tlsdets['meta']=meta
     return tlsdets
 
+# basic functions for initially exploring data
+# pattern followed is to print from a sample of 
+# ~200, then classify
+
+def p_metadata(p25):
+    try:
+        print "metadata: " + str(p25['smtp']['starttls']['metadata']) ;
+        return True
+    except:
+        return False
+    return False
+
+def p_banner(p25):
+    try:
+        print "banner: " + p25['smtp']['starttls']['banner'] ;
+        return True
+    except:
+        return False
+    return False
+
+def p_ehlo(p25):
+    try:
+        print "ehlo: " + p25['smtp']['starttls']['ehlo'] ;
+        return True
+    except:
+        return False
+    return False
+
+def p_starttlsbanner(p25):
+    try:
+        print "starttls: " + p25['smtp']['starttls']['starttls'] ;
+        return True
+    except:
+        return False
+    return False
+
 # hack for dict->json dates as per https://stackoverflow.com/questions/455580/json-datetime-between-python-and-javascript
 date_handler = lambda obj: (
     obj.isoformat()
@@ -338,36 +373,18 @@ with open(sys.argv[1],'r') as f:
         dodgy=False
         analysis['nameset']=get_fqdns(overallcount,p25,j_content['ip'])
         analysis['smtp_banner']=get_banner(overallcount,p25,j_content['ip'])
-        try: 
-            analysis['p25-tlsdets']={}
-            analysis['p25-tlsdets']=get_smtpstarttls(overallcount,p25,j_content['ip'],scandate)
-        except:
-            analysis['p25-tlsdets']['tls']=False
-        try:
-            analysis['p110-tlsdets']={}
-            get_tls(overallcount,j_content['p110']['pop3']['starttls']['tls'],j_content['ip'],analysis['p110-tlsdets'],scandate)
-        except:
-            analysis['p110-tlsdets']['tls']=False
-        try:
-            analysis['p143-tlsdets']={}
-            get_tls(overallcount,j_content['p143']['imap']['starttls']['tls'],j_content['ip'],analysis['p143-tlsdets'],scandate)
-        except:
-            analysis['p143-tlsdets']['tls']=False
-        try:
-            analysis['p443-tlsdets']={}
-            get_tls(overallcount,j_content['p443']['https']['tls'],j_content['ip'],analysis['p443-tlsdets'],scandate)
-        except:
-            analysis['p443-tlsdets']['tls']=False
-        try:
-            analysis['p993-tlsdets']={}
-            get_tls(overallcount,j_content['p993']['imaps']['tls']['tls'],j_content['ip'],analysis['p993-tlsdets'],scandate)
-        except:
-            analysis['p993-tlsdets']['tls']=False
-
+        analysis['p25-tlsdets']=get_smtpstarttls(overallcount,p25,j_content['ip'],scandate)
+        analysis['p443-tlsdets']=get_https(overallcount,j_content['p443'],j_content['ip'],scandate)
         #analysis['enddate']=str(datetime.datetime.utcnow())
-        #nicer output for vi
-        #print json.dumps(analysis,default=date_handler,indent=2,sort_keys=True) 
-        print json.dumps(analysis,default=date_handler)
+        print json.dumps(analysis,default=date_handler,indent=2,sort_keys=True) 
+        #if not p_metadata(p25):
+            #dodgy=True
+        #if not p_banner(p25):
+            #dodgy=True
+        #if not p_starttlsbanner(p25):
+            #dodgy=True
+        #if not p_ehlo(p25):
+            #dodgy=True
         if not dodgy:
             goodcount += 1
         else:

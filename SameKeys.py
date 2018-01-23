@@ -3,7 +3,7 @@
 # check who's re-using the same keys 
 # CensysIESMTP.py
 
-# TODO: figure out if we can get port 587 ever
+# TODO: figure out if we can get port 587 ever - looks like not, for now anyway
 
 import sys
 import json
