@@ -3,7 +3,7 @@
 # check who's re-using the same keys 
 # CensysIESMTP.py
 
-# TODO: figure out if we can get port 587 ever - looks like not, for now anyway
+# figure out if we can get port 587 ever - looks like not, for now anyway
 
 import sys
 import json
@@ -11,6 +11,16 @@ import gc
 
 # install via  "$ sudo pip install -U jsonpickle"
 import jsonpickle
+
+# try visualising:
+# first try "$ sudo -H pip install networkx"
+# https://networkx.github.io/documentation/stable/install.html
+# found that via a general python visualisation page:
+# https://python-graph-gallery.com/
+# learning from https://networkx.github.io/documentation/stable/tutorial.html
+import networkx as nx
+# for a pretty picture...
+import matplotlib.pyplot as plt
 
 class OneFP():
     __slots__ = ['ip_record','ip','asn','amazon','fprints','nsrc','rcs']
@@ -246,15 +256,22 @@ colcount=0
 noncolcount=0
 accumcount=0
 
+# grephing 
+graph = nx.Graph()
 
 colf=open('collisions.json', 'w')
 colf.write('[\n')
 for f in fingerprints:
+    graph.add_node(f.ip)
     if f.nrcs!=0:
         #collisions.append(f)
         bstr=jsonpickle.encode(f,unpicklable=False)
         colf.write(bstr + '\n')
         del bstr
+        for recn in f.rcs:
+            cip=f.rcs[recn]['ip']
+            graph.add_node(cip)
+            graph.add_edge(f.ip,cip)
         colcount += 1
     else:
         noncolcount += 1
@@ -265,6 +282,12 @@ for f in fingerprints:
         print >> sys.stderr, "Accumulating colissions, did: " + str(accumcount) + " found: " + str(colcount) + " IP's with remote collisions"
 
 del fingerprints
+
+# look at graph...
+# causes memory error
+#nx.draw(graph)
+#plt.show()
+nx.write_gpickle(graph,"graph.pickle")
 
 # this gets crapped on each time (for now)
 colf.write('\n')

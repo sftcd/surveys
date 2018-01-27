@@ -3,8 +3,7 @@
 # check what kind of keys are in use
 # CensysIESMTP.py
 
-# TODO: figure out if we have a commensurate ssh fingerprint
-# TODO: figure out if we can get port 587 ever
+# figure out if we can get port 587 ever - seems like not from censys, hmm
 
 import sys
 import json
