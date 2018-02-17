@@ -22,6 +22,7 @@ import networkx as nx
 # for a pretty picture...
 import matplotlib.pyplot as plt
 
+# using a class needs way less memory than random dicts apparently
 class OneFP():
     __slots__ = ['ip_record','ip','asn','amazon','fprints','nsrc','rcs']
     def __init__(self):
@@ -49,7 +50,7 @@ with open(sys.argv[1],'r') as f:
         thisone.ip=j_content['ip']
 
         # amazon is the chief susspect for key sharing, via some 
-        # kind of fronting
+        # kind of fronting, at least in .ie
         try:
             asn=j_content['autonomous_system']['name'].lower()
             if "amazon" in asn:
@@ -152,36 +153,57 @@ colcount=0
 # 0x02 local port matches remote p25
 # 0x06 local port matches remote p25 and p143
 # etc
+
+
+# reverse map from bit# to string
+# the above could be done better using this... but meh
+portstrings=['p22','p25','p110','p143','p443','p993']
+def indexport(index):
+    return portstrings[index]
+
 def portindex(pname):
-    pind=-1
-    if pname=='p22':
-        pind=0
-    elif pname=='p25':
-        pind=1
-    elif pname=='p110':
-        pind=2
-    elif pname=='p143':
-        pind=3
-    elif pname=='p443':
-        pind=4
-    elif pname=='p993':
-        pind=5
-    else:
-        print >>sys.stderr, "Error - unknown port: " + pname
-        sys.exit(-1)
-    return pind
+    for pind in range(0,len(portstrings)):
+        if portstrings[pind]==pname:
+            return pind
+    print >>sys.stderr, "Error - unknown port: " + pname
+    return -1
 
 def collmask(mask,k1,k2):
     try:
         lp=portindex(k1)
         rp=portindex(k2)
         intmask=int(mask,16)
-        intmask |= ((1<<rp)*(256*lp)) 
-        newmask="0x%06x" % intmask
+        intmask |= (1<<(rp+8*lp)) 
+        newmask="0x%012x" % intmask
     except Exception as e: 
         print >> sys.stderr, "collmask exception, k1: " + k1 + " k2: " + k2 + " lp:" + str(lp) + " rp: " + str(rp) + " exception: " + str(e)  
         pass
     return newmask
+
+def expandmask(mask):
+    emask=""
+    intmask=int(mask,16)
+    #print "intmask: 0x%06x" % intmask
+    portcount=len(portstrings)
+    for i in range(0,portcount):
+        for j in range(0,portcount):
+            cmpmask = (1<<(j+8*i)) 
+            #print "\tcmpmask: 0x%06x" % cmpmask
+            if intmask & cmpmask:
+                emask += indexport(i) + "==" + indexport(j) + ";"
+    return emask
+
+
+def mask2colours(mask, colours):
+    intmask=int(mask,16)
+    portcount=len(portstrings)
+    for i in range(0,portcount):
+        for j in range(0,portcount):
+            cmpmask = (1<<(j+8*i)) 
+            if intmask & cmpmask:
+                colcode='#'+ "%06X" % cmpmask
+                colours.append(colcode)
+
 
 # this gets crapped on each time (for now)
 keyf=open('all-key-fingerprints.json', 'w')
@@ -206,7 +228,7 @@ for i in range(0,fl):
                         r1.rcs[rec2]['ip']=r2.ip
                         if r2.asn != r1.asn:
                             r1.rcs[rec2]['asn']=r2.asn
-                        r1.rcs[rec2]['ports']=collmask('0x000000',k1,k2)
+                        r1.rcs[rec2]['ports']=collmask('0x0',k1,k2)
                         #print "A: " + r1.rcs[rec2]['ports']
                         colcount += 1
                         r1r2coll=True # so we remember if there was one
@@ -222,7 +244,7 @@ for i in range(0,fl):
                         r2.rcs[rec1]['ip']=r1.ip
                         if r2.asn != r1.asn:
                             r2.rcs[rec1]['asn']=r1.asn
-                        r2.rcs[rec1]['ports']=collmask('0x000000',k2,k1)
+                        r2.rcs[rec1]['ports']=collmask('0x0',k2,k1)
                         #print "D: "+ r2.rcs[rec1]['ports']
                     else: 
                         r21=r2.rcs[rec1]
@@ -262,16 +284,19 @@ graph = nx.Graph()
 colf=open('collisions.json', 'w')
 colf.write('[\n')
 for f in fingerprints:
-    graph.add_node(f.ip)
     if f.nrcs!=0:
-        #collisions.append(f)
-        bstr=jsonpickle.encode(f,unpicklable=False)
-        colf.write(bstr + '\n')
-        del bstr
+        graph.add_node(f.ip)
         for recn in f.rcs:
             cip=f.rcs[recn]['ip']
             graph.add_node(cip)
-            graph.add_edge(f.ip,cip)
+            colours=[]
+            mask2colours(f.rcs[recn]['ports'],colours)
+            for col in colours:
+                graph.add_edge(f.ip,cip,color=col)
+            f.rcs[recn]['str_colls']=expandmask(f.rcs[recn]['ports'])
+        bstr=jsonpickle.encode(f,unpicklable=False)
+        colf.write(bstr + '\n')
+        del bstr
         colcount += 1
     else:
         noncolcount += 1
@@ -284,9 +309,8 @@ for f in fingerprints:
 del fingerprints
 
 # look at graph...
-# causes memory error
-#nx.draw(graph)
-#plt.show()
+nx.draw(graph)
+plt.show()
 nx.write_gpickle(graph,"graph.pickle")
 
 # this gets crapped on each time (for now)
