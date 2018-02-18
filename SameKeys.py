@@ -29,6 +29,7 @@ class OneFP():
         self.ip_record=-1
         self.ip=''
         self.asn=''
+        self.clusternum=0
         self.amazon=False
         self.fprints={}
         self.nrcs=0
@@ -212,6 +213,9 @@ keyf.write("[\n");
 mostcollisions=0
 biggestcollider=-1
 
+# identify 'em
+clusternum=0
+
 fl=len(fingerprints)
 for i in range(0,fl):
     r1=fingerprints[i]
@@ -230,6 +234,12 @@ for i in range(0,fl):
                             r1.rcs[rec2]['asn']=r2.asn
                         r1.rcs[rec2]['ports']=collmask('0x0',k1,k2)
                         #print "A: " + r1.rcs[rec2]['ports']
+                        if r1.clusternum==0:
+                            clusternum += 1
+                            r1.clusternum=clusternum
+                            r2.clusternum=clusternum
+                        else:
+                            r2.clusternum=r1.clusternum
                         colcount += 1
                         r1r2coll=True # so we remember if there was one
                     else: 
@@ -278,24 +288,15 @@ colcount=0
 noncolcount=0
 accumcount=0
 
-# grephing 
-graph = nx.Graph()
-
 colf=open('collisions.json', 'w')
 colf.write('[\n')
 for f in fingerprints:
     if f.nrcs!=0:
-        graph.add_node(f.ip)
         for recn in f.rcs:
             cip=f.rcs[recn]['ip']
-            graph.add_node(cip)
-            colours=[]
-            mask2colours(f.rcs[recn]['ports'],colours)
-            for col in colours:
-                graph.add_edge(f.ip,cip,color=col)
             f.rcs[recn]['str_colls']=expandmask(f.rcs[recn]['ports'])
         bstr=jsonpickle.encode(f,unpicklable=False)
-        colf.write(bstr + '\n')
+        colf.write(bstr + ',\n')
         del bstr
         colcount += 1
     else:
@@ -306,20 +307,36 @@ for f in fingerprints:
         #break
         print >> sys.stderr, "Accumulating colissions, did: " + str(accumcount) + " found: " + str(colcount) + " IP's with remote collisions"
 
-del fingerprints
-
-# look at graph...
-nx.draw(graph)
-plt.show()
-nx.write_gpickle(graph,"graph.pickle")
-
 # this gets crapped on each time (for now)
 colf.write('\n')
 colf.close()
+
+
+# graphing 
+for i in range(0,clusternum):
+    print "Cluster: " + str(f.clusternum) + " of " + str(clusternum)
+    graph = nx.Graph()
+    for f in fingerprints:
+        if f.clusternum==i and f.nrcs!=0:
+            graph.add_node(f.ip)
+            for recn in f.rcs:
+                cip=f.rcs[recn]['ip']
+                graph.add_node(cip)
+                colours=[]
+                mask2colours(f.rcs[recn]['ports'],colours)
+                for col in colours:
+                    graph.add_edge(f.ip,cip,color=col)
+    nx.draw(graph)
+    #plt.show()
+    nx.write_gpickle(graph,"graphs/graph"+str(i)+".pickle")
+    graph.clear()
+
+del fingerprints
 
 print >> sys.stderr, "\toverall: " + str(overallcount) + "\n\t" + \
         "good: " + str(goodcount) + "\n\t" + \
         "bad: " + str(badcount) + "\n\t" + \
         "remote collisions: " + str(colcount) + "\n\t" + \
         "no collisions: " + str(noncolcount) + "\n\t" + \
-        "most collisions: " + str(mostcollisions) + " for record: " + str(biggestcollider) + "\n"
+        "most collisions: " + str(mostcollisions) + " for record: " + str(biggestcollider) + "\n\t" + \
+        "total clusters: " + str(clusternum)
