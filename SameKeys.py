@@ -314,7 +314,7 @@ colf.close()
 
 # graphing 
 for i in range(0,clusternum):
-    print "Cluster: " + str(f.clusternum) + " of " + str(clusternum)
+    print "Cluster: " + str(i) + " of " + str(clusternum)
     graph = nx.Graph()
     for f in fingerprints:
         if f.clusternum==i and f.nrcs!=0:
