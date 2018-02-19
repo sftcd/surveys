@@ -2,6 +2,10 @@
 
 Code for various survey-related stuff
 
+Note that this very much in flux as I figure out what's interesting. I 
+promise to put manners on the code soon as I know what I want it do to:-)
+Getting there though...
+
 Initial work is based on using the [censys.io](https://censys.io/) API
 
 ## Cron job

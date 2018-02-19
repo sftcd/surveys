@@ -22,13 +22,17 @@ import networkx as nx
 # for a pretty picture...
 import matplotlib.pyplot as plt
 
+# direct to graphviz ...
+import graphviz as gv
+
 # using a class needs way less memory than random dicts apparently
 class OneFP():
-    __slots__ = ['ip_record','ip','asn','amazon','fprints','nsrc','rcs']
+    __slots__ = ['ip_record','ip','asn','asndec','amazon','fprints','nsrc','rcs']
     def __init__(self):
         self.ip_record=-1
         self.ip=''
         self.asn=''
+        self.asndec=0
         self.clusternum=0
         self.amazon=False
         self.fprints={}
@@ -54,9 +58,11 @@ with open(sys.argv[1],'r') as f:
         # kind of fronting, at least in .ie
         try:
             asn=j_content['autonomous_system']['name'].lower()
+            asndec=int(j_content['autonomous_system']['asn'])
             if "amazon" in asn:
                 thisone.amazon=True
             thisone.asn=asn
+            thisone.asndec=asndec
         except:
             thisone.asn="unknown"
 
@@ -195,6 +201,15 @@ def expandmask(mask):
     return emask
 
 
+def mask2labels(mask, labels):
+    intmask=int(mask,16)
+    portcount=len(portstrings)
+    for i in range(0,portcount):
+        for j in range(0,portcount):
+            cmpmask = (1<<(j+8*i)) 
+            if intmask & cmpmask:
+                labels.append(indexport(i) + "==" + indexport(j) )
+
 def mask2colours(mask, colours):
     intmask=int(mask,16)
     portcount=len(portstrings)
@@ -205,6 +220,8 @@ def mask2colours(mask, colours):
                 colcode='#'+ "%06X" % cmpmask
                 colours.append(colcode)
 
+def asn2colour(asn):
+    return '#' + ("%06X" % int(asn))
 
 # this gets crapped on each time (for now)
 keyf=open('all-key-fingerprints.json', 'w')
@@ -232,6 +249,7 @@ for i in range(0,fl):
                         r1.rcs[rec2]['ip']=r2.ip
                         if r2.asn != r1.asn:
                             r1.rcs[rec2]['asn']=r2.asn
+                            r1.rcs[rec2]['asndec']=r2.asndec
                         r1.rcs[rec2]['ports']=collmask('0x0',k1,k2)
                         #print "A: " + r1.rcs[rec2]['ports']
                         if r1.clusternum==0:
@@ -254,6 +272,7 @@ for i in range(0,fl):
                         r2.rcs[rec1]['ip']=r1.ip
                         if r2.asn != r1.asn:
                             r2.rcs[rec1]['asn']=r1.asn
+                            r2.rcs[rec1]['asndec']=r1.asndec
                         r2.rcs[rec1]['ports']=collmask('0x0',k2,k1)
                         #print "D: "+ r2.rcs[rec1]['ports']
                     else: 
@@ -311,26 +330,53 @@ for f in fingerprints:
 colf.write('\n')
 colf.close()
 
-
 # graphing 
-for i in range(0,clusternum):
+for i in range(1,clusternum+1):
     print "Cluster: " + str(i) + " of " + str(clusternum)
     graph = nx.Graph()
+    gvgraph = gv.Graph(format='svg')
+    ipsdone=[]
     for f in fingerprints:
+        print gvgraph
         if f.clusternum==i and f.nrcs!=0:
-            graph.add_node(f.ip)
+            asncol=asn2colour(f.asndec)
+            print "asncol: " + asncol
+            print "ipsdone: " + str(ipsdone)
+            graph.add_node(f.ip,node_color=asncol)
+            if f.ip not in ipsdone:
+                gvgraph.node(f.ip,node_color=asncol)
+                ipsdone.append(f.ip)
+                print "ipsdone2: " + str(ipsdone)
+            #graph.add_node(f.ip)
+            #graph.node[f.ip]['color']='red'
             for recn in f.rcs:
                 cip=f.rcs[recn]['ip']
-                graph.add_node(cip)
-                colours=[]
-                mask2colours(f.rcs[recn]['ports'],colours)
-                for col in colours:
-                    graph.add_edge(f.ip,cip,color=col)
+                if asndec in f.rcs[recn]:
+                    asncol=asn2colour(f.rcs['asndec'])
+                    print "\tasncol2: " + asncol
+                graph.add_node(cip,node_color=asncol)
+                labels=[]
+                mask2labels(f.rcs[recn]['ports'],labels)
+                if cip not in ipsdone:
+                    gvgraph.node(cip,node_color=asncol)
+                    ipsdone.append(cip)
+                    print "ipsdone3: " + str(ipsdone)
+                    for lab in labels:
+                        gvgraph.edge(f.ip,cip,label=lab)
+                #colours=[]
+                #mask2colours(f.rcs[recn]['ports'],colours)
+                #for col in colours:
+                    #graph.add_edge(f.ip,cip,color=col)
+                for lab in labels:
+                    graph.add_edge(f.ip,cip,label=lab)
     nx.draw(graph)
     #plt.show()
-    nx.write_gpickle(graph,"graphs/graph"+str(i)+".pickle")
+    #nx.write_gpickle(graph,"graphs/graph"+str(i)+".pickle")
+    nx.write_gexf(graph,"graphs/graph"+str(i)+".gexf")
     graph.clear()
+    gvgraph.render("graphs/graph"+str(i))
 
+print gvgraph
 del fingerprints
 
 print >> sys.stderr, "\toverall: " + str(overallcount) + "\n\t" + \
