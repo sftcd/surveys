@@ -18,12 +18,15 @@ import graphviz as gv
 
 # graphing globals
 #the_engine='circo'
-#the_engine='dot'
-the_engine='neato'
+the_engine='dot'
+#the_engine='neato'
 #the_engine='sfdp'
 the_format='svg'
 #the_format='png'
 #the_format='dot'
+
+# max size of dot file we try to render
+maxglen=500000
 
 def readfprints(fname):
     f=open(fname,'r')
@@ -34,8 +37,10 @@ def readfprints(fname):
 # reverse map from bit# to string
 # the above could be done better using this... but meh
 portstrings=['p22','p25','p110','p143','p443','p993']
-portscols=[0x00000f,0x0000f0,0x000f00,0x00f000,0x0f0000,0xf00000]
 
+# old way
+#portscols=[0x00000f,0x0000f0,0x000f00,0x00f000,0x0f0000,0xf00000]
+# new way - this is manually made symmetric around the diagonal
 nportscols=[ \
         'black',     'bisque',        'yellow', 'aquamarine', 'darkgray',     'orange', \
         'bisque',    'blue',          'blanchedalmond',  'crimson',    'violet',    'brown', \
@@ -92,16 +97,22 @@ def mask2labels(mask, labels):
                 labels.append(indexport(i) + "==" + indexport(j) )
 
 # colours - return a list of logical-Or of port-specific colour settings
-def mask2colours(mask, colours):
+def mask2colours(mask, colours, dynleg):
     intmask=int(mask,16)
     portcount=len(portstrings)
     for i in range(0,portcount):
         for j in range(0,portcount):
             cmpmask = (1<<(j+8*i)) 
             if intmask & cmpmask:
-                colcode='#'+ "%06X" % (portscols[i]|portscols[j])
+                cnum=i*len(portstrings)+j
+                colcode=nportscols[cnum]
+                #colcode='#'+ "%06X" % (portscols[i]|portscols[j])
                 if colcode not in colours:
                     colours.append(colcode)
+                    if i>j:
+                        dynleg.add(portstrings[i]+"-"+portstrings[j]+" "+colcode)
+                    else:
+                        dynleg.add(portstrings[j]+"-"+portstrings[i]+" "+colcode)
 
 def printlegend():
     # make a fake graph with nodes for each port and coloured edges
@@ -144,6 +155,7 @@ edgedone=set()
 clusternum=0
 checkcount=0
 grr=['null']
+dynlegs=['null']
 for f in fingerprints:
     try:
         this_clusternum=f['clusternum']
@@ -157,11 +169,14 @@ for f in fingerprints:
 
         try:
             gvgraph=grr[f['clusternum']]
+            dynleg=dynlegs[f['clusternum']]
         except:
             gvgraph=gv.Graph(format=the_format,engine=the_engine)
             gvgraph.attr('graph',splines='true')
             gvgraph.attr('graph',overlap='false')
             grr.insert(f['clusternum'],gvgraph) 
+            dynleg=set()
+            dynlegs.insert(f['clusternum'],dynleg)
         #print "ipdone1: " + str(ipdone)
         asncol=asn2colour(f['asndec'])
         if f['ip'] not in ipdone:
@@ -180,7 +195,7 @@ for f in fingerprints:
                 #print "ipdone3: " + str(ipdone)
             if edgename(f['ip'],cip) not in edgedone and edgename(cip,f['ip']) not in edgedone:
                 colours=[]
-                mask2colours(f['rcs'][recn]['ports'],colours)
+                mask2colours(f['rcs'][recn]['ports'],colours,dynleg)
                 for col in colours:
                     gvgraph.edge(f['ip'],cip,color=col)
                 edgedone.add(edgename(f['ip'],cip))
@@ -192,7 +207,35 @@ for f in fingerprints:
 for i in range(1,clusternum+1):
     print "Graphing cluster: " + str(i)
     gvgraph=grr[i]
-    gvgraph.render("graphs/graph"+str(i)+".dot")
+    # optional legend...
+    try:
+        if sys.argv[2]=="legend":
+            lgr=gv.Graph(name="legend",node_attr={'shape': 'box'})
+            lgr.attr('graph',rank="source")
+            lgr.node("Cluster " + str(i))
+            dynleg=dynlegs[i]
+            for leg in dynleg:
+                ss=leg.split()
+                lgr.node(ss[0],label=ss[0],color=ss[1])
+            #gvgraph.subgraph(lgr,name="legend"
+            gvgraph.subgraph(lgr)
+            #gvgraph.attr('graph',rank="min")
+    except Exception as e: 
+        print >> sys.stderr, str(e)
+    # render if not too big...
+    glen=len(gvgraph.source)
+    if glen > maxglen:
+        print "Not rendering graph for cluster "+ str(i) + " - too long: " + str(glen)
+        gvgraph.save("graphs/graph"+str(i)+".dot")
+    else:
+        try:
+            gvgraph.render("graphs/graph"+str(i)+".dot")
+        except Exception as e: 
+            print >> sys.stderr, "Ecxeption rendering cluster: " + str(i) 
+            print >> sys.stderr, "Exception: " + str(e)
+            print >> sys.stderr, "Maybe you got bored and killed a process?"
+            
+
 
 del grr
 

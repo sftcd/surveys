@@ -277,12 +277,13 @@ colf.write('[\n')
 firstone=True
 for f in fingerprints:
     if f.nrcs!=0:
-        if not firstone:
-            colf.write(',')
         for recn in f.rcs:
             cip=f.rcs[recn]['ip']
             f.rcs[recn]['str_colls']=expandmask(f.rcs[recn]['ports'])
         bstr=jsonpickle.encode(f,unpicklable=False)
+        if not firstone:
+            colf.write('\n,\n')
+        firstone=False
         colf.write(bstr)
         del bstr
         colcount += 1
@@ -295,7 +296,7 @@ for f in fingerprints:
         print >> sys.stderr, "Accumulating collisions, did: " + str(accumcount) + " found: " + str(colcount) + " IP's with remote collisions"
 
 # this gets crapped on each time (for now)
-colf.write(']\n')
+colf.write('\n]\n')
 colf.close()
 
 del fingerprints
