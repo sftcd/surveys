@@ -224,7 +224,8 @@ def mask2colours(mask, colours):
             cmpmask = (1<<(j+8*i)) 
             if intmask & cmpmask:
                 colcode='#'+ "%06X" % (portscols[i]|portscols[j])
-                colours.append(colcode)
+                if colcode not in colours:
+                    colours.append(colcode)
 
 def asn2colour(asn):
     return '#' + "%06X" % (int(asn)&0xffffff)
@@ -341,7 +342,9 @@ cdone=[]
 for f in fingerprints:
     if f.clusternum>=0 and f.nrcs>0 and f.clusternum not in cdone:
         # process cluster
-        gvgraph = gv.Graph(format='svg',engine='neato')
+        #gvgraph = gv.Graph(format='svg',engine='neato')
+        gvgraph = gv.Graph(format='svg',engine='circo')
+        #gvgraph = gv.Graph(format='svg',engine='dot')
         asncol=asn2colour(f.asndec)
         gvgraph.node(f.ip,color=asncol,style="filled")
         for recn in f.rcs:
