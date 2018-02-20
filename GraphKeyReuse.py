@@ -16,6 +16,15 @@ import jsonpickle
 import graphviz as gv
 
 
+# graphing globals
+#the_engine='circo'
+#the_engine='dot'
+the_engine='neato'
+#the_engine='sfdp'
+the_format='svg'
+#the_format='png'
+#the_format='dot'
+
 def readfprints(fname):
     f=open(fname,'r')
     fp=json.load(f)
@@ -26,6 +35,14 @@ def readfprints(fname):
 # the above could be done better using this... but meh
 portstrings=['p22','p25','p110','p143','p443','p993']
 portscols=[0x00000f,0x0000f0,0x000f00,0x00f000,0x0f0000,0xf00000]
+
+nportscols=[ \
+        'black',     'bisque',        'yellow', 'aquamarine', 'darkgray',     'orange', \
+        'bisque',    'blue',          'blanchedalmond',  'crimson',    'violet',    'brown', \
+        'yellow', 'blanchedalmond','chartreuse',      'cyan',       'coral',        'darkred', \
+        'aquamarine','crimson',       'cyan',            'darkblue',   'darkkhaki',    'darksalmon', \
+        'darkgray',  'violet',     'coral',           'darkkhaki',  'darkmagenta',  'darkseagreen', \
+        'orange',     'brown',         'darkred',         'darksalmon', 'darkseagreen', 'magenta', ] 
 
 def indexport(index):
     return portstrings[index]
@@ -59,6 +76,8 @@ def expandmask(mask):
             cmpmask = (1<<(j+8*i)) 
             #print "\tcmpmask: 0x%06x" % cmpmask
             if intmask & cmpmask:
+
+                # main line processing ...
                 emask += indexport(i) + "==" + indexport(j) + ";"
     return emask
 
@@ -72,8 +91,7 @@ def mask2labels(mask, labels):
             if intmask & cmpmask:
                 labels.append(indexport(i) + "==" + indexport(j) )
 
-# colours - a diagonal matrix
-
+# colours - return a list of logical-Or of port-specific colour settings
 def mask2colours(mask, colours):
     intmask=int(mask,16)
     portcount=len(portstrings)
@@ -85,12 +103,39 @@ def mask2colours(mask, colours):
                 if colcode not in colours:
                     colours.append(colcode)
 
+def printlegend():
+    # make a fake graph with nodes for each port and coloured edges
+    leg=gv.Graph(format=the_format,engine='neato',name="legend")
+    leg.attr('graph',splines='true')
+    leg.attr('graph',overlap='false')
+    leg.attr('edge',overlap='false')
+    portcount=len(portstrings)
+    c=0
+    for i in range(0,portcount):
+        for j in range(0,portcount):
+            #colcode='#'+ "%06X" % (portscols[i]|portscols[j])
+            cnum=i*len(portstrings)+j
+            colcode=nportscols[cnum]
+            portpair = portstrings[i] + "-" + portstrings[j] 
+            #print portstrings[i] + "-" + portstrings[j] + ": " + colcode 
+            #leg.edge(portstrings[i],portstrings[j],label=str(cnum),color=colcode)
+            leg.edge(portstrings[i],portstrings[j],color=colcode)
+    leg.render("legend.dot")
+
+
 def asn2colour(asn):
     return '#' + "%06X" % (int(asn)&0xffffff)
 
 def edgename(ip1,ip2):
     return ip1+"|"+ip2
 
+# main line processing ...
+
+if sys.argv[1]=="legend":
+    printlegend()
+    sys.exit(0)
+
+# read in e.g. collisions.json from a run of SameKeys.py
 fingerprints=readfprints(sys.argv[1])
 
 # newer graphing
@@ -109,13 +154,7 @@ for f in fingerprints:
         
     if f['clusternum']>=0 and f['nrcs']>0:
         # process cluster
-        #the_engine='circo'
-        #the_engine='dot'
-        the_engine='neato'
-        #the_engine='sfdp'
-        the_format='svg'
-        #the_format='png'
-        #the_format='dot'
+
         try:
             gvgraph=grr[f['clusternum']]
         except:
