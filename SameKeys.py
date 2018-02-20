@@ -310,7 +310,7 @@ for i in range(0,fl):
     if checkcount % 1000 == 0:
         gc.collect()
 
-keyf.write('\n')
+keyf.write(']\n')
 keyf.close()
 
 colcount=0
