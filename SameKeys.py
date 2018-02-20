@@ -12,21 +12,6 @@ import gc
 # install via  "$ sudo pip install -U jsonpickle"
 import jsonpickle
 
-# try visualising:
-# first try "$ sudo -H pip install networkx"
-# https://networkx.github.io/documentation/stable/install.html
-# found that via a general python visualisation page:
-# https://python-graph-gallery.com/
-# learning from https://networkx.github.io/documentation/stable/tutorial.html
-import networkx as nx
-# for a pretty picture...
-import matplotlib.pyplot as plt
-
-donx=False
-
-# direct to graphviz ...
-import graphviz as gv
-
 # using a class needs way less memory than random dicts apparently
 class OneFP():
     __slots__ = ['ip_record','ip','asn','asndec','amazon','fprints','nsrc','rcs']
@@ -194,44 +179,14 @@ def collmask(mask,k1,k2):
 def expandmask(mask):
     emask=""
     intmask=int(mask,16)
-    #print "intmask: 0x%06x" % intmask
     portcount=len(portstrings)
     for i in range(0,portcount):
         for j in range(0,portcount):
             cmpmask = (1<<(j+8*i)) 
-            #print "\tcmpmask: 0x%06x" % cmpmask
             if intmask & cmpmask:
                 emask += indexport(i) + "==" + indexport(j) + ";"
     return emask
 
-
-def mask2labels(mask, labels):
-    intmask=int(mask,16)
-    portcount=len(portstrings)
-    for i in range(0,portcount):
-        for j in range(0,portcount):
-            cmpmask = (1<<(j+8*i)) 
-            if intmask & cmpmask:
-                labels.append(indexport(i) + "==" + indexport(j) )
-
-# colours - a diagonal matrix
-
-def mask2colours(mask, colours):
-    intmask=int(mask,16)
-    portcount=len(portstrings)
-    for i in range(0,portcount):
-        for j in range(0,portcount):
-            cmpmask = (1<<(j+8*i)) 
-            if intmask & cmpmask:
-                colcode='#'+ "%06X" % (portscols[i]|portscols[j])
-                if colcode not in colours:
-                    colours.append(colcode)
-
-def asn2colour(asn):
-    return '#' + "%06X" % (int(asn)&0xffffff)
-
-def edgename(ip1,ip2):
-    return ip1+"|"+ip2
 
 # this gets crapped on each time (for now)
 keyf=open('all-key-fingerprints.json', 'w')
@@ -319,13 +274,16 @@ accumcount=0
 
 colf=open('collisions.json', 'w')
 colf.write('[\n')
+firstone=True
 for f in fingerprints:
     if f.nrcs!=0:
+        if not firstone:
+            colf.write(',')
         for recn in f.rcs:
             cip=f.rcs[recn]['ip']
             f.rcs[recn]['str_colls']=expandmask(f.rcs[recn]['ports'])
         bstr=jsonpickle.encode(f,unpicklable=False)
-        colf.write(bstr + ',\n')
+        colf.write(bstr)
         del bstr
         colcount += 1
     else:
@@ -334,113 +292,13 @@ for f in fingerprints:
     if accumcount % 100 == 0:
         # exit early for debug purposes
         #break
-        print >> sys.stderr, "Accumulating colissions, did: " + str(accumcount) + " found: " + str(colcount) + " IP's with remote collisions"
+        print >> sys.stderr, "Accumulating collisions, did: " + str(accumcount) + " found: " + str(colcount) + " IP's with remote collisions"
 
 # this gets crapped on each time (for now)
-colf.write('\n')
+colf.write(']\n')
 colf.close()
 
-# newer graphing
-ipdone=set()
-edgedone=set()
-grr=['null']
-for f in fingerprints:
-    if f.clusternum>=0 and f.nrcs>0:
-        # process cluster
-        #gvgraph = gv.Graph(format='svg',engine='neato')
-        #gvgraph = gv.Graph(format='svg',engine='dot')
-        try:
-            gvgraph=grr[f.clusternum]
-        except:
-            gvgraph=gv.Graph(format='svg',engine='circo')
-            grr.insert(f.clusternum,gvgraph) 
-        #print "ipdone1: " + str(ipdone)
-        asncol=asn2colour(f.asndec)
-        if f.ip not in ipdone:
-            gvgraph.node(f.ip,color=asncol,style="filled")
-            ipdone.add(f.ip)
-            #print "ipdone2: " + str(ipdone)
-        for recn in f.rcs:
-            cip=f.rcs[recn]['ip']
-            if cip not in ipdone:
-                try:
-                    ccol=asn2colour(f.rcs[recn]['asndec'])
-                    gvgraph.node(cip,color=ccol,style="filled")
-                except:
-                    gvgraph.node(cip,color=asncol,style="filled")
-                ipdone.add(cip)
-                #print "ipdone3: " + str(ipdone)
-            if edgename(f.ip,cip) not in edgedone and edgename(cip,f.ip) not in edgedone:
-                colours=[]
-                mask2colours(f.rcs[recn]['ports'],colours)
-                for col in colours:
-                    gvgraph.edge(f.ip,cip,color=col)
-                edgedone.add(edgename(f.ip,cip))
-        #print "gvgraph: " + str(gvgraph)
-
-for i in range(1,clusternum+1):
-    gvgraph=grr[i]
-    gvgraph.render("graphs/graph"+str(i))
-
-del grr
 del fingerprints
-
-'''
-# graphing 
-for i in range(1,clusternum+1):
-    print "Cluster: " + str(i) + " of " + str(clusternum)
-    if donx:
-        graph = nx.Graph()
-    gvgraph = gv.Graph(format='svg',engine='neato')
-    ipsdone=[]
-    for f in fingerprints:
-        #print gvgraph
-        if f.clusternum==i and f.nrcs!=0:
-            asncol=asn2colour(f.asndec)
-            print "asncol: " + asncol
-            print "ipsdone: " + str(ipsdone)
-            if donx:
-                graph.add_node(f.ip,node_color=asncol)
-            if f.ip not in ipsdone:
-                gvgraph.node(f.ip,color=asncol)
-                ipsdone.append(f.ip)
-                print "ipsdone2: " + str(ipsdone)
-            for recn in f.rcs:
-                cip=f.rcs[recn]['ip']
-                if donx:
-                    graph.add_node(cip,node_color=asncol)
-                #labels=[]
-                #mask2labels(f.rcs[recn]['ports'],labels)
-                colours=[]
-                mask2colours(f.rcs[recn]['ports'],colours)
-                if cip not in ipsdone:
-                    print f.rcs[recn]
-                    if asndec in f.rcs[recn]:
-                        asncol=asn2colour(f.rcs[recn]['asndec'])
-                        print "\tasncol2: " + asncol
-                    gvgraph.node(cip,color=asncol)
-                    ipsdone.append(cip)
-                    print "ipsdone3: " + str(ipsdone)
-                    #for lab in labels:
-                        #gvgraph.edge(f.ip,cip,label=lab)
-                    for col in colours:
-                        gvgraph.edge(f.ip,cip,color=col)
-                if donx:
-                    for lab in labels:
-                        #graph.add_edge(f.ip,cip,color=col)
-                        graph.add_edge(f.ip,cip,label=lab)
-    if donx:
-        nx.draw(graph)
-        #plt.show()
-        #nx.write_gpickle(graph,"graphs/graph"+str(i)+".pickle")
-        nx.write_gexf(graph,"graphs/graph"+str(i)+".gexf")
-        graph.clear()
-    gvgraph.render("graphs/graph"+str(i))
-    del gvgraph
-
-#print gvgraph
-del fingerprints
-'''
 
 
 print >> sys.stderr, "\toverall: " + str(overallcount) + "\n\t" + \
