@@ -230,6 +230,9 @@ def mask2colours(mask, colours):
 def asn2colour(asn):
     return '#' + "%06X" % (int(asn)&0xffffff)
 
+def edgename(ip1,ip2):
+    return ip1+"|"+ip2
+
 # this gets crapped on each time (for now)
 keyf=open('all-key-fingerprints.json', 'w')
 keyf.write("[\n");
@@ -338,31 +341,48 @@ colf.write('\n')
 colf.close()
 
 # newer graphing
-cdone=[]
+ipdone=set()
+edgedone=set()
+grr=['null']
 for f in fingerprints:
-    if f.clusternum>=0 and f.nrcs>0 and f.clusternum not in cdone:
+    if f.clusternum>=0 and f.nrcs>0:
         # process cluster
         #gvgraph = gv.Graph(format='svg',engine='neato')
-        gvgraph = gv.Graph(format='svg',engine='circo')
         #gvgraph = gv.Graph(format='svg',engine='dot')
+        try:
+            gvgraph=grr[f.clusternum]
+        except:
+            gvgraph=gv.Graph(format='svg',engine='circo')
+            grr.insert(f.clusternum,gvgraph) 
+        #print "ipdone1: " + str(ipdone)
         asncol=asn2colour(f.asndec)
-        gvgraph.node(f.ip,color=asncol,style="filled")
+        if f.ip not in ipdone:
+            gvgraph.node(f.ip,color=asncol,style="filled")
+            ipdone.add(f.ip)
+            #print "ipdone2: " + str(ipdone)
         for recn in f.rcs:
             cip=f.rcs[recn]['ip']
-            try:
-                ccol=asn2colour(f.rcs[recn]['asndec'])
-                gvgraph.node(cip,color=ccol,style="filled")
-            except:
-                gvgraph.node(cip,color=asncol,style="filled")
-            colours=[]
-            mask2colours(f.rcs[recn]['ports'],colours)
-            for col in colours:
-                gvgraph.edge(f.ip,cip,color=col)
-        gvgraph.render("graphs/graph"+str(f.clusternum))
-        del gvgraph
-        cdone.append(f.clusternum)
-    if f.clusternum==clusternum:
-        break
+            if cip not in ipdone:
+                try:
+                    ccol=asn2colour(f.rcs[recn]['asndec'])
+                    gvgraph.node(cip,color=ccol,style="filled")
+                except:
+                    gvgraph.node(cip,color=asncol,style="filled")
+                ipdone.add(cip)
+                #print "ipdone3: " + str(ipdone)
+            if edgename(f.ip,cip) not in edgedone and edgename(cip,f.ip) not in edgedone:
+                colours=[]
+                mask2colours(f.rcs[recn]['ports'],colours)
+                for col in colours:
+                    gvgraph.edge(f.ip,cip,color=col)
+                edgedone.add(edgename(f.ip,cip))
+        #print "gvgraph: " + str(gvgraph)
+
+for i in range(1,clusternum+1):
+    gvgraph=grr[i]
+    gvgraph.render("graphs/graph"+str(i))
+
+del grr
 del fingerprints
 
 '''
