@@ -28,6 +28,9 @@ the_format='svg'
 # max size of dot file we try to render
 maxglen=500000
 
+# sizes of clusters
+clustersizes=[]
+
 def readfprints(fname):
     f=open(fname,'r')
     fp=json.load(f)
@@ -166,7 +169,6 @@ for f in fingerprints:
         
     if f['clusternum']>=0 and f['nrcs']>0:
         # process cluster
-
         try:
             gvgraph=grr[f['clusternum']]
             dynleg=dynlegs[f['clusternum']]
@@ -221,7 +223,8 @@ for i in range(1,clusternum+1):
             gvgraph.subgraph(lgr)
             #gvgraph.attr('graph',rank="min")
     except Exception as e: 
-        print >> sys.stderr, str(e)
+        pass
+        #print >> sys.stderr, str(e)
     # render if not too big...
     glen=len(gvgraph.source)
     if glen > maxglen:
