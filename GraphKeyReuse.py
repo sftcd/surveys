@@ -206,6 +206,10 @@ for f in fingerprints:
     if checkcount % 100 == 0:
         print >> sys.stderr, "Creating graphs, fingerprint: " + str(checkcount) + " saw " + str(clusternum) + " clusters"
 
+
+# make a list of graphs we didn't render
+notrendered=[]
+
 for i in range(1,clusternum+1):
     print "Graphing cluster: " + str(i)
     gvgraph=grr[i]
@@ -230,19 +234,20 @@ for i in range(1,clusternum+1):
     if glen > maxglen:
         print "Not rendering graph for cluster "+ str(i) + " - too long: " + str(glen)
         gvgraph.save("graphs/graph"+str(i)+".dot")
+        notrendered.append(i)
     else:
         try:
             gvgraph.render("graphs/graph"+str(i)+".dot")
         except Exception as e: 
+            notrendered.append(i)
             print >> sys.stderr, "Ecxeption rendering cluster: " + str(i) 
             print >> sys.stderr, "Exception: " + str(e)
             print >> sys.stderr, "Maybe you got bored and killed a process?"
             
-
-
 del grr
 
 print >> sys.stderr, "collisions: " + str(len(fingerprints)) + "\n\t" + \
-        "total clusters: " + str(clusternum)
+        "total clusters: " + str(clusternum) + "\n\t" + \
+        "graphs not rendered: " + str(notrendered)
 
-del fingerprints
+del fingerprints 
