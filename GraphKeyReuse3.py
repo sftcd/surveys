@@ -163,9 +163,12 @@ clusternum=0
 checkcount=0
 grr=['null']
 dynlegs=['null']
+actualcnums=[]
 for f in fingerprints:
     try:
         this_clusternum=f['clusternum']
+        if f['clusternum'] not in actualcnums:
+            actualcnums.append(f['clusternum'])
         if this_clusternum > clusternum:
             clusternum=this_clusternum
     except:
@@ -213,10 +216,17 @@ for f in fingerprints:
 
 # make a list of graphs we didn't render
 notrendered=[]
+clustercount=0
 
-for i in range(1,clusternum+1):
+#for i in range(1,clusternum+1):
+for i in actualcnums:
+    try:
+        gvgraph=grr[i]
+    except:
+        print "Cluster " + str(i) + " must have been merged - skipping"
+        continue
+    clustercount += 1
     print "Graphing cluster: " + str(i)
-    gvgraph=grr[i]
     # optional legend...
     try:
         if sys.argv[2]=="legend":
@@ -251,7 +261,8 @@ for i in range(1,clusternum+1):
 del grr
 
 print >> sys.stderr, "collisions: " + str(len(fingerprints)) + "\n\t" + \
-        "total clusters: " + str(clusternum) + "\n\t" + \
+        "max cluster: " + str(clusternum) + "\n\t" + \
+        "total clusters: " + str(clustercount) + "\n\t" + \
         "graphs not rendered: " + str(notrendered)
 
 del fingerprints 

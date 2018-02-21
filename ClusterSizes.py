@@ -18,48 +18,44 @@ def readfprints(fname):
 # read in e.g. collisions.json from a run of SameKeys.py
 fingerprints=readfprints(sys.argv[1])
 
-# sizes of clusters
-clustersizes=[]
+totalfps=len(fingerprints)
+
+# ips in clusters
+clusterips={}
 
 this_clusternum=0
-clusternum=0
+clustercount=0
 checkcount=0
 
 for f in fingerprints:
-    try:
-        this_clusternum=f['clusternum']
-        if this_clusternum > clusternum:
-            clusternum=this_clusternum
-    except:
+    if not (f['clusternum']>0 and f['nrcs']>0):
         continue
-        
-    if f['clusternum']>=0 and f['nrcs']>0:
-        # process cluster
-        try:
-            cset=clustersizes[f['clusternum']]
-        except:
-            cset=set()
-            clustersizes.insert(f['clusternum'],cset)
-        cset.add(f['nrcs']+1)
+
+    cnum=f['clusternum']
+    for rec in f['rcs']:
+        theip=f['rcs'][rec]['ip']
+        if cnum not in clusterips:
+            clusterips[cnum]=[]
+            clustercount+=1
+        #print clusterips[cnum]
+        if theip not in clusterips[cnum]:
+            clusterips[cnum].append(theip)
 
     checkcount += 1
     if checkcount % 100 == 0:
-        print >> sys.stderr, "Creating graphs, fingerprint: " + str(checkcount) + " saw " + str(clusternum) + " clusters"
+        print >> sys.stderr, "Did: " + str(checkcount) + " of " + str(totalfps)
 
 cf="clustersizes.csv"
 cf_p=open(cf,"w")
 
 print >> cf_p, "#clusternum,size"
-for i in range(1,clusternum+1):
-    if len(clustersizes[i]) == 1:
-        csize=clustersizes[i].pop()
-        print "Clusternum: " + str(i) + " has " + str(csize) + " members"
-        print >> cf_p, str(i) + "," + str(csize)
-    else:
-        print "ODDBALL Clusternum: " + str(i) + " has " + str(clustersizes[i]) + " members"
+for cnum in clusterips:
+    csize=len(clusterips[cnum])
+    print "Clusternum: " + str(cnum) + " has " + str(csize) + " members"
+    print >> cf_p, str(cnum) + "," + str(csize)
 cf_p.close()
 
-print >> sys.stderr, "collisions: " + str(len(fingerprints)) + "\n\t" + \
-        "total clusters: " + str(clusternum)
+print >> sys.stderr, "collisions: " + str(totalfps) + "\n\t" + \
+        "total clusters: " + str(clustercount)
 
 del fingerprints
