@@ -209,6 +209,26 @@ for i in range(0,fl):
         for k1 in r1.fprints:
             for k2 in r2.fprints:
                 if r1.fprints[k1]==r2.fprints[k2]:
+
+                    if r1.clusternum==0 and r2.clusternum==0:
+                        clusternum += 1
+                        r1.clusternum=clusternum
+                        r2.clusternum=clusternum
+                    elif r1.clusternum==0 and r2.clusternum>0:
+                        r1.clusternum=r2.clusternum
+                    elif r1.clusternum>0 and r2.clusternum==0:
+                        r2.clusternum=r1.clusternum
+                    elif r1.clusternum>0 and r2.clusternum>0 and r1.clusternum!=r2.clusternum:
+                        # merge 'em, check all clusters from r1 to r2 and do the merging
+                        # into r1.clusternum from r2.clusternum
+                        # note we waste a clusternum here
+                        for k in range(0,j):
+                            if fingerprints[k].clusternum==r2.clusternum:
+                                fingerprints[k].clusternum=r1.clusternum
+                        r2.clusternum=r1.clusternum
+
+                    colcount += 1
+                    r1r2coll=True # so we remember if there was one
                     if rec2 not in r1.rcs:
                         r1.rcs[rec2]={}
                         r1.rcs[rec2]['ip']=r2.ip
@@ -216,22 +236,11 @@ for i in range(0,fl):
                             r1.rcs[rec2]['asn']=r2.asn
                             r1.rcs[rec2]['asndec']=r2.asndec
                         r1.rcs[rec2]['ports']=collmask('0x0',k1,k2)
-                        #print "A: " + r1.rcs[rec2]['ports']
-                        if r1.clusternum==0:
-                            clusternum += 1
-                            r1.clusternum=clusternum
-                            r2.clusternum=clusternum
-                        else:
-                            r2.clusternum=r1.clusternum
-                        colcount += 1
-                        r1r2coll=True # so we remember if there was one
+                        r1.nrcs += 1
                     else: 
                         r12=r1.rcs[rec2]
-                        #print "B: " + r12['ports'] + " k1: " + k1 + " k2: " + k2
                         r12['ports'] = collmask(r12['ports'],k1,k2)
-                        #print "C: " + r12['ports'] + " k1: " + k1 + " k2: " + k2
-                        colcount += 1
-                        r1r2coll=True # so we remember if there was one
+
                     if rec1 not in r2.rcs:
                         r2.rcs[rec1]={}
                         r2.rcs[rec1]['ip']=r1.ip
@@ -239,15 +248,12 @@ for i in range(0,fl):
                             r2.rcs[rec1]['asn']=r1.asn
                             r2.rcs[rec1]['asndec']=r1.asndec
                         r2.rcs[rec1]['ports']=collmask('0x0',k2,k1)
-                        #print "D: "+ r2.rcs[rec1]['ports']
+                        r2.nrcs += 1
                     else: 
                         r21=r2.rcs[rec1]
-                        #print "E: " + r12['ports']
                         r21['ports'] = collmask(r21['ports'],k2,k1)
-                        #print "F: " + r12['ports']
+
         if r1r2coll==True: # so we remember if there was one
-            r1.nrcs += 1
-            r2.nrcs += 1
             if r1.nrcs > mostcollisions:
                 mostcollisions = r1.nrcs
                 biggestcollider = r1.ip_record
@@ -275,8 +281,11 @@ accumcount=0
 colf=open('collisions.json', 'w')
 colf.write('[\n')
 firstone=True
+mergedclusternums=[]
 for f in fingerprints:
     if f.nrcs!=0:
+        if f.clusternum not in mergedclusternums:
+            mergedclusternums.append(f.clusternum)
         for recn in f.rcs:
             cip=f.rcs[recn]['ip']
             f.rcs[recn]['str_colls']=expandmask(f.rcs[recn]['ports'])
@@ -293,11 +302,12 @@ for f in fingerprints:
     if accumcount % 100 == 0:
         # exit early for debug purposes
         #break
-        print >> sys.stderr, "Accumulating collisions, did: " + str(accumcount) + " found: " + str(colcount) + " IP's with remote collisions"
+        print >> sys.stderr, "Savin collisions, did: " + str(accumcount) + " found: " + str(colcount) + " IP's with remote collisions"
 
 # this gets crapped on each time (for now)
 colf.write('\n]\n')
 colf.close()
+mergedclusternum=len(mergedclusternums)
 
 del fingerprints
 
@@ -308,4 +318,5 @@ print >> sys.stderr, "\toverall: " + str(overallcount) + "\n\t" + \
         "remote collisions: " + str(colcount) + "\n\t" + \
         "no collisions: " + str(noncolcount) + "\n\t" + \
         "most collisions: " + str(mostcollisions) + " for record: " + str(biggestcollider) + "\n\t" + \
-        "total clusters: " + str(clusternum)
+        "non-merged total clusters: " + str(clusternum) + "\n\t" + \
+        "merged total clusters: " + str(mergedclusternum) 
