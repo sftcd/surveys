@@ -21,11 +21,11 @@ import graphviz as gv
 
 # graphing globals
 #the_engine='circo'
-the_engine='dot'
-#the_engine='neato'
+#the_engine='dot'
+the_engine='neato'
 #the_engine='sfdp'
-the_format='svg'
-#the_format='png'
+#the_format='svg'
+the_format='png'
 #the_format='dot'
 
 # max size of dot file we try to render
@@ -53,7 +53,7 @@ nportscols=[ \
         'bisque',    'blue',   'blue',   'blue',      'violet',      'blue', \
         'yellow',    'blue',   'blue',   'blue',      'coral',       'blue', \
         'aquamarine','blue',   'blue',   'blue',      'darkkhaki',   'blue', \
-        'darkgray',  'violet', 'coral',  'darkkhaki', 'darkmagenta', 'darkseagreen', \
+        'darkgray',  'violet', 'coral',  'darkkhaki', 'magenta', 'darkseagreen', \
         'orange',    'blue',   'blue',   'blue',      'darkseagreen','blue', ] 
 
 def indexport(index):
