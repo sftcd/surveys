@@ -9,16 +9,21 @@
 # figure out if we can get port 587 ever - looks like not, for now anyway
 
 import sys
+import os
+import tempfile
 import json
 import gc
 import copy
+import argparse
 
 # install via  "$ sudo pip install -U jsonpickle"
-import jsonpickle
+#import jsonpickle
 
 # direct to graphviz ...
 import graphviz as gv
 
+# output directory
+outdir="graphs"
 
 # graphing globals
 #the_engine='circo'
@@ -79,7 +84,6 @@ nportscols=unmerged_nportscols
 # note that in the merged case almost all collisions on ports 25,110,
 # etc will be shown as p25-p25 collisions in graph legends
  
-
 def indexport(index):
     return portstrings[index]
 
@@ -171,14 +175,54 @@ def asn2colour(asn):
 def edgename(ip1,ip2):
     return ip1+"|"+ip2
 
-# main line processing ...
 
-if sys.argv[1]=="legend":
+# command line arg handling 
+parser=argparse.ArgumentParser(description='Graph the collisions found by SameKeys.py')
+parser.add_argument('-f','--file',     
+                    dest='fname',
+                    help='json file containing key fingerprint collisions')
+parser.add_argument('-o','--output_dir',     
+                    dest='outdir',
+                    help='directory in which to put (maybe many) graph files')
+parser.add_argument('-l','--legend',
+                    help='include a legend on each graph, or just create ./legend.dot.svg if no other args',
+                    action='store_true')
+parser.add_argument('-n','--neato',
+                    help='switch to neato graphviz thing (default=sfdp)',
+                    action='store_true')
+args=parser.parse_args()
+
+
+# if this then just print legend
+if args.fname=='' and args.legend:
+    print args
     printlegend()
     sys.exit(0)
 
+if args.outdir:
+    outdir=args.outdir
+
+if args.neato:
+    the_engine='neato'
+
+# checks - can we write to outdir...
+try:
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+    testfile = tempfile.TemporaryFile(dir = outdir)
+    testfile.close()
+except Exception as e:
+    print >> sys.stderr, "Can't create output directory " + outdir + " - exiting:" + str(e)
+    sys.exit(1)
+
+if not os.access(outdir,os.W_OK):
+    print >> sys.stderr, "Can't write to output directory " + outdir + " - exiting"
+    sys.exit(1)
+
+# main line processing ...
+
 # read in e.g. collisions.json from a run of SameKeys.py
-fingerprints=readfprints(sys.argv[1])
+fingerprints=readfprints(args.fname)
 
 # we need to pass over all the fingerprints to make a graph for each
 # cluster, note that due to cluster merging (in SameKeys.py) we may
@@ -254,7 +298,7 @@ for i in actualcnums:
     print "Graphing cluster: " + str(i)
     # optional legend...
     try:
-        if sys.argv[2]=="legend":
+        if args.legend:
             lgr=gv.Graph(name="legend",node_attr={'shape': 'box'})
             lgr.attr('graph',rank="source")
             lgr.node("Cluster " + str(i))
@@ -272,11 +316,11 @@ for i in actualcnums:
     glen=len(gvgraph.source)
     if glen > maxglen:
         print "Not rendering graph for cluster "+ str(i) + " - too long: " + str(glen)
-        gvgraph.save("graphs/graph"+str(i)+".dot")
+        gvgraph.save(outdir + "/graph"+str(i)+".dot")
         notrendered.append(i)
     else:
         try:
-            gvgraph.render("graphs/graph"+str(i)+".dot")
+            gvgraph.render(outdir + "/graph"+str(i)+".dot")
         except Exception as e: 
             notrendered.append(i)
             print >> sys.stderr, "Ecxeption rendering cluster: " + str(i) 
@@ -284,6 +328,11 @@ for i in actualcnums:
             print >> sys.stderr, "Maybe you got bored and killed a process?"
             
 del grr
+
+summary_fp=open(outdir+"/summary.txt","a+")
+print >> summary_fp, "collisions: " + str(len(fingerprints)) + "\n\t" + \
+        "total clusters: " + str(clustercount) + "\n\t" + \
+summary_fp.close()
 
 print >> sys.stderr, "collisions: " + str(len(fingerprints)) + "\n\t" + \
         "total clusters: " + str(clustercount) + "\n\t" + \
