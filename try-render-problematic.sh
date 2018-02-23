@@ -15,16 +15,18 @@ list=`cat summary.txt | grep "not rendered" \
 
 for gr in $list
 do
-	echo "Trying $gr..."
 	# don't re-do already done stuff
 	target=graph$gr.dot.svg
 	if [ ! -f $target ]
 	then
-		sfdp -Tsvg graph$gr.dot >$target
+		echo "Trying $gr..."
+		timeout --kill-after 30s 20s sfdp -Tsvg graph$gr.dot >$target
 		if (( $? != 0 ))
 		then
-			mv $target failed-$ge.dot.svg
+			mv $target failed-$gr.dot.svg
 		fi
+	else
+		echo "Skipping $gr..."
 	fi
 done
 
