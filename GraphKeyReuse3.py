@@ -11,6 +11,7 @@
 import sys
 import json
 import gc
+import copy
 
 # install via  "$ sudo pip install -U jsonpickle"
 import jsonpickle
@@ -22,11 +23,15 @@ import graphviz as gv
 # graphing globals
 #the_engine='circo'
 #the_engine='dot'
-the_engine='neato'
-#the_engine='sfdp'
-#the_format='svg'
-the_format='png'
+#the_engine='neato'
+the_engine='sfdp'
+the_format='svg'
+#the_format='png'
 #the_format='dot'
+
+# note - had to rebuild graphviz locally for sfdp to work (and that had
+# *loads* of compiler warnings and seems to crash on some graphs) if
+# running on ubuntu version dot ok-ish works here but not sfdp
 
 # max size of dot file we try to render
 maxglen=500000
@@ -48,13 +53,32 @@ portstrings=['p22','p25','p110','p143','p443','p993']
 #portscols=[0x00000f,0x0000f0,0x000f00,0x00f000,0x0f0000,0xf00000]
 # new way - this is manually made symmetric around the diagonal
 # variant - make all the mail colours the same
-nportscols=[ \
-        'black',     'bisque', 'yellow', 'aquamarine','darkgray',    'orange', \
+merged_nportscols=[ \
+        'black',     'bisque', 'yellow', 'aquamarine','darkgray',    'magenta', \
         'bisque',    'blue',   'blue',   'blue',      'violet',      'blue', \
         'yellow',    'blue',   'blue',   'blue',      'coral',       'blue', \
         'aquamarine','blue',   'blue',   'blue',      'darkkhaki',   'blue', \
-        'darkgray',  'violet', 'coral',  'darkkhaki', 'magenta', 'darkseagreen', \
-        'orange',    'blue',   'blue',   'blue',      'darkseagreen','blue', ] 
+        'darkgray',  'violet', 'coral',  'darkkhaki', 'orange', 'darkseagreen', \
+        'magenta',    'blue',   'blue',   'blue',      'darkseagreen','blue', ] 
+
+# new way - individual colours per port-pair  - this is manually made symmetric around the diagonal
+unmerged_nportscols=[ \
+        'black',     'bisque',        'yellow', 'aquamarine', 'darkgray',     'magenta', \
+        'bisque',    'blue',          'blanchedalmond',  'crimson',    'violet',    'brown', \
+        'yellow', 'blanchedalmond','chartreuse',      'cyan',       'coral',        'darkred', \
+        'aquamarine','crimson',       'cyan',            'darkblue',   'darkkhaki',    'darksalmon', \
+        'darkgray',  'violet',     'coral',           'darkkhaki',  'orange',  'darkseagreen', \
+        'magenta',     'brown',         'darkred',         'darksalmon', 'darkseagreen', 'maroon', ]
+
+
+# pick one of these - the first merges many mail port combos
+# leading to clearer graphs, the 2nd keeps all the details
+# nportscols=merged_nportscols
+nportscols=unmerged_nportscols
+
+# note that in the merged case almost all collisions on ports 25,110,
+# etc will be shown as p25-p25 collisions in graph legends
+ 
 
 def indexport(index):
     return portstrings[index]
@@ -156,42 +180,42 @@ if sys.argv[1]=="legend":
 # read in e.g. collisions.json from a run of SameKeys.py
 fingerprints=readfprints(sys.argv[1])
 
-# newer graphing
+# we need to pass over all the fingerprints to make a graph for each
+# cluster, note that due to cluster merging (in SameKeys.py) we may
+# not see all cluster members as peers of the first cluster member
+
 ipdone=set()
 edgedone=set()
-clusternum=0
 checkcount=0
-grr=['null']
-dynlegs=['null']
+grr={}
+dynlegs={}
 actualcnums=[]
 for f in fingerprints:
-    try:
-        this_clusternum=f['clusternum']
-        if f['clusternum'] not in actualcnums:
-            actualcnums.append(f['clusternum'])
-        if this_clusternum > clusternum:
-            clusternum=this_clusternum
-    except:
-        continue
-        
     if f['clusternum']>=0 and f['nrcs']>0:
-        # process cluster
-        try:
-            gvgraph=grr[f['clusternum']]
-            dynleg=dynlegs[f['clusternum']]
-        except:
+        # remember clusternum for later
+        newgraph=False
+        if f['clusternum'] not in actualcnums:
+            newgraph=True
+            actualcnums.append(f['clusternum'])
             gvgraph=gv.Graph(format=the_format,engine=the_engine)
             gvgraph.attr('graph',splines='true')
             gvgraph.attr('graph',overlap='false')
-            grr.insert(f['clusternum'],gvgraph) 
             dynleg=set()
-            dynlegs.insert(f['clusternum'],dynleg)
-        #print "ipdone1: " + str(ipdone)
+            grr[f['clusternum']]=gvgraph
+            dynlegs[f['clusternum']]=dynleg
+        else:
+            gvgraph=grr[f['clusternum']]
+            dynleg=dynlegs[f['clusternum']]
+
+        # figure colour for node for this fingerprint based on ASN
         asncol=asn2colour(f['asndec'])
+
+        # have we processed this node already?
         if f['ip'] not in ipdone:
             gvgraph.node(f['ip'],color=asncol,style="filled")
             ipdone.add(f['ip'])
-            #print "ipdone2: " + str(ipdone)
+
+        # process peers ("key sharers") for this node
         for recn in f['rcs']:
             cip=f['rcs'][recn]['ip']
             if cip not in ipdone:
@@ -201,24 +225,25 @@ for f in fingerprints:
                 except:
                     gvgraph.node(cip,color=asncol,style="filled")
                 ipdone.add(cip)
-                #print "ipdone3: " + str(ipdone)
+
+            # add edge for that to this
             if edgename(f['ip'],cip) not in edgedone and edgename(cip,f['ip']) not in edgedone:
                 colours=[]
                 mask2colours(f['rcs'][recn]['ports'],colours,dynleg)
                 for col in colours:
                     gvgraph.edge(f['ip'],cip,color=col)
                 edgedone.add(edgename(f['ip'],cip))
-        #print "gvgraph: " + str(gvgraph)
+
+    # print something now and then to keep operator amused
     checkcount += 1
     if checkcount % 100 == 0:
-        print >> sys.stderr, "Creating graphs, fingerprint: " + str(checkcount) + " saw " + str(clusternum) + " clusters"
+        print >> sys.stderr, "Creating graphs, fingerprint: " + str(checkcount) + " saw " + str(f['clusternum']) + " clusters"
 
 
-# make a list of graphs we didn't render
+# make a list of graphs we didn't end up rendering
 notrendered=[]
 clustercount=0
 
-#for i in range(1,clusternum+1):
 for i in actualcnums:
     try:
         gvgraph=grr[i]
@@ -261,7 +286,6 @@ for i in actualcnums:
 del grr
 
 print >> sys.stderr, "collisions: " + str(len(fingerprints)) + "\n\t" + \
-        "max cluster: " + str(clusternum) + "\n\t" + \
         "total clusters: " + str(clustercount) + "\n\t" + \
         "graphs not rendered: " + str(notrendered)
 
