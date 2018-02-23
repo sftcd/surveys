@@ -20,7 +20,7 @@ do
 	if [ ! -f $target ]
 	then
 		echo "Trying $gr..."
-		timeout --kill-after 30s 20s sfdp -Tsvg graph$gr.dot >$target
+		timeout --kill-after 30s 120s sfdp -Tsvg graph$gr.dot >$target
 		if (( $? != 0 ))
 		then
 			mv $target failed-$gr.dot.svg

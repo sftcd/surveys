@@ -332,6 +332,7 @@ del grr
 summary_fp=open(outdir+"/summary.txt","a+")
 print >> summary_fp, "collisions: " + str(len(fingerprints)) + "\n\t" + \
         "total clusters: " + str(clustercount) + "\n\t" + \
+        "graphs not rendered: " + str(notrendered)
 summary_fp.close()
 
 print >> sys.stderr, "collisions: " + str(len(fingerprints)) + "\n\t" + \
