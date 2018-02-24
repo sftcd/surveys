@@ -31,7 +31,7 @@ formats="svg png"
 # default to 1st from list above
 format=`echo $formats | cut -d" " -f1`
 
-if (( $all==True ))
+if [ "$all" == "True" ]
 then
 	engine=$engines
 	format=$formats
@@ -60,3 +60,36 @@ do
 	done
 done
 
+minsize=5000
+baddies=""
+
+# see who failed everything
+for gr in $list
+do
+	nogood=True
+	# note plural here - we check 'em all
+	for fmt in $formats
+	do
+		target=graph$gr.dot.$fmt
+		if [ -f $target ]
+		then
+			size=`ls -l $target | awk '{print $5}'`
+			if (( $size > $minsize ))
+			then
+				nogood=False
+			fi
+		fi
+	done
+	if [ "$nogood" == "True" ]
+	then
+		baddies+=" "$gr
+	fi
+done
+
+echo "At the end, we still didn't manage to do $baddies"
+echo ""
+echo "The details: (output of 'ls -l graph\$NN.*')"
+for gr in $baddies
+do
+	ls -l graph$gr.*
+done
