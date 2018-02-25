@@ -15,11 +15,6 @@ def readfprints(fname):
     f.close()
     return fp
 
-# read in e.g. collisions.json from a run of SameKeys.py
-fingerprints=readfprints(sys.argv[1])
-
-totalfps=len(fingerprints)
-
 # ips in clusters
 clusterips={}
 
@@ -27,7 +22,32 @@ this_clusternum=0
 clustercount=0
 checkcount=0
 
-for f in fingerprints:
+def getnextfprint(fp):
+    # read the next fingerprint from the file pointer
+    # fprint is a json structure, pretty-printed, so we'll
+    # read to the first line that's just an "{" until
+    # the next line that's just a "}"
+    line=fp.readline()
+    while line:
+        if line=="{\n":
+            break
+        line=fp.readline()
+    jstr=""
+    while line:
+        jstr += line
+        if line=="}\n":
+            break
+        line=fp.readline()
+    if line:
+        jthing=json.loads(jstr)
+        return jthing
+    else:
+        return line
+
+fp=open(sys.argv[1],"r")
+
+f=getnextfprint(fp)
+while f:
     if not (f['clusternum']>0 and f['nrcs']>0):
         continue
 
@@ -43,7 +63,10 @@ for f in fingerprints:
 
     checkcount += 1
     if checkcount % 100 == 0:
-        print >> sys.stderr, "Did: " + str(checkcount) + " of " + str(totalfps)
+        print >> sys.stderr, "Did: " + str(checkcount) 
+    f=getnextfprint(fp)
+
+fp.close()
 
 cf="clustersizes.csv"
 cf_p=open(cf,"w")
@@ -55,7 +78,6 @@ for cnum in clusterips:
     print >> cf_p, str(cnum) + "," + str(csize)
 cf_p.close()
 
-print >> sys.stderr, "collisions: " + str(totalfps) + "\n\t" + \
+print >> sys.stderr, "collisions: " + str(checkcount) + "\n\t" + \
         "total clusters: " + str(clustercount)
 
-del fingerprints

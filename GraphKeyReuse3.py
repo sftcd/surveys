@@ -37,12 +37,6 @@ the_format='svg'
 # *loads* of compiler warnings and seems to crash on some graphs) if
 # running on ubuntu version dot ok-ish works here but not sfdp
 
-# max size of dot file we try to render
-maxglen=500000
-
-# sizes of clusters
-clustersizes=[]
-
 def readfprints(fname):
     try:
         f=open(fname,'r')
@@ -193,12 +187,21 @@ def printlegend():
             leg.edge(portstrings[i],portstrings[j],color=colcode)
     leg.render("legend.dot")
 
-
 def asn2colour(asn):
     return '#' + "%06X" % (int(asn)&0xffffff)
 
+def ip2int(ip):
+    sip=ip.split(".")
+    sip=list(map(int,sip))
+    iip=sip[0]*256**3+sip[1]*256**2+sip[2]*256+sip[3]
+    return iip
+
 def edgename(ip1,ip2):
-    return ip1+"|"+ip2
+    #return ip1+"|"+ip2
+    int1=ip2int(ip1)
+    int2=ip2int(ip2)
+    floater=float("%d.%d"%(int1,int2))
+    return floater
 
 
 # command line arg handling 
@@ -246,22 +249,24 @@ if not os.access(outdir,os.W_OK):
 
 # main line processing ...
 
-# read in e.g. collisions.json from a run of SameKeys.py
-#fingerprints=readfprints(args.fname)
-#if fingerprints is None:
-    #sys.exit(1)
-
 # we need to pass over all the fingerprints to make a graph for each
 # cluster, note that due to cluster merging (in SameKeys.py) we may
 # not see all cluster members as peers of the first cluster member
 
+# ipdone and edgedone are ok to be global as each ip is only in one
+# cluster and hence same with edges
+# need to be careful with memory for the edges - on EE data those
+# seem to explode
 ipdone=set()
 edgedone=set()
+
 checkcount=0
 grr={}
 dynlegs={}
 actualcnums=[]
-#for f in fingerprints:
+
+# max size of dot file we try to render
+maxglen=500000
 
 # open file
 fp=open(args.fname,"r")
@@ -315,8 +320,8 @@ while f:
     # print something now and then to keep operator amused
     checkcount += 1
     if checkcount % 100 == 0:
-        print >> sys.stderr, "Creating graphs, fingerprint: " + str(checkcount) + " most recent cluster " + str(f['clusternum']) 
-        print >> sys.stderr, "\tIPs: " + str(len(ipdone)) + " edges: " + str(len(edgedone))
+        print >> sys.stderr, "Creating graphs, fingerprint: " + str(checkcount) + " most recent cluster " + str(f['clusternum']) + \
+                    " IPs: " + str(len(ipdone)) + " edges: " + str(len(edgedone)) + " #clusters: " + str(len(actualcnums))
     if checkcount % 1000 == 0:
         gc.collect()
 
