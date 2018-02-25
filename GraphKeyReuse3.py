@@ -3,8 +3,7 @@
 # check who's re-using the same keys 
 # CensysIESMTP.py
 
-# variant: just graph mail,web,ssh and not specific port combos...
-# to see if the bigger clusters can be graphed that way...
+# reduce memory footprint - just read one collision at a time from file
 
 # figure out if we can get port 587 ever - looks like not, for now anyway
 
@@ -45,10 +44,36 @@ maxglen=500000
 clustersizes=[]
 
 def readfprints(fname):
-    f=open(fname,'r')
-    fp=json.load(f)
-    f.close()
-    return fp
+    try:
+        f=open(fname,'r')
+        fp=json.load(f)
+        f.close()
+        return fp
+    except Exception as e: 
+        print >> sys.stderr, "exception reading " + fname + " exception: " + str(e)  
+        return None
+
+def getnextfprint(fp):
+    # read the next fingerprint from the file pointer
+    # fprint is a json structure, pretty-printed, so we'll
+    # read to the first line that's just an "{" until
+    # the next line that's just a "}"
+    line=fp.readline()
+    while line:
+        if line=="{\n":
+            break
+        line=fp.readline()
+    jstr=""
+    while line:
+        jstr += line
+        if line=="}\n":
+            break
+        line=fp.readline()
+    if line:
+        jthing=json.loads(jstr)
+        return jthing
+    else:
+        return line
 
 # reverse map from bit# to string
 # the above could be done better using this... but meh
@@ -222,7 +247,9 @@ if not os.access(outdir,os.W_OK):
 # main line processing ...
 
 # read in e.g. collisions.json from a run of SameKeys.py
-fingerprints=readfprints(args.fname)
+#fingerprints=readfprints(args.fname)
+#if fingerprints is None:
+    #sys.exit(1)
 
 # we need to pass over all the fingerprints to make a graph for each
 # cluster, note that due to cluster merging (in SameKeys.py) we may
@@ -234,7 +261,13 @@ checkcount=0
 grr={}
 dynlegs={}
 actualcnums=[]
-for f in fingerprints:
+#for f in fingerprints:
+
+# open file
+fp=open(args.fname,"r")
+
+f=getnextfprint(fp)
+while f:
     if f['clusternum']>=0 and f['nrcs']>0:
         # remember clusternum for later
         newgraph=False
@@ -276,13 +309,22 @@ for f in fingerprints:
                 mask2colours(f['rcs'][recn]['ports'],colours,dynleg)
                 for col in colours:
                     gvgraph.edge(f['ip'],cip,color=col)
+                del colours
                 edgedone.add(edgename(f['ip'],cip))
 
     # print something now and then to keep operator amused
     checkcount += 1
     if checkcount % 100 == 0:
-        print >> sys.stderr, "Creating graphs, fingerprint: " + str(checkcount) + " saw " + str(f['clusternum']) + " clusters"
+        print >> sys.stderr, "Creating graphs, fingerprint: " + str(checkcount) + " most recent cluster " + str(f['clusternum']) 
+        print >> sys.stderr, "\tIPs: " + str(len(ipdone)) + " edges: " + str(len(edgedone))
+    if checkcount % 1000 == 0:
+        gc.collect()
 
+    # read next fp
+    f=getnextfprint(fp)
+
+# close file
+fp.close()
 
 # make a list of graphs we didn't end up rendering
 notrendered=[]
@@ -330,13 +372,13 @@ for i in actualcnums:
 del grr
 
 summary_fp=open(outdir+"/summary.txt","a+")
-print >> summary_fp, "collisions: " + str(len(fingerprints)) + "\n\t" + \
+print >> summary_fp, "collisions: " + str(checkcount) + "\n\t" + \
         "total clusters: " + str(clustercount) + "\n\t" + \
         "graphs not rendered: " + str(notrendered)
 summary_fp.close()
 
-print >> sys.stderr, "collisions: " + str(len(fingerprints)) + "\n\t" + \
+print >> sys.stderr, "collisions: " + str(checkcount) + "\n\t" + \
         "total clusters: " + str(clustercount) + "\n\t" + \
         "graphs not rendered: " + str(notrendered)
 
-del fingerprints 
+#del fingerprints 

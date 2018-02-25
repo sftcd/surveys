@@ -282,27 +282,30 @@ colf=open('collisions.json', 'w')
 colf.write('[\n')
 firstone=True
 mergedclusternums=[]
-for f in fingerprints:
-    if f.nrcs!=0:
-        if f.clusternum not in mergedclusternums:
-            mergedclusternums.append(f.clusternum)
-        for recn in f.rcs:
-            cip=f.rcs[recn]['ip']
-            f.rcs[recn]['str_colls']=expandmask(f.rcs[recn]['ports'])
-        bstr=jsonpickle.encode(f,unpicklable=False)
-        if not firstone:
-            colf.write('\n,\n')
-        firstone=False
-        colf.write(bstr)
-        del bstr
-        colcount += 1
-    else:
-        noncolcount += 1
-    accumcount += 1
-    if accumcount % 100 == 0:
-        # exit early for debug purposes
-        #break
-        print >> sys.stderr, "Savin collisions, did: " + str(accumcount) + " found: " + str(colcount) + " IP's with remote collisions"
+try:
+    for f in fingerprints:
+        if f.nrcs!=0:
+            if f.clusternum not in mergedclusternums:
+                mergedclusternums.append(f.clusternum)
+            for recn in f.rcs:
+                cip=f.rcs[recn]['ip']
+                f.rcs[recn]['str_colls']=expandmask(f.rcs[recn]['ports'])
+            bstr=jsonpickle.encode(f,unpicklable=False)
+            if not firstone:
+                colf.write('\n,\n')
+            firstone=False
+            colf.write(bstr)
+            del bstr
+            colcount += 1
+        else:
+            noncolcount += 1
+        accumcount += 1
+        if accumcount % 100 == 0:
+            # exit early for debug purposes
+            #break
+            print >> sys.stderr, "Saving collisions, did: " + str(accumcount) + " found: " + str(colcount) + " IP's with remote collisions"
+except Exception as e: 
+    print >> sys.stderr, "Saving exception " + str(e)
 
 # this gets crapped on each time (for now)
 colf.write('\n]\n')
