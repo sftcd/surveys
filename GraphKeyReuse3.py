@@ -194,15 +194,29 @@ def ip2int(ip):
     sip=ip.split(".")
     sip=list(map(int,sip))
     iip=sip[0]*256**3+sip[1]*256**2+sip[2]*256+sip[3]
+    del sip
     return iip
 
 def edgename(ip1,ip2):
+    # string form consumes more memory
     #return ip1+"|"+ip2
     int1=ip2int(ip1)
     int2=ip2int(ip2)
-    floater=float("%d.%d"%(int1,int2))
-    return floater
-
+    int3=int2*2**32+int1
+    del int1
+    del int2
+    return int3
+''' 
+float version of this didn't work (well) due to 
+some precision issue (maybe)
+    fstr="%d.%d"%(int1,int2)
+    #print fstr
+    floater=float(fstr)
+    #print '%.10f' % floater
+    tenf= '%.10f' % floater
+    #print tenf
+    return tenf
+'''
 
 # command line arg handling 
 parser=argparse.ArgumentParser(description='Graph the collisions found by SameKeys.py')
@@ -273,6 +287,7 @@ fp=open(args.fname,"r")
 
 f=getnextfprint(fp)
 while f:
+    dynleg=set()
     if f['clusternum']>=0 and f['nrcs']>0:
         # remember clusternum for later
         newgraph=False
@@ -282,12 +297,13 @@ while f:
             gvgraph=gv.Graph(format=the_format,engine=the_engine)
             gvgraph.attr('graph',splines='true')
             gvgraph.attr('graph',overlap='false')
-            dynleg=set()
             grr[f['clusternum']]=gvgraph
-            dynlegs[f['clusternum']]=dynleg
+            if args.legend:
+                dynlegs[f['clusternum']]=dynleg
         else:
             gvgraph=grr[f['clusternum']]
-            dynleg=dynlegs[f['clusternum']]
+            if args.legend:
+                dynleg=dynlegs[f['clusternum']]
 
         # figure colour for node for this fingerprint based on ASN
         asncol=asn2colour(f['asndec'])
@@ -309,13 +325,18 @@ while f:
                 ipdone.add(cip)
 
             # add edge for that to this
-            if edgename(f['ip'],cip) not in edgedone and edgename(cip,f['ip']) not in edgedone:
+            ename=edgename(f['ip'],cip)
+            backename=edgename(cip,f['ip'])
+            if ename not in edgedone and backename not in edgedone:
                 colours=[]
                 mask2colours(f['rcs'][recn]['ports'],colours,dynleg)
                 for col in colours:
                     gvgraph.edge(f['ip'],cip,color=col)
                 del colours
-                edgedone.add(edgename(f['ip'],cip))
+                edgedone.add(ename)
+
+    if not args.legend:
+        del dynleg
 
     # print something now and then to keep operator amused
     checkcount += 1
@@ -326,6 +347,7 @@ while f:
         gc.collect()
 
     # read next fp
+    del f
     f=getnextfprint(fp)
 
 # close file
