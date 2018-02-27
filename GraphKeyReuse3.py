@@ -360,19 +360,19 @@ for i in actualcnums:
         pass
         #print >> sys.stderr, str(e)
     # render if not too big...
-    glen=len(gvgraph.source)
-    if glen > maxglen:
-        print "Not rendering graph for cluster "+ str(i) + " - too long: " + str(glen)
-        gvgraph.save(outdir + "/graph"+str(i)+".dot")
-        notrendered.append(i)
-    else:
-        try:
-            gvgraph.render(outdir + "/graph"+str(i)+".dot")
-        except Exception as e: 
+    try:
+        glen=len(gvgraph.source)
+        if glen > maxglen:
+            print "Not rendering graph for cluster "+ str(i) + " - too long: " + str(glen)
+            gvgraph.save(outdir + "/graph"+str(i)+".dot")
             notrendered.append(i)
-            print >> sys.stderr, "Ecxeption rendering cluster: " + str(i) 
-            print >> sys.stderr, "Exception: " + str(e)
-            print >> sys.stderr, "Maybe you got bored and killed a process?"
+        else:
+            gvgraph.render(outdir + "/graph"+str(i)+".dot")
+    except Exception as e: 
+        notrendered.append(i)
+        print >> sys.stderr, "Ecxeption rendering cluster: " + str(i) 
+        print >> sys.stderr, "Exception: " + str(e)
+        print >> sys.stderr, "Maybe you got bored and killed a process?"
             
 del grr
 
