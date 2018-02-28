@@ -12,21 +12,9 @@ import gc
 # install via  "$ sudo pip install -U jsonpickle"
 import jsonpickle
 
-# using a class needs way less memory than random dicts apparently
-class OneFP():
-    __slots__ = ['ip_record','ip','asn','asndec','amazon','fprints','nsrc','rcs']
-    def __init__(self):
-        self.ip_record=-1
-        self.ip=''
-        self.asn=''
-        self.asndec=0
-        self.clusternum=0
-        self.amazon=False
-        self.fprints={}
-        self.nrcs=0
-        self.rcs={}
+from SurveyFuncs import * 
 
-# this is a dict to hold the set of keys we find
+# this is an array to hold the set of keys we find
 fingerprints=[]
 bads={}
 
@@ -136,56 +124,6 @@ del bads
 
 checkcount=0
 colcount=0
-
-# to save memory we'll encode port collision information in a 
-# compact form, we have six ports to consider 22,25,110,143,443 and 993
-# and 25==25 is diferent from 25==143
-# we use five octets, one for each local port;
-# values are bitmasks, a set bit means the key on the remote
-# port is the same as this one, so octet values can be:
-# 0x00 no match
-# 0x02 local port matches remote p25
-# 0x06 local port matches remote p25 and p143
-# etc
-
-
-# reverse map from bit# to string
-# the above could be done better using this... but meh
-portstrings=['p22','p25','p110','p143','p443','p993']
-portscols=[0x00000f,0x0000f0,0x000f00,0x00f000,0x0f0000,0xf00000]
-
-def indexport(index):
-    return portstrings[index]
-
-def portindex(pname):
-    for pind in range(0,len(portstrings)):
-        if portstrings[pind]==pname:
-            return pind
-    print >>sys.stderr, "Error - unknown port: " + pname
-    return -1
-
-def collmask(mask,k1,k2):
-    try:
-        lp=portindex(k1)
-        rp=portindex(k2)
-        intmask=int(mask,16)
-        intmask |= (1<<(rp+8*lp)) 
-        newmask="0x%012x" % intmask
-    except Exception as e: 
-        print >> sys.stderr, "collmask exception, k1: " + k1 + " k2: " + k2 + " lp:" + str(lp) + " rp: " + str(rp) + " exception: " + str(e)  
-        pass
-    return newmask
-
-def expandmask(mask):
-    emask=""
-    intmask=int(mask,16)
-    portcount=len(portstrings)
-    for i in range(0,portcount):
-        for j in range(0,portcount):
-            cmpmask = (1<<(j+8*i)) 
-            if intmask & cmpmask:
-                emask += indexport(i) + "==" + indexport(j) + ";"
-    return emask
 
 
 # this gets crapped on each time (for now)
