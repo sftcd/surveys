@@ -1,11 +1,13 @@
 #!/usr/bin/python
 import json
+import jsonpickle
+import copy
 
 # variious utilities for surveying
 
 # using a class needs way less memory than random dicts apparently
 class OneFP():
-    __slots__ = ['ip_record','ip','asn','asndec','amazon','fprints','nsrc','rcs']
+    __slots__ = ['ip_record','ip','asn','asndec','amazon','fprints','csize','nsrc','rcs']
     def __init__(self):
         self.ip_record=-1
         self.ip=''
@@ -14,8 +16,28 @@ class OneFP():
         self.clusternum=0
         self.amazon=False
         self.fprints={}
+        self.csize=1
         self.nrcs=0
         self.rcs={}
+
+def printOneFP(f):
+    print jsonpickle.encode(f)
+
+def j2o(jthing):
+    ot=OneFP()
+    #print json.dumps(jthing)
+    ot.ip=jthing['ip']
+    ot.ip_record=-jthing['ip_record']
+    ot.asn=jthing['asn']
+    ot.asndec=jthing['asndec']
+    ot.clusternum=jthing['clusternum']
+    ot.amazon=jthing['amazon']
+    ot.fprints=jthing['fprints']
+    ot.csize=jthing['csize']
+    ot.nrcs=jthing['nrcs']
+    ot.rcs=jthing['rcs']
+    #printOneFP(ot)
+    return ot
 
 # to save memory we'll encode port collision information in a 
 # compact form, we have six ports to consider 22,25,110,143,443 and 993
@@ -122,7 +144,9 @@ def getnextfprint(fp):
         line=fp.readline()
     if line:
         jthing=json.loads(jstr)
-        return jthing
+        onething=j2o(jthing)
+        del jthing
+        return onething
     else:
         return line
 

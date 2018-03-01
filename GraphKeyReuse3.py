@@ -37,6 +37,37 @@ the_format='svg'
 #the_format='png'
 #the_format='dot'
 
+# graph rendering func
+
+def rendergraph(cnum,gvgraph,dynleg,legendwanted,odir):
+    #print "Graphing cluster: " + str(cnum)
+    # optional legend...
+    if legendwanted:
+        lgr=gv.Graph(name="legend",node_attr={'shape': 'box'})
+        lgr.attr('graph',rank="source")
+        lgr.node("Cluster " + str(cnum))
+        #print "with legend" + str(dynleg)
+        for leg in dynleg:
+            ss=leg.split()
+            lgr.node(ss[0],label=ss[0],color=ss[1])
+        gvgraph.subgraph(lgr)
+    # render if not too big... this can fail due to graphviz bugginess (I assume)
+    try:
+        glen=len(gvgraph.source)
+        if glen > maxglen:
+            print "Not rendering graph for cluster "+ str(cnum) + " - too long: " + str(glen)
+            gvgraph.save(odir + "/graph"+str(cnum)+".dot")
+            return False
+        else:
+            gvgraph.render(odir + "/graph"+str(cnum)+".dot")
+            return True
+    except Exception as e: 
+        print >> sys.stderr, "Ecxeption rendering cluster: " + str(cnum) 
+        print >> sys.stderr, "Exception: " + str(e)
+        print >> sys.stderr, "Maybe you got bored and killed a process?"
+        return False
+
+
 # command line arg handling 
 parser=argparse.ArgumentParser(description='Graph the collisions found by SameKeys.py')
 parser.add_argument('-f','--file',     
@@ -97,6 +128,11 @@ checkcount=0
 grr={}
 dynlegs={}
 actualcnums=[]
+# a list of graphs we didn't end up rendering
+notrendered=[]
+clustercount=0
+# a count of how many ips we've done for each cluster
+clipsdone={}
 
 # max size of dot file we try to render
 maxglen=500000
@@ -105,54 +141,69 @@ maxglen=500000
 fp=open(args.fname,"r")
 
 f=getnextfprint(fp)
+print f
 while f:
     dynleg=set()
-    if f['clusternum']>=0 and f['nrcs']>0:
+    cnum=f.clusternum
+    csize=f.csize
+    nrcs=f.nrcs
+    if cnum>=0 and nrcs>0:
         # remember clusternum for later
         newgraph=False
-        if f['clusternum'] not in actualcnums:
+        if cnum not in actualcnums:
             newgraph=True
-            actualcnums.append(f['clusternum'])
+            actualcnums.append(cnum)
             gvgraph=gv.Graph(format=the_format,engine=the_engine)
             gvgraph.attr('graph',splines='true')
             gvgraph.attr('graph',overlap='false')
-            grr[f['clusternum']]=gvgraph
+            grr[cnum]=gvgraph
             if args.legend:
-                dynlegs[f['clusternum']]=dynleg
+                dynlegs[cnum]=dynleg
         else:
-            gvgraph=grr[f['clusternum']]
+            gvgraph=grr[cnum]
             if args.legend:
-                dynleg=dynlegs[f['clusternum']]
+                dynleg=dynlegs[cnum]
 
         # figure colour for node for this fingerprint based on ASN
-        asncol=asn2colour(f['asndec'])
+        asncol=asn2colour(f.asndec)
 
         # have we processed this node already?
-        if f['ip'] not in ipdone:
-            gvgraph.node(f['ip'],color=asncol,style="filled")
-            ipdone.add(f['ip'])
+        if f.ip not in ipdone:
+            gvgraph.node(f.ip,color=asncol,style="filled")
+            ipdone.add(f.ip)
 
         # process peers ("key sharers") for this node
-        for recn in f['rcs']:
-            cip=f['rcs'][recn]['ip']
+        for recn in f.rcs:
+            cip=f.rcs[recn]['ip']
             if cip not in ipdone:
                 try:
-                    ccol=asn2colour(f['rcs'][recn]['asndec'])
+                    ccol=asn2colour(f.rcs[recn]['asndec'])
                     gvgraph.node(cip,color=ccol,style="filled")
                 except:
                     gvgraph.node(cip,color=asncol,style="filled")
                 ipdone.add(cip)
 
             # add edge for that to this
-            ename=edgename(f['ip'],cip)
-            backename=edgename(cip,f['ip'])
+            ename=edgename(f.ip,cip)
+            backename=edgename(cip,f.ip)
             if ename not in edgedone and backename not in edgedone:
                 colours=[]
-                mask2colours(f['rcs'][recn]['ports'],colours,dynleg)
+                mask2colours(f.rcs[recn]['ports'],colours,dynleg)
                 for col in colours:
-                    gvgraph.edge(f['ip'],cip,color=col)
+                    gvgraph.edge(f.ip,cip,color=col)
                 del colours
                 edgedone.add(ename)
+    if cnum in clipsdone:
+        clipsdone[cnum] += 1
+        if clipsdone[cnum] == csize:
+            rv=rendergraph(cnum,gvgraph,dynleg,args.legend,outdir)
+            if rv:
+                print "Rendered graph for cluster " + str(cnum)
+                del grr[cnum]
+            else:
+                print "Failed to graph cluster " + str(cnum)
+    else:
+        clipsdone[cnum] = 1
 
     if not args.legend:
         del dynleg
@@ -160,7 +211,7 @@ while f:
     # print something now and then to keep operator amused
     checkcount += 1
     if checkcount % 100 == 0:
-        print >> sys.stderr, "Creating graphs, fingerprint: " + str(checkcount) + " most recent cluster " + str(f['clusternum']) + \
+        print >> sys.stderr, "Creating graphs, fingerprint: " + str(checkcount) + " most recent cluster " + str(cnum) + \
                     " IPs: " + str(len(ipdone)) + " edges: " + str(len(edgedone)) + " #clusters: " + str(len(actualcnums))
     if checkcount % 1000 == 0:
         gc.collect()
@@ -168,53 +219,30 @@ while f:
     # read next fp
     del f
     f=getnextfprint(fp)
+    #nextcnum=f.clusternum
+    # figure out if we need to remember that graph or not...
 
 # close file
 fp.close()
-
-# make a list of graphs we didn't end up rendering
-notrendered=[]
-clustercount=0
 
 for i in actualcnums:
     try:
         gvgraph=grr[i]
     except:
-        print "Cluster " + str(i) + " must have been merged - skipping"
+        print "Cluster " + str(i) + " must have been done already - skipping"
         continue
     clustercount += 1
     print "Graphing cluster: " + str(i)
-    # optional legend...
     try:
-        if args.legend:
-            lgr=gv.Graph(name="legend",node_attr={'shape': 'box'})
-            lgr.attr('graph',rank="source")
-            lgr.node("Cluster " + str(i))
-            dynleg=dynlegs[i]
-            for leg in dynleg:
-                ss=leg.split()
-                lgr.node(ss[0],label=ss[0],color=ss[1])
-            #gvgraph.subgraph(lgr,name="legend"
-            gvgraph.subgraph(lgr)
-            #gvgraph.attr('graph',rank="min")
-    except Exception as e: 
-        pass
-        #print >> sys.stderr, str(e)
-    # render if not too big...
-    try:
-        glen=len(gvgraph.source)
-        if glen > maxglen:
-            print "Not rendering graph for cluster "+ str(i) + " - too long: " + str(glen)
-            gvgraph.save(outdir + "/graph"+str(i)+".dot")
+        dynleg=dynlegs[i]
+        rv=rendergraph(i,gvgraph,dynleg,args.legend,outdir)
+        if not rv:
+            print "rendergraph failed for clusternum : " + str(i)
             notrendered.append(i)
-        else:
-            gvgraph.render(outdir + "/graph"+str(i)+".dot")
     except Exception as e: 
         notrendered.append(i)
-        print >> sys.stderr, "Ecxeption rendering cluster: " + str(i) 
-        print >> sys.stderr, "Exception: " + str(e)
-        print >> sys.stderr, "Maybe you got bored and killed a process?"
-            
+        pass
+
 del grr
 
 summary_fp=open(outdir+"/summary.txt","a+")

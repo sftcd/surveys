@@ -157,7 +157,7 @@ for i in range(0,fl):
                     elif r1.clusternum>0 and r2.clusternum==0:
                         r2.clusternum=r1.clusternum
                     elif r1.clusternum>0 and r2.clusternum>0 and r1.clusternum!=r2.clusternum:
-                        # merge 'em, check all clusters from r1 to r2 and do the merging
+                        # merge 'em, check all clusters up to r2 and do the merging
                         # into r1.clusternum from r2.clusternum
                         # note we waste a clusternum here
                         for k in range(0,j):
@@ -215,6 +215,23 @@ keyf.close()
 colcount=0
 noncolcount=0
 accumcount=0
+
+# do clustersizes
+clustersizes={}
+for f in fingerprints:
+    if f.clusternum in clustersizes:
+        clustersizes[f.clusternum]+=1
+    else:
+        clustersizes[f.clusternum]=1
+
+for f in fingerprints:
+    f.csize=clustersizes[f.clusternum]
+
+clusterf=open("clustersizes.csv","w")
+for c in clustersizes:
+    print >> clusterf, str(c) + ", " + str(clustersizes[c])
+clusterf.close()
+del clustersizes
 
 colf=open('collisions.json', 'w')
 colf.write('[\n')
