@@ -66,6 +66,7 @@ with open(args.infile,'r') as f:
     for ip in f:
         jthing={}
         jthing['ip']=ip
+        jthing['writer']="FreshGrab.py"
         ip=ip.strip() # lose the CRLF
         for port in ports:
             tof=tempfile.mkstemp()
