@@ -169,10 +169,34 @@ def mask2colours(mask, colours, dynleg):
             if intmask & cmpmask:
                 cnum=i*len(portstrings)+j
                 colcode=nportscols[cnum]
+                # old way - didn't give good colours
                 #colcode='#'+ "%06X" % (portscols[i]|portscols[j])
                 if colcode not in colours:
                     colours.append(colcode)
                     if i>j:
+                        dynleg.add(portstrings[i]+"-"+portstrings[j]+" "+colcode)
+                    else:
+                        dynleg.add(portstrings[j]+"-"+portstrings[i]+" "+colcode)
+
+def mask2fewercolours(mask, colours, dynleg):
+    intmask=int(mask,16)
+    portcount=len(portstrings)
+    for i in range(0,portcount):
+        for j in range(0,portcount):
+            cmpmask = (1<<(j+8*i)) 
+            if intmask & cmpmask:
+                cnum=i*len(portstrings)+j
+                colcode=merged_nportscols[cnum]
+                if colcode not in colours:
+                    colours.append(colcode)
+                    # recall i and j index this: portstrings=['p22','p25','p110','p143','p443','p993']
+                    if i==0 and j==0:
+                        dynleg.add("ssh"+" "+colcode)
+                    elif i==4 and j==4:
+                        dynleg.add("web"+" "+colcode)
+                    elif (i==1 or i==2 or i==3 or i==5) and (j==1 or j==2 or j==3 or j==5):
+                        dynleg.add("mail"+" "+colcode)
+                    elif i>j:
                         dynleg.add(portstrings[i]+"-"+portstrings[j]+" "+colcode)
                     else:
                         dynleg.add(portstrings[j]+"-"+portstrings[i]+" "+colcode)
