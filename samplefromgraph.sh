@@ -20,7 +20,7 @@ ips=`grep filled $gfile | awk '{print $1}'`
 count=0
 for ip in $ips
 do
-		grep $ip $srcfile >>$outfile
+		grep '"ip":'$ip $srcfile >>$outfile
 		((count=count+1))
 done
 
