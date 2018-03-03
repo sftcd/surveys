@@ -2,13 +2,16 @@
 import json
 import jsonpickle
 import copy
+import graphviz as gv
+import sys
 
 # variious utilities for surveying
 
 # using a class needs way less memory than random dicts apparently
 class OneFP():
-    __slots__ = ['ip_record','ip','asn','asndec','amazon','fprints','csize','nsrc','rcs']
+    __slots__ = ['writer','ip_record','ip','asn','asndec','amazon','fprints','csize','nsrc','rcs']
     def __init__(self):
+        self.writer='unknown'
         self.ip_record=-1
         self.ip=''
         self.asn=''
@@ -51,32 +54,43 @@ def j2o(jthing):
 # etc
 
 
+# note - had to rebuild graphviz locally for sfdp to work (and that had
+# *loads* of compiler warnings and seems to crash on some graphs) if
+# running on ubuntu version dot ok-ish works here but not sfdp
+# graphing globals
+#the_engine='circo'
+#the_engine='dot'
+#the_engine='neato'
+the_engine='sfdp'
+the_format='svg'
+#the_format='png'
+#the_format='dot'
+
 # reverse map from bit# to string
 # the above could be done better using this... but meh
-portstrings=['p22','p25','p110','p143','p443','p993']
+portstrings=['p22','p25','p110','p143','p443','p587','p993']
 
-# very old way
-portscols=[0x00000f,0x0000f0,0x000f00,0x00f000,0x0f0000,0xf00000]
-
-# new way - this is manually made symmetric around the diagonal
+# this is manually made symmetric around the diagonal
 # variant - make all the mail colours the same
 merged_nportscols=[ \
-        'black',     'bisque', 'yellow', 'aquamarine','darkgray',    'magenta', \
-        'bisque',    'blue',   'blue',   'blue',      'violet',      'blue', \
-        'yellow',    'blue',   'blue',   'blue',      'coral',       'blue', \
-        'aquamarine','blue',   'blue',   'blue',      'darkkhaki',   'blue', \
-        'darkgray',  'violet', 'coral',  'darkkhaki', 'orange', 'darkseagreen', \
-        'magenta',    'blue',   'blue',   'blue',      'darkseagreen','blue', ] 
+        'black',     'bisque', 'yellow', 'aquamarine','darkgray',    'chocolate',    'magenta', \
+        'bisque',    'blue',   'blue',   'blue',      'violet',      'blue',         'blue', \
+        'yellow',    'blue',   'blue',   'blue',      'coral',       'blue',         'blue', \
+        'aquamarine','blue',   'blue',   'blue',      'darkkhaki',   'blue',         'blue', \
+        'darkgray',  'violet', 'coral',  'darkkhaki', 'orange',      'darkseagreen', 'blue', \
+        'turquoise', 'blue',   'blue',   'blue',      'blue',        'blue',         'blue',
+        'magenta',   'blue',   'blue',   'blue',      'darkseagreen','blue',         'blue', ] 
 
 # new way - individual colours per port-pair  - this is manually made symmetric around the diagonal
 unmerged_nportscols=[ \
-        'black',     'bisque',        'yellow', 'aquamarine', 'darkgray',     'magenta', \
-        'bisque',    'blue',          'blanchedalmond',  'crimson',    'violet',    'brown', \
-        'yellow', 'blanchedalmond','chartreuse',      'cyan',       'coral',        'darkred', \
-        'aquamarine','crimson',       'cyan',            'darkblue',   'darkkhaki',    'darksalmon', \
-        'darkgray',  'violet',     'coral',           'darkkhaki',  'orange',  'darkseagreen', \
-        'magenta',     'brown',         'darkred',         'darksalmon', 'darkseagreen', 'maroon', ]
-
+        'black',     'bisque',        'yellow',          'aquamarine', 'darkgray',     'turquoise',      'magenta', \
+        'bisque',    'blue',          'blanchedalmond',  'crimson',    'violet',       'wheat',          'brown', \
+        'yellow',    'blanchedalmond','chartreuse',      'cyan',       'coral',        'yellowgreen',    'darkred', \
+        'aquamarine','crimson',       'cyan',            'darkblue',   'darkkhaki',    'chocolate',      'darksalmon', \
+        'darkgray',  'violet',        'coral',           'darkkhaki',  'orange',       'cornsilk',       'darkseagreen', \
+        'turquoise', 'wheat',         'yellowgreen',     'chocolate',  'cornsilk',     'deeppink',       'deepskyblue', \
+        'magenta',   'brown',         'darkred',         'darksalmon', 'darkseagreen', 'deepskyblue',    'maroon', \
+        ]
 
 # pick one of these - the first merges many mail port combos
 # leading to clearer graphs, the 2nd keeps all the details
@@ -99,7 +113,7 @@ def collmask(mask,k1,k2):
         rp=portindex(k2)
         intmask=int(mask,16)
         intmask |= (1<<(rp+8*lp)) 
-        newmask="0x%012x" % intmask
+        newmask="0x%016x" % intmask
     except Exception as e: 
         print >> sys.stderr, "collmask exception, k1: " + k1 + " k2: " + k2 + " lp:" + str(lp) + " rp: " + str(rp) + " exception: " + str(e)  
         pass
@@ -169,8 +183,6 @@ def mask2colours(mask, colours, dynleg):
             if intmask & cmpmask:
                 cnum=i*len(portstrings)+j
                 colcode=nportscols[cnum]
-                # old way - didn't give good colours
-                #colcode='#'+ "%06X" % (portscols[i]|portscols[j])
                 if colcode not in colours:
                     colours.append(colcode)
                     if i>j:
@@ -189,12 +201,12 @@ def mask2fewercolours(mask, colours, dynleg):
                 colcode=merged_nportscols[cnum]
                 if colcode not in colours:
                     colours.append(colcode)
-                    # recall i and j index this: portstrings=['p22','p25','p110','p143','p443','p993']
+                    # recall i and j index this: portstrings=['p22','p25','p110','p143','p443','p587','p993']
                     if i==0 and j==0:
                         dynleg.add("ssh"+" "+colcode)
                     elif i==4 and j==4:
                         dynleg.add("web"+" "+colcode)
-                    elif (i==1 or i==2 or i==3 or i==5) and (j==1 or j==2 or j==3 or j==5):
+                    elif (i==1 or i==2 or i==3 or i==5 or i==6) and (j==1 or j==2 or j==3 or j==5 or j==6):
                         dynleg.add("mail"+" "+colcode)
                     elif i>j:
                         dynleg.add(portstrings[i]+"-"+portstrings[j]+" "+colcode)
@@ -211,12 +223,9 @@ def printlegend():
     c=0
     for i in range(0,portcount):
         for j in range(0,portcount):
-            #colcode='#'+ "%06X" % (portscols[i]|portscols[j])
             cnum=i*len(portstrings)+j
             colcode=nportscols[cnum]
             portpair = portstrings[i] + "-" + portstrings[j] 
-            #print portstrings[i] + "-" + portstrings[j] + ": " + colcode 
-            #leg.edge(portstrings[i],portstrings[j],label=str(cnum),color=colcode)
             leg.edge(portstrings[i],portstrings[j],color=colcode)
     leg.render("legend.dot")
 

@@ -4,6 +4,7 @@
 # CensysIESMTP.py
 
 # figure out if we can get port 587 ever - looks like not, for now anyway
+# my FreshGrab's do have that but we don't for censys.io's Nov 2017 scans
 
 import sys
 import json
@@ -27,7 +28,12 @@ with open(sys.argv[1],'r') as f:
         somekey=False
         thisone=OneFP()
         thisone.ip_record=overallcount
-        thisone.ip=j_content['ip']
+        thisone.ip=j_content['ip'].strip()
+
+        #print "Doing " + thisone.ip
+
+        if 'writer' in j_content:
+            thisone.writer=j_content['writer']
 
         # amazon is the chief susspect for key sharing, via some 
         # kind of fronting, at least in .ie
@@ -42,42 +48,72 @@ with open(sys.argv[1],'r') as f:
             thisone.asn="unknown"
 
         try:
-            fp=j_content['p22']['ssh']['v2']['server_host_key']['fingerprint_sha256'] 
+            if thisone.writer=="FreshGrab.py":
+                fp=j_content['p22']['data']['xssh']['key_exchange']['server_host_key']['fingerprint_sha256'] 
+            else:
+                fp=j_content['p22']['ssh']['v2']['server_host_key']['fingerprint_sha256'] 
             thisone.fprints['p22']=fp
             somekey=True
         except Exception as e: 
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
         try:
-            fp=j_content['p25']['smtp']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+            if thisone.writer=="FreshGrab.py":
+                fp=j_content['p25']['data']['tls']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+            else:
+                fp=j_content['p25']['smtp']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
             thisone.fprints['p25']=fp
             somekey=True
         except Exception as e: 
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
         try:
-            fp=j_content['p110']['pop3']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+            if thisone.writer=="FreshGrab.py":
+                fp=j_content['p110']['data']['tls']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+            else:
+                fp=j_content['p110']['pop3']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
             thisone.fprints['p110']=fp
             somekey=True
         except Exception as e: 
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
         try:
-            fp=j_content['p143']['imap']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
+            if thisone.writer=="FreshGrab.py":
+                fp=j_content['p143']['data']['tls']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+            else:
+                fp=j_content['p143']['imap']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
             thisone.fprints['p143']=fp
             somekey=True
         except Exception as e: 
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
         try:
-            fp=j_content['p443']['https']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
+            if thisone.writer=="FreshGrab.py":
+                fp=j_content['p443']['data']['http']['response']['request']['tls_handshake']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+            else:
+                fp=j_content['p443']['https']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
             thisone.fprints['p443']=fp
             somekey=True
         except Exception as e: 
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
+
         try:
-            fp=j_content['p993']['imaps']['tls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
+            if thisone.writer=="FreshGrab.py":
+                fp=j_content['p587']['data']['tls']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+            else:
+                fp=j_content['p587']['imaps']['tls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
+            thisone.fprints['p587']=fp
+            somekey=True
+        except Exception as e: 
+            #print >> sys.stderr, "fprint exception " + str(e)
+            pass
+
+        try:
+            if thisone.writer=="FreshGrab.py":
+                fp=j_content['p993']['data']['tls']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+            else:
+                fp=j_content['p993']['imaps']['tls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
             thisone.fprints['p993']=fp
             somekey=True
         except Exception as e: 

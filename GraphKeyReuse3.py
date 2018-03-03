@@ -31,18 +31,6 @@ toobiggraph=10
 # deffault output directory
 outdir="graphs"
 
-# note - had to rebuild graphviz locally for sfdp to work (and that had
-# *loads* of compiler warnings and seems to crash on some graphs) if
-# running on ubuntu version dot ok-ish works here but not sfdp
-# graphing globals
-#the_engine='circo'
-#the_engine='dot'
-#the_engine='neato'
-the_engine='sfdp'
-the_format='svg'
-#the_format='png'
-#the_format='dot'
-
 # graph rendering func
 
 def rendergraph(cnum,gvgraph,dynleg,legendwanted,odir):
@@ -92,7 +80,7 @@ args=parser.parse_args()
 
 
 # if this then just print legend
-if args.fname=='' and args.legend:
+if args.fname is None and args.legend:
     print args
     printlegend()
     sys.exit(0)

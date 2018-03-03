@@ -65,9 +65,9 @@ with open(args.infile,'r') as f:
     ipcount=0
     for ip in f:
         jthing={}
+        ip=ip.strip() # lose the CRLF
         jthing['ip']=ip
         jthing['writer']="FreshGrab.py"
-        ip=ip.strip() # lose the CRLF
         for port in ports:
             tof=tempfile.mkstemp()
             command='echo -n "' + ip + '" | zgrab ' + pparms[port] + " -output-file=" + tof[1] + " >> " + err_fn + " 2>&1"
