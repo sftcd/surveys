@@ -79,9 +79,15 @@ with open(args.infile,'r') as f:
         ip=ip.strip() # lose the CRLF
         jthing['ip']=ip
         jthing['writer']="FreshGrab.py"
+        # this is awkward - need to provide IP input in a file as the pipe we'd usually
+        # use to pipe input to zgrab causes a file descriptor to be consumed in a way
+        # that's not recovered. So we'll put the IP in a temp file and use that.
+        tif=tempfile.mkstemp()
+        tif.write(ip)
+        tif.close()
         for port in ports:
             tof=tempfile.mkstemp()
-            command='echo -n "' + ip + '" | zgrab ' + pparms[port] + " -output-file=" + tof[1] + " >> " + err_fn + " 2>&1"
+            command='zgrab ' + pparms[port] + " -input-file " + tif[1] + " -output-file=" + tof[1] + " >> " + err_fn + " 2>&1"
             print command 
             rv=os.system(command)
             if rv:
@@ -93,6 +99,7 @@ with open(args.infile,'r') as f:
                         jthing['p'+port]=json.loads(line)
                 resf.close()
             os.remove(tof[1])
+        os.remove(tif[1])
         bstr=jsonpickle.encode(jthing)
         del jthing
         out_f.write(bstr+"\n")
