@@ -39,7 +39,7 @@ pparms={
         '25': '-port 25 -smtp -starttls -banners',
         '110': '-port 110 -pop3 -starttls -banners',
         '143': '-port 143 -imap -starttls -banners',
-        '443': '-port 443 -tls -http="/" -timeout 3',
+        '443': '-port 443 -tls -http /',
         '587': '-port 587 -smtp -starttls -banners',
         '993': '-port 993 -imap -tls -banners',
         }
