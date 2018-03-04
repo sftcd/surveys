@@ -70,16 +70,22 @@ if args.errfile is not None:
 # default to a 100ms wait between zgrab calls
 defsleep=0.1
 
+print "Running ",sys.argv[0:]," starting at",time.asctime(time.localtime(time.time()))
+
 sleepval=defsleep
 if args.sleepsecs is not None:
     sleepval=float(args.sleepsecs)
     print "Will sleep for " + str(sleepval) + " seconds between zgrabs"
+
+# keep track of how long this is taking per ip
+peripaverage=0
 
 out_f=open(args.outfile,"w")
 
 with open(args.infile,'r') as f:
     checkcount=0
     for ip in f:
+        ipstart=time.time()
         jthing={}
         ip=ip.strip() # lose the CRLF
         jthing['ip']=ip
@@ -99,7 +105,14 @@ with open(args.infile,'r') as f:
                 # something goes wrong, we just record what
                 jthing['p'+port]=str(e)
 
-        #os.remove(tif[1])
+        # update average
+        ipend=time.time()
+        thistime=ipend-ipstart
+        peripaverage=((checkcount*peripaverage)+thistime)/(checkcount+1)
+        #print ip,"time taken:",str(thistime),"average:",str(peripaverage)
+        jthing['duration']=thistime
+        jthing['average']=peripaverage
+
         bstr=jsonpickle.encode(jthing)
         del jthing
         out_f.write(bstr+"\n")
@@ -110,11 +123,13 @@ with open(args.infile,'r') as f:
 
         # print something now and then to keep operator amused
         checkcount += 1
-        if checkcount % 100 == 0:
-            print >> sys.stderr, "Freshly grabbing... did: " + str(checkcount) + " most recent ip " + ip
+        #if checkcount % 100 == 0:
+        if checkcount % 5 == 0:
+            print >> sys.stderr, "Freshly grabbing... did: " + str(checkcount) + " most recent ip " + ip + " average time/ip: " + str(peripaverage)
         if checkcount % 1000 == 0:
             gc.collect()
 
 out_f.close()
 
 
+print "Ran ",sys.argv[0:]," finished at",time.asctime(time.localtime(time.time())),"average seconds/ip:",peripaverage

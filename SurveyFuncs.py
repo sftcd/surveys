@@ -230,7 +230,11 @@ def printlegend():
     leg.render("legend.dot")
 
 def asn2colour(asn):
-    return '#' + "%06X" % (int(asn)&0xffffff)
+    asni=int(asn)
+    if asni==0:
+        return '#A5A5A5'
+    else:
+        return '#' + "%06X" % (asni&0xffffff)
 
 def ip2int(ip):
     sip=ip.split(".")
