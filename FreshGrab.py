@@ -3,6 +3,8 @@
 import os, sys, argparse, tempfile, gc
 import json, jsonpickle
 import time
+import subprocess
+import copy
 
 # use zgrab to grab fresh records for a set of IPs
 
@@ -28,13 +30,16 @@ args=parser.parse_args()
 # default (all) ports to scan - added in 587 for fun (wasn't in original scans)
 defports=['22', '25', '110', '143', '443', '587', '993']
 
+# default timeout for zgrab, in seconds
+ztimeout=' -timeout 2'
+
 # port parameters
 pparms={ 
         '22': '-port 22 -xssh',
         '25': '-port 25 -smtp -starttls -banners',
         '110': '-port 110 -pop3 -starttls -banners',
         '143': '-port 143 -imap -starttls -banners',
-        '443': '-port 443 -tls -http="/"',
+        '443': '-port 443 -tls -http="/" -timeout 3',
         '587': '-port 587 -smtp -starttls -banners',
         '993': '-port 993 -imap -tls -banners',
         }
@@ -79,28 +84,22 @@ with open(args.infile,'r') as f:
         ip=ip.strip() # lose the CRLF
         jthing['ip']=ip
         jthing['writer']="FreshGrab.py"
-        # this is awkward - need to provide IP input in a file as the pipe we'd usually
-        # use to pipe input to zgrab causes a file descriptor to be consumed in a way
-        # that's not recovered. So we'll put the IP in a temp file and use that.
-        tif=tempfile.mkstemp()
-        ti=open(tif[1],"w")
-        ti.write(ip)
-        ti.close()
         for port in ports:
-            tof=tempfile.mkstemp()
-            command='zgrab ' + pparms[port] + " -input-file " + tif[1] + " -output-file=" + tof[1] + " >> " + err_fn + " 2>&1"
-            #print command 
-            rv=os.system(command)
-            if rv:
-                print "system call returned " + str(rv)
-            else:
-                # accumulate results
-                with open(tof[1],"r") as resf:
-                    for line in resf:
-                        jthing['p'+port]=json.loads(line)
-                resf.close()
-            os.remove(tof[1])
-        os.remove(tif[1])
+            try:
+                cmd='zgrab '+  pparms[port] + ztimeout
+                proc=subprocess.Popen(cmd.split(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+                pc=proc.communicate(input=ip.encode())
+                lines=pc[0].split('\n')
+                jinfo=json.loads(lines[1])
+                jres=json.loads(lines[0])
+                #print jinfo
+                #print jres
+                jthing['p'+port]=jres
+            except Exception as e:
+                # something goes wrong, we just record what
+                jthing['p'+port]=str(e)
+
+        #os.remove(tif[1])
         bstr=jsonpickle.encode(jthing)
         del jthing
         out_f.write(bstr+"\n")
