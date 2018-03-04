@@ -83,12 +83,13 @@ with open(args.infile,'r') as f:
         # use to pipe input to zgrab causes a file descriptor to be consumed in a way
         # that's not recovered. So we'll put the IP in a temp file and use that.
         tif=tempfile.mkstemp()
-        tif.write(ip)
-        tif.close()
+        ti=open(tif[1],"w")
+        ti.write(ip)
+        ti.close()
         for port in ports:
             tof=tempfile.mkstemp()
             command='zgrab ' + pparms[port] + " -input-file " + tif[1] + " -output-file=" + tof[1] + " >> " + err_fn + " 2>&1"
-            print command 
+            #print command 
             rv=os.system(command)
             if rv:
                 print "system call returned " + str(rv)
