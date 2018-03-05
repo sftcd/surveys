@@ -40,39 +40,31 @@ if args.outfile is not None and os.path.isfile(args.outfile) and not os.access(a
 # default to a 100ms wait between zgrab calls
 defsleep=0.1
 
-print "Running ",sys.argv[0:]," starting at",time.asctime(time.localtime(time.time()))
-
-sleepval=defsleep
-if args.sleepsecs is not None:
-    sleepval=float(args.sleepsecs)
-    print "Will sleep for " + str(sleepval) + " seconds between ssh-keyscans"
-
 if args.outfile is not None:
     out_f=open(args.outfile,"w")
 else:
     out_f=sys.stdout
 
+print >>out_f, "Running ",sys.argv[0:]," starting at",time.asctime(time.localtime(time.time()))
+
+sleepval=defsleep
+if args.sleepsecs is not None:
+    sleepval=float(args.sleepsecs)
+    print >>out_f, "Will sleep for " + str(sleepval) + " seconds between ssh-keyscans"
+
 def gethostkey(ip):
     rv=[]
     try:
         cmd='/usr/bin/ssh-keyscan ' + ip
-        #print "\tTrying",cmd,ip
         proc=subprocess.Popen(cmd.split(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         time.sleep(sleepval)
         pc=proc.communicate()
         lines=pc[0].split('\n')
-        #print "\t",lines
         for x in range(0,len(lines)):
-            #print "\tlines",x,"|",lines[x],"|"
             foo=lines[x].split()
-            #print "\tfoo","|",foo,"|"
             if foo[2]!='':
                 rv.append(foo[2])
-        #print "\trv:",rv
     except Exception as e:
-        # something goes wrong, we just record what
-        #print "\tErrorwith",ip,cmd,str(e)
-        #rv.append("error")
         pass
     return rv
 
@@ -84,7 +76,8 @@ def anymatch(one,other):
                     #print "anymatch",x,y
                     return True
     except Exception as e:
-        print "nomatch: x",x,"y",y,e
+        #print >>out_f, "nomatch: x",x,"y",y,e
+        pass
     return False
 
 # mainline processing
@@ -102,7 +95,7 @@ while f:
     ipcount+=1
     ip=f.ip
     if 'p22' not in f.fprints:
-        print "Ignoring",ip
+        print >>out_f, "Ignoring",ip,"no SSH involved"
     else:
         hkey=gethostkey(ip)
         ipsdone[ip]=hkey
@@ -111,7 +104,7 @@ while f:
             str_colls=f.rcs[ind]['str_colls']
             if 'p22' in str_colls:
                 ttcount+=1
-                print "Checking",ip,"vs",pip
+                print >>out_f, "Checking",ip,"vs",pip
                 if pip in ipsdone:
                     pkey=ipsdone[pip]
                 else:
@@ -120,11 +113,17 @@ while f:
                 if anymatch(pkey,hkey):
                     matches+=1
                 else:
-                    print "EEK - Discrepency between",ip,"and",pip
-                    print hkey
-                    print pkey
+                    print >>out_f, "EEK - Discrepency between",ip,"and",pip
+                    print >>out_f, hkey
+                    print >>out_f, pkey
                     mismatches+=1
     f=getnextfprint(fp)
 
-print ipcount,ttcount,matches,mismatches
-#print ipsdone
+print >>out_f, "ipcount,ttcount,matches,mismatches"
+print >>out_f, ipcount,ttcount,matches,mismatches
+#print >>out_f, ipsdone
+
+print >>out_f, "Ran ",sys.argv[0:]," started at ",time.asctime(time.localtime(time.time()))
+
+if args.outfile:
+    out_f.close()
