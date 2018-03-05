@@ -101,30 +101,29 @@ f=getnextfprint(fp)
 while f:
     ipcount+=1
     ip=f.ip
-    if ip in ipsdone:
-        print "Did",ip,ipcount
-    elif 'p22' not in f.fprints:
-        print "Ignoring",ip,ipcount
+    if 'p22' not in f.fprints:
+        print "Ignoring",ip
     else:
-        ttcount+=1
-        print "Checking",ip,ipcount
         hkey=gethostkey(ip)
         ipsdone[ip]=hkey
         for ind in f.rcs:
             pip=f.rcs[ind]['ip']
-            print "will try",pip,ipcount
-            if pip in ipsdone:
-                pkey=ipsdone[pip]
-            else:
-                pkey=gethostkey(pip)
-                ipsdone[pip]=pkey
-            if anymatch(pkey,hkey):
-                matches+=1
-            else:
-                print "EEK - Discrepency between",ip,"and",pip
-                print hkey
-                print pkey
-                mismatches+=1
+            str_colls=f.rcs[ind]['str_colls']
+            if 'p22' in str_colls:
+                ttcount+=1
+                print "Checking",ip,"vs",pip
+                if pip in ipsdone:
+                    pkey=ipsdone[pip]
+                else:
+                    pkey=gethostkey(pip)
+                    ipsdone[pip]=pkey
+                if anymatch(pkey,hkey):
+                    matches+=1
+                else:
+                    print "EEK - Discrepency between",ip,"and",pip
+                    print hkey
+                    print pkey
+                    mismatches+=1
     f=getnextfprint(fp)
 
 print ipcount,ttcount,matches,mismatches
