@@ -45,7 +45,7 @@ pparms={
         }
 
 def usage():
-    print >>sys.stderr, "usage: " + sys.argv[0] + " -i <infile> -o <putfile> [-p <portlist>]"
+    print >>sys.stderr, "usage: " + sys.argv[0] + " -i <infile> -o <putfile> [-p <portlist>] [-s <sleepsecs>]"
     sys.exit(1)
 
 ports=defports
