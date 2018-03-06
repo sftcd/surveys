@@ -4,6 +4,7 @@ import jsonpickle
 import copy
 import graphviz as gv
 import sys
+import geoip2.database
 
 # variious utilities for surveying
 
@@ -253,3 +254,40 @@ def edgename(ip1,ip2):
     del int1
     del int2
     return int3
+
+# MaxMind stuff
+
+mmdbdir='/home/stephen/code/surveys/mmdb/'
+
+def mm_setup():
+    global asnreader
+    global cityreader
+    global countryreader
+    asnreader=geoip2.database.Reader(mmdbdir+'GeoLite2-ASN.mmdb')
+    cityreader=geoip2.database.Reader(mmdbdir+'GeoLite2-City.mmdb')
+    countryreader=geoip2.database.Reader(mmdbdir+'GeoLite2-Country.mmdb')
+
+def mm_info(ip):
+    rv={}
+    rv['ip']=ip
+    asnresponse=asnreader.asn(ip)
+    rv['asndec']=asnresponse.autonomous_system_number
+    rv['asn']=asnresponse.autonomous_system_organization
+    cityresponse=cityreader.city(ip)
+    countryresponse=countryreader.country(ip)
+    #print asnresponse
+    #print cityresponse
+    rv['lat']=cityresponse.location.latitude
+    rv['long']=cityresponse.location.longitude
+    #print "\n"
+    #print "\n"
+    #print countryresponse
+    rv['cc']=cityresponse.country.iso_code
+    if cityresponse.country.iso_code != countryresponse.country.iso_code:
+        rv['cc-city']=cityresponse.country.iso_code
+    return rv
+
+# mm test code
+#mm_setup()
+#foo=mm_info(sys.argv[1])
+#print foo

@@ -163,6 +163,20 @@ while f:
                 dynleg=dynlegs[cnum]
 
         # figure colour for node for this fingerprint based on ASN
+        if f.asndec==0 and f.asn=="unknown":
+            # look that chap up ourselves
+            mm_inited=False
+            if not mm_inited:
+                mm_setup()
+                mm_inited=True
+            asninfo=mm_info(thisone.ip)
+            #print "fixing up asn info",asninfo
+            f.asn=asninfo['asn']
+            f.asndec=asninfo['asndec']
+            if asninfo['cc'] != 'IE' and asninfo['cc'] != 'EE':
+                # TODO: what to actually if the country-code is (now) wrong?
+                print "Bad country for ip",f.ip,asninfo['cc']
+
         asncol=asn2colour(f.asndec)
 
         # have we processed this node already?

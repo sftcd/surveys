@@ -24,6 +24,7 @@ with open(sys.argv[1],'r') as f:
     badcount=0
     goodcount=0
     for line in f:
+        badrec=False
         j_content = json.loads(line)
         somekey=False
         thisone=OneFP()
@@ -45,7 +46,19 @@ with open(sys.argv[1],'r') as f:
             thisone.asn=asn
             thisone.asndec=asndec
         except:
-            thisone.asn="unknown"
+            # look that chap up ourselves
+            mm_inited=False
+            if not mm_inited:
+                mm_setup()
+                mm_inited=True
+            asninfo=mm_info(thisone.ip)
+            #print "fixing up asn info",asninfo
+            thisone.asn=asninfo['asn']
+            thisone.asndec=asninfo['asndec']
+            if asninfo['cc'] != 'IE' and asninfo['cc'] != 'EE':
+                # TODO: what to actually if the country-code is (now) wrong?
+                print "Bad country for ip",thisone.ip,asninfo['cc']
+                badrec=True
 
         try:
             if thisone.writer=="FreshGrab.py":
@@ -120,7 +133,7 @@ with open(sys.argv[1],'r') as f:
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
 
-        if somekey:
+        if not badrec and somekey:
             goodcount += 1
             fingerprints.append(thisone)
         else:
