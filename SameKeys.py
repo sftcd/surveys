@@ -263,11 +263,25 @@ for f in fingerprints:
 for f in fingerprints:
     f.csize=clustersizes[f.clusternum]
 
+histogram={}
 clusterf=open("clustersizes.csv","w")
+print >>clusterf, "clusternum,size"
 for c in clustersizes:
     print >> clusterf, str(c) + ", " + str(clustersizes[c])
-clusterf.close()
+    if clustersizes[c] in histogram:
+        histogram[clustersizes[c]]= histogram[clustersizes[c]]+1
+    else:
+        histogram[clustersizes[c]]=1
+print >>clusterf, "\n"
+print >>clusterf, "clustersize,#clusters,collider"
+# "collider" is y or n, so we mark the special "no-external collisions cluster" with an "n"
+for h in histogram:
+    if h==clustersizes[0]:
+        print >> clusterf, str(h) + "," + str(histogram[h]) + ",n"
+    else:
+        print >> clusterf, str(h) + "," + str(histogram[h]) + ",y"
 del clustersizes
+clusterf.close()
 
 colf=open('collisions.json', 'w')
 colf.write('[\n')
