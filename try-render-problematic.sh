@@ -4,9 +4,32 @@
 
 # should we try one or all engines/formats?
 all=False
+seleng=False
 if [ "$1" == "--all" ]
 then
 		all=True
+elif [ "$1" == "--sfdp" ]
+then
+		seleng='sfdp'
+elif [ "$1" == "--neato" ]
+then
+		seleng='neato'
+elif [ "$1" == "--dot" ]
+then
+		seleng='dot'
+elif [ "$1" == "--fdp" ]
+then
+		seleng='fdp'
+elif [ "$1" == "--circo" ]
+then
+		seleng='circo'
+elif [ "$1" == "--twopi" ]
+then
+		seleng='twopi'
+elif [ "$#" != "0" ]
+then
+	echo "usage: $0 [--all|--sftp|--neato|--dot|--fdp|--circo|--twopi]"
+	exit 1
 fi
 
 # GraphKeyReUse3.py produces a summary file at the end that
@@ -35,26 +58,36 @@ if [ "$all" == "True" ]
 then
 	engine=$engines
 	format=$formats
+elif [ "$seleng" != "False" ]
+then
+	engine=$seleng
 fi
 
 for eng in $engine
 do
-	for fmt in $format
+	engparms=""
+	case $eng in
+		neato )
+			engparms="-Gepsilon=1.5"
+			;;
+	esac
+	for gr in $list
 	do
-		for gr in $list
+		for fmt in $format
 		do
 			# don't re-do already done stuff
 			target=graph$gr.dot.$fmt
 			if [ ! -f $target ]
 			then
 				echo "Trying $gr..."
-				timeout 120s $eng -Tsvg graph$gr.dot >$target
+				timeout 120s $eng $engparms -T$fmt graph$gr.dot >$target
 				if (( $? != 0 ))
 				then
 					mv $target failed-$gr.dot.$fmt
 				fi
 			else
 				echo "Skipping $gr..."
+				break
 			fi
 		done
 	done
