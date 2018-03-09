@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# check if there are any non dna_name SANS in the output from
+# check if there are any non dns_name SANS in the output from
 # CensysIESMTP.py
 
 import sys
