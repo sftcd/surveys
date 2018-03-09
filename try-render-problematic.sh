@@ -45,6 +45,12 @@ list=`cat summary.txt | grep "not rendered" \
 		| sed -e 's/\].*$//' \
 		| sed -e 's/, / /g'`
 
+if [ "$list" == "" ]
+then
+	echo "Nothing to do"
+	exit 0
+fi
+
 # which graphviz engine
 engines="sfdp neato dot fdp circo twopi"
 # default to 1st from list above
