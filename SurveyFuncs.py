@@ -25,6 +25,7 @@ import copy
 import graphviz as gv
 import sys
 import geoip2.database
+from dateutil import parser as dparser  # for parsing time from comand line and certs
 
 # variious utilities for surveying
 
@@ -350,49 +351,43 @@ def mm_info(ip):
 # well as p25
 # scandate is needed to check if cert was expired at time of
 # scan
-def get_tls(count,tls,ip,tlsdets,scandate):
+def get_tls(tls,ip,tlsdets,scandate):
+    #print tls
     try:
         # we'll put each in a try/except to set true/false values
         # would chain work in browser
-        try:
-            tlsdets['browser_trusted']=str(tls['validation']['browser_trusted'])
-        except:
-            tlsdets['browser_trusted']='exception'
-        try:
-            tlsdets['self_signed']=str(tls['certificate']['parsed']['signature']['self_signed'])
-        except:
-            tlsdets['self_signed']='exception'
-        try:
-            tlsdets['cipher_suite']=tls['cipher_suite']['name']
-        except:
-            tlsdets['cipher_suite']='exception'
-        try:
-            notbefore=parser.parse(tls['certificate']['parsed']['validity']['start'])
-            notafter=parser.parse(tls['certificate']['parsed']['validity']['end'])
-            if (notbefore <= scandate and notafter > scandate):
-                tlsdets['validthen']='good'
-            elif (notbefore > scandate):
-                tlsdets['validthen']='too-early'
-            elif (notafter < scandate):
-                tlsdets['validthen']='expired'
-            tlsdets['validthen-date']=scandate
-        except Exception as e: 
-            #print >> sys.stderr, "get_tls error for ip: " + ip + " record:" + str(count) + " " + str(e)
-            tlsdets['validthen']='exception'
-        try:
-            now=datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
-            if (notbefore <= now and notafter > now):
-                tlsdets['validnow']='good'
-            elif (notbefore > now):
-                tlsdets['validnow']='too-early'
-            elif (notafter < now):
-                tlsdets['validnow']='expired'
-            tlsdets['validnow-date']=now
-        except Exception as e: 
-            #print >> sys.stderr, "get_tls error for ip: " + ip + " record:" + str(count) + " " + str(e)
-            tlsdets['validnow']='exception'
+        # two flavours of TLS struct - one from Censys and one from local zgrabs
+        # first is the local variant, 2nd censys.io
+        if 'server_hello' in tls:
+            # local
+            tlsdets['cipher_suite']=tls['server_hello']['cipher_suite']['value']
+        else:
+            # censys.io
+            tlsdets['cipher_suite']=tls['server_hello']['cipher_suite']['value']
+        if 'server_certificates' in tls:
+            # local
+            tlsdets['browser_trusted']=tls['server_certificates']['validation']['browser_trusted']
+            tlsdets['self_signed']=tls['server_certificates']['certificate']['parsed']['signature']['self_signed']
+            tlsdets['rsalen']=tls['server_certificates']['certificate']['parsed']['subject_key_info']['rsa_public_key']['length']
+            notbefore=dparser.parse(tls['server_certificates']['certificate']['parsed']['validity']['start'])
+            notafter=dparser.parse(tls['server_certificates']['certificate']['parsed']['validity']['end'])
+        else:
+            # censys.io
+            tlsdets['browser_trusted']=tls['validation']['browser_trusted']
+            tlsdets['self_signed']=tls['certificate']['parsed']['signature']['self_signed']
+            tlsdets['rsalen']=tls['certificate']['parsed']['subject_key_info']['rsa_public_key']['length']
+            notbefore=dparser.parse(tls['certificate']['parsed']['validity']['start'])
+            notafter=dparser.parse(tls['certificate']['parsed']['validity']['end'])
+
+        if (notbefore <= scandate and notafter > scandate):
+            tlsdets['timely']=True
+        elif (notbefore > scandate):
+            tlsdets['timely']=False
+        elif (notafter < scandate):
+            tlsdets['timely']=False
+        tlsdets['validthen-date']=scandate
     except Exception as e: 
-        #print >> sys.stderr, "get_tls error for ip: " + ip + " record:" + str(count) + " " + str(e)
+        print >>sys.stderr, "get_tls exception" + str(e)
         pass
     return True
 

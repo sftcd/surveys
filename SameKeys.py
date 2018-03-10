@@ -118,6 +118,10 @@ with open(infile,'r') as f:
                 j_content['wrong_country']=asninfo['cc']
                 badrec=True
 
+        analysis={}
+        for pstr in portstrings:
+            analysis[pstr]={}
+
         try:
             if thisone.writer=="FreshGrab.py":
                 fp=j_content['p22']['data']['xssh']['key_exchange']['server_host_key']['fingerprint_sha256'] 
@@ -131,8 +135,10 @@ with open(infile,'r') as f:
         try:
             if thisone.writer=="FreshGrab.py":
                 fp=j_content['p25']['data']['tls']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+                get_tls(j_content['25']['data']['tls'],j_content['ip'],analysis['p25'],scandate)
             else:
                 fp=j_content['p25']['smtp']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+                get_tls(j_content['p25']['pop3']['starttls']['tls'],j_content['ip'],analysis['p25'],scandate)
             thisone.fprints['p25']=fp
             somekey=True
         except Exception as e: 
@@ -141,8 +147,10 @@ with open(infile,'r') as f:
         try:
             if thisone.writer=="FreshGrab.py":
                 fp=j_content['p110']['data']['tls']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+                get_tls(j_content['p110']['data']['tls'],j_content['ip'],analysis['p110'],scandate)
             else:
                 fp=j_content['p110']['pop3']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+                get_tls(j_content['p110']['pop3']['starttls']['tls'],j_content['ip'],analysis['p110'],scandate)
             thisone.fprints['p110']=fp
             somekey=True
         except Exception as e: 
@@ -151,8 +159,10 @@ with open(infile,'r') as f:
         try:
             if thisone.writer=="FreshGrab.py":
                 fp=j_content['p143']['data']['tls']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+                get_tls(j_content['p143']['data']['tls'],j_content['ip'],analysis['p143'],scandate)
             else:
                 fp=j_content['p143']['imap']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
+                get_tls(j_content['p143']['pop3']['starttls']['tls'],j_content['ip'],analysis['p143'],scandate)
             thisone.fprints['p143']=fp
             somekey=True
         except Exception as e: 
@@ -199,9 +209,9 @@ with open(infile,'r') as f:
             badcount += 1
         overallcount += 1
         if overallcount % 100 == 0:
-            # exit early for debug purposes
-            #break
             print >> sys.stderr, "Reading fingerprints, did: " + str(overallcount)
+        #print analysis
+        del analysis
         del j_content
         del thisone
 f.close()
