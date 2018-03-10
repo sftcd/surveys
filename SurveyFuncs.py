@@ -346,10 +346,61 @@ def mm_info(ip):
         rv['cc-city']=cityresponse.country.iso_code
     return rv
 
+# analyse the tls details - this ought work for other ports as
+# well as p25
+# scandate is needed to check if cert was expired at time of
+# scan
+def get_tls(count,tls,ip,tlsdets,scandate):
+    try:
+        # we'll put each in a try/except to set true/false values
+        # would chain work in browser
+        try:
+            tlsdets['browser_trusted']=str(tls['validation']['browser_trusted'])
+        except:
+            tlsdets['browser_trusted']='exception'
+        try:
+            tlsdets['self_signed']=str(tls['certificate']['parsed']['signature']['self_signed'])
+        except:
+            tlsdets['self_signed']='exception'
+        try:
+            tlsdets['cipher_suite']=tls['cipher_suite']['name']
+        except:
+            tlsdets['cipher_suite']='exception'
+        try:
+            notbefore=parser.parse(tls['certificate']['parsed']['validity']['start'])
+            notafter=parser.parse(tls['certificate']['parsed']['validity']['end'])
+            if (notbefore <= scandate and notafter > scandate):
+                tlsdets['validthen']='good'
+            elif (notbefore > scandate):
+                tlsdets['validthen']='too-early'
+            elif (notafter < scandate):
+                tlsdets['validthen']='expired'
+            tlsdets['validthen-date']=scandate
+        except Exception as e: 
+            #print >> sys.stderr, "get_tls error for ip: " + ip + " record:" + str(count) + " " + str(e)
+            tlsdets['validthen']='exception'
+        try:
+            now=datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+            if (notbefore <= now and notafter > now):
+                tlsdets['validnow']='good'
+            elif (notbefore > now):
+                tlsdets['validnow']='too-early'
+            elif (notafter < now):
+                tlsdets['validnow']='expired'
+            tlsdets['validnow-date']=now
+        except Exception as e: 
+            #print >> sys.stderr, "get_tls error for ip: " + ip + " record:" + str(count) + " " + str(e)
+            tlsdets['validnow']='exception'
+    except Exception as e: 
+        #print >> sys.stderr, "get_tls error for ip: " + ip + " record:" + str(count) + " " + str(e)
+        pass
+    return True
+
+
 # OLD CODE below here, hasn't been fully re-integrated yet, will likely
 # move up above and then ditch what's not wanted below
-
-# functions to check out the (few) protocol details in which we're interested
+# when I move code from below to above, I'll leave the version below
+# for now and rename the foo function to OLD_foo
 
 # Extract a CN= from a DN, if present - moar curses on the X.500 namers!
 # mind you, X.500 names were set in stone in 1988 so it's a bit late. 
@@ -547,7 +598,7 @@ def get_banner(count,p25,ip):
 # well as p25
 # scandate is needed to check if cert was expired at time of
 # scan
-def get_tls(count,tls,ip,tlsdets,scandate):
+def OLD_get_tls(count,tls,ip,tlsdets,scandate):
     try:
         # we'll put each in a try/except to set true/false values
         # would chain work in browser
@@ -576,7 +627,6 @@ def get_tls(count,tls,ip,tlsdets,scandate):
         except Exception as e: 
             #print >> sys.stderr, "get_tls error for ip: " + ip + " record:" + str(count) + " " + str(e)
             tlsdets['validthen']='exception'
-
         try:
             now=datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
             if (notbefore <= now and notafter > now):

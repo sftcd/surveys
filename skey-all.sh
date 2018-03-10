@@ -263,7 +263,7 @@ else
 	echo "Clustering records" 
 	echo "Clustering records" >>$logf 
 	# this takes a few minutes at least
-	$srcdir/SameKeys.py $TELLTALE_FRESH >>$logf 2>&1 
+	$srcdir/SameKeys.py -i $TELLTALE_FRESH -o $TELLTALE_CLUSTER >>$logf 2>&1 
 	if [ "$?" != "0" ]
 	then
 		echo "Error ($?) from SameKeys.py"

@@ -26,20 +26,56 @@
 # figure out if we can get port 587 ever - looks like not, for now anyway
 # my FreshGrab's do have that but we don't for censys.io's Nov 2017 scans
 
-import sys
+import os, sys, argparse, tempfile, gc
 import json
-import gc
+import jsonpickle # install via  "$ sudo pip install -U jsonpickle"
+import datetime
+from dateutil import parser as dparser  # for parsing time from comand line and certs
+import pytz # for adding back TZ info to allow comparisons
 
-# install via  "$ sudo pip install -U jsonpickle"
-import jsonpickle
+# our own stuff
+from SurveyFuncs import *  
 
-from SurveyFuncs import * 
+# default values
+infile="records.fresh"
+outfile="collusions.json"
+
+# command line arg handling 
+argparser=argparse.ArgumentParser(description='Scan records for collisions')
+argparser.add_argument('-i','--input',     
+                    dest='infile',
+                    help='file containing list of IPs')
+argparser.add_argument('-o','--output_file',     
+                    dest='outfile',
+                    help='file in which to put json records (one per line)')
+argparser.add_argument('-p','--ports',     
+                    dest='portstring',
+                    help='comma-sep list of ports to scan')
+argparser.add_argument('-s','--scandate',     
+                    dest='scandatestring',
+                    help='time at which to evaluate certificate validity')
+args=argparser.parse_args()
+
+# scandate is needed to determine certificate validity, so we support
+# the option to now use "now"
+if args.scandatestring is None:
+    scandate=datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+    #print >> sys.stderr, "No (or bad) scan time provided, using 'now'"
+else:
+    scandate=dparser.parse(args.scandatestring).replace(tzinfo=pytz.UTC)
+    print >> sys.stderr, "Scandate: using " + args.scandatestring + "\n"
+
+if args.infile is not None:
+    infile=args.infile
+
+if args.outfile is not None:
+    outfile=args.outfile
 
 # this is an array to hold the set of keys we find
 fingerprints=[]
 bads={}
 
-with open(sys.argv[1],'r') as f:
+with open(infile,'r') as f:
     overallcount=0
     badcount=0
     goodcount=0
@@ -318,7 +354,7 @@ for h in histogram:
 del clustersizes
 clusterf.close()
 
-colf=open('collisions.json', 'w')
+colf=open(outfile, 'w')
 colf.write('[\n')
 firstone=True
 mergedclusternums=[]

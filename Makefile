@@ -44,8 +44,7 @@ fullrun:
 	${srcdir}/skey-all.sh ${srcdir} ${datadir} ${cname}
 
 clusters:
-	# add proper option handling "-i <file>" here
-	$(srcdir)/SameKeys.py ${fname}
+	$(srcdir)/SameKeys.py -i ${fname} -o ${colf}
 
 graphs:
 	$(srcdir)/GraphKeyReuse3.py -f ${colf} -l -o ${gdir}
