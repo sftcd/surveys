@@ -21,29 +21,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-SRCDIR=${HOME}/code/surveys
-DATADIR=${HOME}/data/smtp/runs
-
 # 'skey-all.sh' will tee up a full run of all key survey tools.
 # It might take a day or two to complete as we don't want to
 # keep any network busy, so we'll trickle along slowly.
+#
+
+# defaults - can be overridden on command line with make
+fname="records.fresh"
+srcdir=${HOME}/code/surveys
+datadir=${HOME}/data/smtp/runs
 cname="IE"
-
-# Our initial inputs are from Censys.io, taken in November 2017
-
-# 'GrabIPs.py' will take the baseline inputs and extract out
-# the ip addresses in a form usable to... 
-
-# GrabIPs.py extracts IPs from older inputs
-
-# FreshGrap.py uses that then calls zgrab to gather fresh data
-
-# SameKey.py figures out what key sharing clusters exist
-# use fname=cesys.io output or output of FreshGrab.py
-
-# GraphKeyReuse3.py generates .dot files and graphs for all
-# the clusters found
-# inputs for GraphKeyReuse3.py
 colf="collisions.json"
 gdir="."
 
@@ -51,29 +38,28 @@ all: help
 	
 help: justcleaning
 
-clean: graphclean
+clean: graphclean logclean
 
 fullrun:
-	${SRCDIR}/skey-all.sh ${SRCDIR} ${DATADIR} ${cname}
+	${srcdir}/skey-all.sh ${srcdir} ${datadir} ${cname}
 
-samekeys:
+clusters:
 	# add proper option handling "-i <file>" here
-	$(SRCDIR)/SameKeys.py ${fname}
+	$(srcdir)/SameKeys.py ${fname}
 
 graphs:
-	$(SRCDIR)/GraphKeyReuse3.py -f ${colf} -l -o ${gdir}
+	$(srcdir)/GraphKeyReuse3.py -f ${colf} -l -o ${gdir}
 
 justcleaning:
 	@echo "Targets are:"
 	@echo "Orchestration:"
-	@echo "\tsetuprun: cname defaults to IE can be set to EE"
-	@echo "\grabips: needs \"rname=<runname>\" on command line"
-	@echo "\tsamekeys: needs \"fname=<file>\" on command line"
+	@echo "\tfullrun: "
+	@echo "\tclusters:figure out collisions"
 	@echo "\tgraphs: clean up after GraphKeyReuse3.py (has defaults)"
 	@echo "We do cleaning as well:"
 	@echo "\tgraphclean: clean up after GraphKeyReuse3.py"
 	@echo "\tcollclean: clean up after SameKey.py"
-	@echo "But also makes graphs..."
+	@echo "\tlogclean: clean up log files"
 	@echo "Read the source if you want more info"
 
 collclean:
@@ -87,3 +73,7 @@ graphclean:
 	@rm -f summary.txt
 	@rm -f graph*.dot graph*.dot.svg
 	@rm -f failed*.svg
+	@rm -f graph.done
+
+logclean:
+	@rm -f *.out

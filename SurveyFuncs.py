@@ -30,7 +30,19 @@ import geoip2.database
 
 # using a class needs way less memory than random dicts apparently
 class OneFP():
-    __slots__ = ['writer','ip_record','ip','asn','asndec','amazon','fprints','csize','nsrc','rcs']
+    __slots__ = [   'writer',
+                    'ip_record',
+                    'ip','asn',
+                    'asndec',
+                    'nprints',
+                    'amazon',
+                    'fprints',
+                    'csize',
+                    'nsrc',
+                    'rcs',
+                    'ciphersuites',
+                    'keytypes',
+                    'certtypes']
     def __init__(self):
         self.writer='unknown'
         self.ip_record=-1
@@ -39,10 +51,33 @@ class OneFP():
         self.asndec=0
         self.clusternum=0
         self.amazon=False
+        self.nprints=0
         self.fprints={}
         self.csize=1
         self.nrcs=0
         self.rcs={}
+        self.ciphersuites={} # has 16 bit values, one per protocol
+        self.keytypes={} # "constants" as per below
+        self.certtypes={} # "constants" as per below
+
+# some "constants" for the above
+KEYTYPE_UNKNOWN=0           # initial value
+KEYTYPE_RSASHORT=1          # <1024
+KEYTYPE_RSA1024=2           # 1024<=len<2048
+KEYTYPE_RSA2048=3           # exactly 2048 only
+KEYTYPE_RSA4096=4           # exactly 4096 only
+KEYTYPE_ODD=5               # anything else
+KEYTYPE_ECDSA=6             # for those oddballs
+KEYTYPE_EDDSA=6             # for those oddballs, when they start to show
+KEYTYPE_OTHER=8             # if we do find something else, e.g. EDDSA
+
+# some "constants" for certs
+CERTTYPE_UNKNOWN=0          # initial value
+CERTTYPE_GOOD=1             # browser-trusted and timely
+CERTTYPE_SC=2               # self-cert and timely
+CERTTYPE_EXPIRED=3          # browser-trusted but not timely
+CERTTYPE_SCEXPIRED=4        # self-cert but not timely
+CERTTYPE_OTHER=5            # oddbballs, don't expect any
 
 def printOneFP(f):
     print jsonpickle.encode(f)
@@ -57,10 +92,14 @@ def j2o(jthing):
     ot.asndec=jthing['asndec']
     ot.clusternum=jthing['clusternum']
     ot.amazon=jthing['amazon']
+    ot.nprints=jthing['nprints']
     ot.fprints=jthing['fprints']
     ot.csize=jthing['csize']
     ot.nrcs=jthing['nrcs']
     ot.rcs=jthing['rcs']
+    ot.ciphersuites=jthing['ciphersuites']
+    ot.keytypes=jthing['keytypes']
+    ot.certypes=jthing['certtypes']
     #printOneFP(ot)
     return ot
 
@@ -306,6 +345,9 @@ def mm_info(ip):
     if cityresponse.country.iso_code != countryresponse.country.iso_code:
         rv['cc-city']=cityresponse.country.iso_code
     return rv
+
+# OLD CODE below here, hasn't been fully re-integrated yet, will likely
+# move up above and then ditch what's not wanted below
 
 # functions to check out the (few) protocol details in which we're interested
 

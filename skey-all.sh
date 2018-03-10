@@ -150,6 +150,8 @@ else
 fi
 
 cd $resdir
+# make life easier
+cp $srcdir/Makefile .
 logf=$NOW.out
 run=$NOW
 

@@ -76,8 +76,10 @@ with open(sys.argv[1],'r') as f:
             thisone.asn=asninfo['asn']
             thisone.asndec=asninfo['asndec']
             if asninfo['cc'] != 'IE' and asninfo['cc'] != 'EE':
-                # TODO: what to actually if the country-code is (now) wrong?
+                # just record as baddy if the country-code is (now) wrong?
+                # mark it so we can revisit later too
                 print "Bad country for ip",thisone.ip,asninfo['cc']
+                j_content['wrong_country']=asninfo['cc']
                 badrec=True
 
         try:
