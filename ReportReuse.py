@@ -248,6 +248,7 @@ while f:
                 print "Failed to graph cluster " + str(cnum)
             repf=open("report"+str(cnum)+".txt","w")
             print >>repf, creps[cnum]
+            print >>repf, "\n]\n"
             repf.close()
             del creps[cnum]
     else:
@@ -257,9 +258,9 @@ while f:
     jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
     fstr=jsonpickle.encode(f)
     if cnum not in creps:
-        creps[cnum]="Cluster " + str(cnum) + "\n" + fstr
+        creps[cnum]="[\n" + fstr 
     else:
-        creps[cnum]+= "\n" + fstr
+        creps[cnum]+= ",\n" + fstr 
     del fstr
 
     if not args.legend:

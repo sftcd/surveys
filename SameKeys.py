@@ -129,10 +129,10 @@ with open(infile,'r') as f:
             # name from reverse DNS
             rdnsrec=socket.gethostbyaddr(ip)
             rdns=rdnsrec[0]
-            #print "FQDN reverse: " + str(rdns)
+            print "FQDN reverse: " + str(rdns)
             nameset['rdns']=rdns
         except Exception as e: 
-            #print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + ip
+            print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + ip
             nameset['rdns']=''
 
         # name from banner
