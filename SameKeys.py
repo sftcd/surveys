@@ -122,9 +122,37 @@ with open(infile,'r') as f:
         for pstr in portstrings:
             thisone.analysis[pstr]={}
 
-        thisone.analysis['nameset']=get_fqdns(j_content)
+        thisone.analysis['nameset']={}
+        nameset=thisone.analysis['nameset']
+        ip=j_content['ip']
+        try:
+            # name from reverse DNS
+            rdnsrec=socket.gethostbyaddr(ip)
+            rdns=rdnsrec[0]
+            #print "FQDN reverse: " + str(rdns)
+            nameset['rdns']=rdns
+        except Exception as e: 
+            #print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + ip
+            nameset['rdns']=''
+
+        # name from banner
+        try:
+            p25=j_content['p25']
+            banner=p25['smtp']['starttls']['banner'] 
+            ts=banner.split()
+            if ts[0]=="220":
+                banner_fqdn=ts[1]
+            elif ts[0].startswith("220-"):
+                banner_fqdn=ts[0][4:]
+            else:
+                banner_fqdn=''
+            nameset['banner']=banner_fqdn
+        except Exception as e: 
+            #print >> sys.stderr, "FQDN banner exception " + str(e) + " for record:" + str(count)
+            nameset['banner']=''
 
         try:
+            # TODO: What names and key parameters to include in analysis?
             if thisone.writer=="FreshGrab.py":
                 fp=j_content['p22']['data']['xssh']['key_exchange']['server_host_key']['fingerprint_sha256'] 
             else:
@@ -134,25 +162,33 @@ with open(infile,'r') as f:
         except Exception as e: 
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
+
         try:
             if thisone.writer=="FreshGrab.py":
-                fp=j_content['p25']['data']['tls']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
-                get_tls(thisone.writer,'p25',j_content['p25']['data']['tls'],j_content['ip'],thisone.analysis['p25'],scandate)
+                tls=j_content['p25']['data']['tls']
+                cert=tls['server_certificates']['certificate']
             else:
-                fp=j_content['p25']['smtp']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
-                get_tls(thisone.writer,'p25',j_content['p25']['smtp']['starttls']['tls'],j_content['ip'],thisone.analysis['p25'],scandate)
+                tls=p25['smtp']['starttls']['tls']
+                cert=tls['certificate']
+            fp=cert['parsed']['subject_key_info']['fingerprint_sha256'] 
+            get_tls(thisone.writer,'p25',tls,j_content['ip'],thisone.analysis['p25'],scandate)
+            get_certnames('p25',cert,nameset)
             thisone.fprints['p25']=fp
             somekey=True
         except Exception as e: 
-            #print >> sys.stderr, "fprint exception " + str(e)
+            #print >> sys.stderr, "p25 fprint exception for:" + j_content['ip'] + ":" + str(e)
             pass
+
         try:
             if thisone.writer=="FreshGrab.py":
+                cert=j_content['p110']['data']['tls']['server_certificates']['certificate']
                 fp=j_content['p110']['data']['tls']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
                 get_tls(thisone.writer,'p25',j_content['p110']['data']['tls'],j_content['ip'],thisone.analysis['p110'],scandate)
             else:
                 fp=j_content['p110']['pop3']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+                cert=j_content['p110']['pop3']['starttls']['tls']['certificate']
                 get_tls(thisone.writer,'p25',j_content['p110']['pop3']['starttls']['tls'],j_content['ip'],thisone.analysis['p110'],scandate)
+            get_certnames('p110',cert,nameset)
             thisone.fprints['p110']=fp
             somekey=True
         except Exception as e: 
@@ -160,11 +196,14 @@ with open(infile,'r') as f:
             pass
         try:
             if thisone.writer=="FreshGrab.py":
+                cert=j_content['p143']['data']['tls']['server_certificates']['certificate']
                 fp=j_content['p143']['data']['tls']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
                 get_tls(thisone.writer,'p143',j_content['p143']['data']['tls'],j_content['ip'],thisone.analysis['p143'],scandate)
             else:
+                cert=j_content['p143']['pop3']['starttls']['tls']['certificate']
                 fp=j_content['p143']['imap']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
                 get_tls(thisone.writer,'p143',j_content['p143']['imap']['starttls']['tls'],j_content['ip'],thisone.analysis['p143'],scandate)
+            get_certnames('p143',cert,nameset)
             thisone.fprints['p143']=fp
             somekey=True
         except Exception as e: 
@@ -173,10 +212,13 @@ with open(infile,'r') as f:
         try:
             if thisone.writer=="FreshGrab.py":
                 fp=j_content['p443']['data']['http']['response']['request']['tls_handshake']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+                cert=j_content['p443']['data']['http']['response']['request']['tls_handshake']['server_certificates']['certificate']
                 get_tls(thisone.writer,'p443',j_content['p443']['data']['http']['response']['request']['tls_handshakee'],j_content['ip'],thisone.analysis['p443'],scandate)
             else:
                 fp=j_content['p443']['https']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
+                cert=j_content['p443']['https']['tls']['certificate']
                 get_tls(thisone.writer,'p443',j_content['p443']['https']['tls'],j_content['ip'],thisone.analysis['p443'],scandate)
+            get_certnames('p443',cert,nameset)
             thisone.fprints['p443']=fp
             somekey=True
         except Exception as e: 
@@ -186,12 +228,14 @@ with open(infile,'r') as f:
         try:
             if thisone.writer=="FreshGrab.py":
                 fp=j_content['p587']['data']['tls']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+                cert=j_content['p587']['data']['tls']['server_certificates']['certificate']
                 get_tls(thisone.writer,'p587',j_content['p587']['data']['tls'],j_content['ip'],thisone.analysis['p587'],scandate)
-                thisone.fprints['p587']=fp
                 somekey=True
             else:
                 # censys.io has no p587 for now
                 pass
+            get_certnames('p443',cert,nameset)
+            thisone.fprints['p587']=fp
         except Exception as e: 
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
@@ -199,15 +243,44 @@ with open(infile,'r') as f:
         try:
             if thisone.writer=="FreshGrab.py":
                 fp=j_content['p993']['data']['tls']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+                cert=j_content['p993']['data']['tls']['server_certificates']['certificate']
                 get_tls(thisone.writer,'p993',j_content['p993']['data']['tls'],j_content['ip'],thisone.analysis['p993'],scandate)
             else:
                 fp=j_content['p993']['imaps']['tls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
+                cert=j_content['p993']['imaps']['tls']['tls']['certificate']['parsed']
                 get_tls(thisone.writer,'p993',j_content['p993']['imaps']['tls']['tls'],j_content['ip'],thisone.analysis['p993'],scandate)
+            get_certnames('p443',cert,nameset)
             thisone.fprints['p993']=fp
             somekey=True
         except Exception as e: 
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
+
+        besty=[]
+        nogood=True # assume none are good
+        tmp={}
+        # try verify names a bit
+        for k in nameset:
+            v=nameset[k]
+            #print "checking: " + k + " " + v
+            # see if we can verify the value as matching our give IP
+            if v != '' and not fqdn_bogon(v):
+                try:
+                    rip=socket.gethostbyname(v)
+                    if rip == ip:
+                        besty.append(k)
+                    else:
+                        tmp[k+'-ip']=rip
+                    # some name has an IP, even if not what we expect
+                    nogood=False
+                except Exception as e: 
+                    #oddly, an NXDOMAIN seems to cause an exception, so these happen
+                    #print >> sys.stderr, "Error making DNS query for " + v + " for record:" + str(count) + " " + str(e)
+                    pass
+        for k in tmp:
+            nameset[k]=tmp[k]
+        nameset['allbad']=nogood
+        nameset['besty']=besty
 
         if not badrec and somekey:
             goodcount += 1

@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
 import json
 import jsonpickle
 import copy
@@ -484,7 +485,6 @@ def get_fqdns(blob):
     except Exception as e: 
         #print >> sys.stderr, "FQDN banner exception " + str(e) + " for record:" + str(count)
         nameset['banner']=''
-
     try:
         dn=p25['smtp']['starttls']['tls']['certificate']['parsed']['subject_dn'] 
         dn_fqdn=dn2cn(dn)
@@ -532,13 +532,39 @@ def get_fqdns(blob):
                 pass
     for k in tmp:
         nameset[k]=tmp[k]
-
     nameset['allbad']=nogood
     nameset['besty']=besty
     #meta['enddate']=str(datetime.datetime.utcnow())
     #nameset['meta']=meta
     print nameset
     return nameset
+
+def get_certnames(portstring,cert,nameset):
+    try:
+        dn=cert['parsed']['subject_dn'] 
+        dn_fqdn=dn2cn(dn)
+        nameset[portstring+'dn'] = dn_fqdn
+    except Exception as e: 
+        #print >> sys.stderr, "FQDN dn exception " + str(e) + " for record:" + str(count)
+        nameset['dn']=''
+    # name from cert SAN
+    try:
+        sans=cert['parsed']['extensions']['subject_alt_name'] 
+        san_fqdns=sans['dns_names']
+        # we ignore all non dns_names - there are very few in our data (maybe 145 / 12000)
+        # and they're mostly otherName with opaque OID/value so not that useful. (A few
+        # are emails but we'll skip 'em for now)
+        #print "FQDN san " + str(san_fqdns) 
+        sancount=0
+        for san in san_fqdns:
+            nameset[portstring+'san'+str(sancount)]=san_fqdns[sancount]
+            sancount += 1
+    except Exception as e: 
+        #these are v. common
+        #print >> sys.stderr, "FQDN san exception " + str(e) + " for record:" + str(count)
+        pass
+    return
+
 
 # OLD CODE below here, hasn't been fully re-integrated yet, will likely
 # move up above and then ditch what's not wanted below
