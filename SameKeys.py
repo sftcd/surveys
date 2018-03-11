@@ -122,7 +122,7 @@ with open(infile,'r') as f:
         for pstr in portstrings:
             thisone.analysis[pstr]={}
 
-        thisone.analysis['nameset']=get_fqdns(overallcount,j_content['p25'],j_content['ip'])
+        thisone.analysis['nameset']=get_fqdns(j_content)
 
         try:
             if thisone.writer=="FreshGrab.py":

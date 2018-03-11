@@ -23,7 +23,7 @@ import json
 import jsonpickle
 import copy
 import graphviz as gv
-import sys
+import sys, socket
 import geoip2.database
 from dateutil import parser as dparser  # for parsing time from comand line and certs
 
@@ -448,7 +448,7 @@ def fqdn_bogon(dn):
 
 # figure out what names apply - return the set of names we've found
 # and not found in a dict
-def get_fqdns(count,p25,ip):
+def get_fqdns(blob):
     # make empty dict
     nameset={}
     # metadata in our return dict is in here, the rest are names or
@@ -459,16 +459,18 @@ def get_fqdns(count,p25,ip):
     # the end-start time won't be near-zero;-(
     #meta['startddate']=str(datetime.datetime.utcnow())
     # name from reverse dns of ip
+    ip=blob['ip']
     try:
         # name from reverse DNS
         rdnsrec=socket.gethostbyaddr(ip)
         rdns=rdnsrec[0]
-        #print "FQDN reverse: " + rdns
+        print "FQDN reverse: " + str(rdns)
         nameset['rdns']=rdns
     except Exception as e: 
-        #print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + str(count)
+        print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + ip
         nameset['rdns']=''
     # name from banner
+    p25=blob['p25']
     try:
         banner=p25['smtp']['starttls']['banner'] 
         ts=banner.split()
@@ -482,6 +484,7 @@ def get_fqdns(count,p25,ip):
     except Exception as e: 
         #print >> sys.stderr, "FQDN banner exception " + str(e) + " for record:" + str(count)
         nameset['banner']=''
+
     try:
         dn=p25['smtp']['starttls']['tls']['certificate']['parsed']['subject_dn'] 
         dn_fqdn=dn2cn(dn)
@@ -534,6 +537,7 @@ def get_fqdns(count,p25,ip):
     nameset['besty']=besty
     #meta['enddate']=str(datetime.datetime.utcnow())
     #nameset['meta']=meta
+    print nameset
     return nameset
 
 # OLD CODE below here, hasn't been fully re-integrated yet, will likely
