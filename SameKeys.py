@@ -65,6 +65,7 @@ else:
     scandate=dparser.parse(args.scandatestring).replace(tzinfo=pytz.UTC)
     print >> sys.stderr, "Scandate: using " + args.scandatestring + "\n"
 
+
 if args.infile is not None:
     infile=args.infile
 
@@ -120,6 +121,8 @@ with open(infile,'r') as f:
 
         for pstr in portstrings:
             thisone.analysis[pstr]={}
+
+        thisone.analysis['nameset']=get_fqdns(overallcount,j_content['p25'],j_content['ip'])
 
         try:
             if thisone.writer=="FreshGrab.py":
@@ -411,4 +414,5 @@ print >> sys.stderr, "\toverall: " + str(overallcount) + "\n\t" + \
         "no collisions: " + str(noncolcount) + "\n\t" + \
         "most collisions: " + str(mostcollisions) + " for record: " + str(biggestcollider) + "\n\t" + \
         "non-merged total clusters: " + str(clusternum) + "\n\t" + \
-        "merged total clusters: " + str(mergedclusternum) 
+        "merged total clusters: " + str(mergedclusternum) + "\n\t" + \
+        "Scandate used is: " + str(scandate)
