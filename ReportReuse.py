@@ -20,12 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# check who's re-using the same keys 
-# CensysIESMTP.py
-
-# reduce memory footprint - just read one collision at a time from file
-
-# figure out if we can get port 587 ever - looks like not, for now anyway
+# Report the collisions, via graphs and text
 
 import sys
 import os
@@ -148,6 +143,9 @@ clustercount=0
 # a count of how many ips we've done for each cluster
 clipsdone={}
 
+# cluster report strings
+creps={}
+
 # max size of dot file we try to render
 maxglen=500000
 
@@ -234,7 +232,11 @@ while f:
     if cnum in clipsdone:
         clipsdone[cnum] += 1
         if clipsdone[cnum]%100==0:
-            print "\tsizeof graph for cluster " + str(cnum) + "  with " + str(clipsdone[cnum]) + " of " + str(csize) + " done is: " + str(asizeof.asizeof(gvgraph)) + " legend:"  + str(asizeof.asizeof(dynleg)) +  " Added " + str(edgesadded) + " edges"
+            print "\tsizeof graph for cluster " + str(cnum) +  \
+                "  with " + str(clipsdone[cnum]) + " of " + str(csize) +  \
+                " done is: " + str(asizeof.asizeof(gvgraph)) +  \
+                " legend:"  + str(asizeof.asizeof(dynleg)) +   \
+                " Added " + str(edgesadded) + " edges"
         if clipsdone[cnum] == csize:
             rv=rendergraph(cnum,gvgraph,dynleg,args.legend,outdir)
             if rv:
@@ -244,8 +246,21 @@ while f:
             else:
                 notrendered.append(cnum)
                 print "Failed to graph cluster " + str(cnum)
+            repf=open("report"+str(cnum)+".txt","w")
+            print >>repf, creps[cnum]
+            repf.close()
+            del creps[cnum]
     else:
         clipsdone[cnum] = 1
+
+
+    jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
+    fstr=jsonpickle.encode(f)
+    if cnum not in creps:
+        creps[cnum]="Cluster " + str(cnum) + "\n" + fstr
+    else:
+        creps[cnum]+= "\n" + fstr
+    del fstr
 
     if not args.legend:
         del dynleg
@@ -277,4 +292,3 @@ print >> sys.stderr, "collisions: " + str(checkcount) + "\n\t" + \
         "total clusters: " + str(clustercount) + "\n\t" + \
         "graphs not rendered: " + str(notrendered)
 
-#del fingerprints 

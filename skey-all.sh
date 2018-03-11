@@ -281,10 +281,10 @@ else
 	echo "Graphing records" 
 	echo "Graphing records" >>$logf 
 	# this takes a few minutes at least
-	$srcdir/GraphKeyReuse3.py -f $TELLTALE_CLUSTER -l -o . >>$logf 2>&1 
+	$srcdir/ReportReuse.py -f $TELLTALE_CLUSTER -l -o . >>$logf 2>&1 
 	if [ "$?" != "0" ]
 	then
-		echo "Error ($?) from GraphKeyReuse3.py"
+		echo "Error ($?) from ReportReuse.py"
 	else
 		touch $TELLTALE_GRAPH
 	fi

@@ -37,15 +37,11 @@ class OneFP():
                     'ip',
                     'asn',
                     'asndec',
-                    'nprints',
                     'amazon',
                     'fprints',
                     'csize',
                     'nsrc',
                     'rcs',
-                    'ciphersuites',
-                    'keytypes',
-                    'certtypes',
                     'analysis']
     def __init__(self):
         self.writer='unknown'
@@ -55,14 +51,10 @@ class OneFP():
         self.asndec=0
         self.clusternum=0
         self.amazon=False
-        self.nprints=0
         self.fprints={}
         self.csize=1
         self.nrcs=0
         self.rcs={}
-        self.ciphersuites={} # has 16 bit values, one per protocol
-        self.keytypes={} # "constants" as per below
-        self.certtypes={} # "constants" as per below
         self.analysis={}
 
 # some "constants" for the above
@@ -97,14 +89,11 @@ def j2o(jthing):
     ot.asndec=jthing['asndec']
     ot.clusternum=jthing['clusternum']
     ot.amazon=jthing['amazon']
-    ot.nprints=jthing['nprints']
     ot.fprints=jthing['fprints']
     ot.csize=jthing['csize']
     ot.nrcs=jthing['nrcs']
     ot.rcs=jthing['rcs']
-    ot.ciphersuites=jthing['ciphersuites']
-    ot.keytypes=jthing['keytypes']
-    ot.certypes=jthing['certtypes']
+    ot.analysis=jthing['analysis']
     #printOneFP(ot)
     return ot
 
@@ -385,7 +374,7 @@ def get_tls(writer,portstr,tls,ip,tlsdets,scandate):
             tlsdets['timely']=False
         elif (notafter < scandate):
             tlsdets['timely']=False
-        tlsdets['ip']=ip
+        #tlsdets['ip']=ip
     except Exception as e: 
         print >>sys.stderr, "get_tls exception for " + ip + ":" + portstr + str(e)
         pass
@@ -546,7 +535,7 @@ def get_certnames(portstring,cert,nameset):
         nameset[portstring+'dn'] = dn_fqdn
     except Exception as e: 
         #print >> sys.stderr, "FQDN dn exception " + str(e) + " for record:" + str(count)
-        nameset['dn']=''
+        pass
     # name from cert SAN
     try:
         sans=cert['parsed']['extensions']['subject_alt_name'] 

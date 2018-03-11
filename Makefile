@@ -47,16 +47,16 @@ clusters:
 	$(srcdir)/SameKeys.py -i ${fname} -o ${colf}
 
 graphs:
-	$(srcdir)/GraphKeyReuse3.py -f ${colf} -l -o ${gdir}
+	$(srcdir)/ReportReuse.py -f ${colf} -l -o ${gdir}
 
 justcleaning:
 	@echo "Targets are:"
 	@echo "Orchestration:"
 	@echo "\tfullrun: "
 	@echo "\tclusters:figure out collisions"
-	@echo "\tgraphs: clean up after GraphKeyReuse3.py (has defaults)"
+	@echo "\tgraphs: clean up after ReportReuse.py (has defaults)"
 	@echo "We do cleaning as well:"
-	@echo "\tgraphclean: clean up after GraphKeyReuse3.py"
+	@echo "\tgraphclean: clean up after ReportReuse.py"
 	@echo "\tcollclean: clean up after SameKey.py"
 	@echo "\tlogclean: clean up log files"
 	@echo "Read the source if you want more info"
