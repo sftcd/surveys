@@ -38,7 +38,7 @@ from SurveyFuncs import *
 
 # default values
 infile="records.fresh"
-outfile="collusions.json"
+outfile="collisions.json"
 
 # command line arg handling 
 argparser=argparse.ArgumentParser(description='Scan records for collisions')
@@ -118,9 +118,8 @@ with open(infile,'r') as f:
                 j_content['wrong_country']=asninfo['cc']
                 badrec=True
 
-        analysis={}
         for pstr in portstrings:
-            analysis[pstr]={}
+            thisone.analysis[pstr]={}
 
         try:
             if thisone.writer=="FreshGrab.py":
@@ -135,10 +134,10 @@ with open(infile,'r') as f:
         try:
             if thisone.writer=="FreshGrab.py":
                 fp=j_content['p25']['data']['tls']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
-                get_tls(j_content['25']['data']['tls'],j_content['ip'],analysis['p25'],scandate)
+                get_tls(thisone.writer,'p25',j_content['p25']['data']['tls'],j_content['ip'],thisone.analysis['p25'],scandate)
             else:
                 fp=j_content['p25']['smtp']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
-                get_tls(j_content['p25']['pop3']['starttls']['tls'],j_content['ip'],analysis['p25'],scandate)
+                get_tls(thisone.writer,'p25',j_content['p25']['smtp']['starttls']['tls'],j_content['ip'],thisone.analysis['p25'],scandate)
             thisone.fprints['p25']=fp
             somekey=True
         except Exception as e: 
@@ -147,10 +146,10 @@ with open(infile,'r') as f:
         try:
             if thisone.writer=="FreshGrab.py":
                 fp=j_content['p110']['data']['tls']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
-                get_tls(j_content['p110']['data']['tls'],j_content['ip'],analysis['p110'],scandate)
+                get_tls(thisone.writer,'p25',j_content['p110']['data']['tls'],j_content['ip'],thisone.analysis['p110'],scandate)
             else:
                 fp=j_content['p110']['pop3']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
-                get_tls(j_content['p110']['pop3']['starttls']['tls'],j_content['ip'],analysis['p110'],scandate)
+                get_tls(thisone.writer,'p25',j_content['p110']['pop3']['starttls']['tls'],j_content['ip'],thisone.analysis['p110'],scandate)
             thisone.fprints['p110']=fp
             somekey=True
         except Exception as e: 
@@ -159,10 +158,10 @@ with open(infile,'r') as f:
         try:
             if thisone.writer=="FreshGrab.py":
                 fp=j_content['p143']['data']['tls']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
-                get_tls(j_content['p143']['data']['tls'],j_content['ip'],analysis['p143'],scandate)
+                get_tls(thisone.writer,'p143',j_content['p143']['data']['tls'],j_content['ip'],thisone.analysis['p143'],scandate)
             else:
                 fp=j_content['p143']['imap']['starttls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
-                get_tls(j_content['p143']['pop3']['starttls']['tls'],j_content['ip'],analysis['p143'],scandate)
+                get_tls(thisone.writer,'p143',j_content['p143']['imap']['starttls']['tls'],j_content['ip'],thisone.analysis['p143'],scandate)
             thisone.fprints['p143']=fp
             somekey=True
         except Exception as e: 
@@ -171,8 +170,10 @@ with open(infile,'r') as f:
         try:
             if thisone.writer=="FreshGrab.py":
                 fp=j_content['p443']['data']['http']['response']['request']['tls_handshake']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+                get_tls(thisone.writer,'p443',j_content['p443']['data']['http']['response']['request']['tls_handshakee'],j_content['ip'],thisone.analysis['p443'],scandate)
             else:
                 fp=j_content['p443']['https']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
+                get_tls(thisone.writer,'p443',j_content['p443']['https']['tls'],j_content['ip'],thisone.analysis['p443'],scandate)
             thisone.fprints['p443']=fp
             somekey=True
         except Exception as e: 
@@ -182,10 +183,12 @@ with open(infile,'r') as f:
         try:
             if thisone.writer=="FreshGrab.py":
                 fp=j_content['p587']['data']['tls']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+                get_tls(thisone.writer,'p587',j_content['p587']['data']['tls'],j_content['ip'],thisone.analysis['p587'],scandate)
+                thisone.fprints['p587']=fp
+                somekey=True
             else:
-                fp=j_content['p587']['imaps']['tls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
-            thisone.fprints['p587']=fp
-            somekey=True
+                # censys.io has no p587 for now
+                pass
         except Exception as e: 
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
@@ -193,8 +196,10 @@ with open(infile,'r') as f:
         try:
             if thisone.writer=="FreshGrab.py":
                 fp=j_content['p993']['data']['tls']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
+                get_tls(thisone.writer,'p993',j_content['p993']['data']['tls'],j_content['ip'],thisone.analysis['p993'],scandate)
             else:
                 fp=j_content['p993']['imaps']['tls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
+                get_tls(thisone.writer,'p993',j_content['p993']['imaps']['tls']['tls'],j_content['ip'],thisone.analysis['p993'],scandate)
             thisone.fprints['p993']=fp
             somekey=True
         except Exception as e: 
@@ -210,8 +215,6 @@ with open(infile,'r') as f:
         overallcount += 1
         if overallcount % 100 == 0:
             print >> sys.stderr, "Reading fingerprints, did: " + str(overallcount)
-        #print analysis
-        del analysis
         del j_content
         del thisone
 f.close()

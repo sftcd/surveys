@@ -33,7 +33,8 @@ from dateutil import parser as dparser  # for parsing time from comand line and 
 class OneFP():
     __slots__ = [   'writer',
                     'ip_record',
-                    'ip','asn',
+                    'ip',
+                    'asn',
                     'asndec',
                     'nprints',
                     'amazon',
@@ -43,7 +44,8 @@ class OneFP():
                     'rcs',
                     'ciphersuites',
                     'keytypes',
-                    'certtypes']
+                    'certtypes',
+                    'analysis']
     def __init__(self):
         self.writer='unknown'
         self.ip_record=-1
@@ -60,6 +62,7 @@ class OneFP():
         self.ciphersuites={} # has 16 bit values, one per protocol
         self.keytypes={} # "constants" as per below
         self.certtypes={} # "constants" as per below
+        self.analysis={}
 
 # some "constants" for the above
 KEYTYPE_UNKNOWN=0           # initial value
@@ -351,21 +354,16 @@ def mm_info(ip):
 # well as p25
 # scandate is needed to check if cert was expired at time of
 # scan
-def get_tls(tls,ip,tlsdets,scandate):
+def get_tls(writer,portstr,tls,ip,tlsdets,scandate):
     #print tls
     try:
         # we'll put each in a try/except to set true/false values
         # would chain work in browser
         # two flavours of TLS struct - one from Censys and one from local zgrabs
         # first is the local variant, 2nd censys.io
-        if 'server_hello' in tls:
+        if writer == 'FreshGrab.py':
             # local
             tlsdets['cipher_suite']=tls['server_hello']['cipher_suite']['value']
-        else:
-            # censys.io
-            tlsdets['cipher_suite']=tls['server_hello']['cipher_suite']['value']
-        if 'server_certificates' in tls:
-            # local
             tlsdets['browser_trusted']=tls['server_certificates']['validation']['browser_trusted']
             tlsdets['self_signed']=tls['server_certificates']['certificate']['parsed']['signature']['self_signed']
             tlsdets['rsalen']=tls['server_certificates']['certificate']['parsed']['subject_key_info']['rsa_public_key']['length']
@@ -373,6 +371,7 @@ def get_tls(tls,ip,tlsdets,scandate):
             notafter=dparser.parse(tls['server_certificates']['certificate']['parsed']['validity']['end'])
         else:
             # censys.io
+            tlsdets['cipher_suite']=int(tls['cipher_suite']['id'],16) 
             tlsdets['browser_trusted']=tls['validation']['browser_trusted']
             tlsdets['self_signed']=tls['certificate']['parsed']['signature']['self_signed']
             tlsdets['rsalen']=tls['certificate']['parsed']['subject_key_info']['rsa_public_key']['length']
@@ -386,8 +385,9 @@ def get_tls(tls,ip,tlsdets,scandate):
         elif (notafter < scandate):
             tlsdets['timely']=False
         tlsdets['validthen-date']=scandate
+        tlsdets['ip']=ip
     except Exception as e: 
-        print >>sys.stderr, "get_tls exception" + str(e)
+        print >>sys.stderr, "get_tls exception for " + ip + ":" + portstr + str(e)
         pass
     return True
 
