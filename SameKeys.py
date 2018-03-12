@@ -29,7 +29,7 @@
 import os, sys, argparse, tempfile, gc
 import json
 import jsonpickle # install via  "$ sudo pip install -U jsonpickle"
-import datetime
+import time, datetime
 from dateutil import parser as dparser  # for parsing time from comand line and certs
 import pytz # for adding back TZ info to allow comparisons
 
@@ -75,12 +75,15 @@ if args.outfile is not None:
 # this is an array to hold the set of keys we find
 fingerprints=[]
 bads={}
+# keep track of how long this is taking per ip
+peripaverage=0
 
 with open(infile,'r') as f:
     overallcount=0
     badcount=0
     goodcount=0
     for line in f:
+        ipstart=time.time()
         badrec=False
         j_content = json.loads(line)
         somekey=False
@@ -129,10 +132,10 @@ with open(infile,'r') as f:
             # name from reverse DNS
             rdnsrec=socket.gethostbyaddr(ip)
             rdns=rdnsrec[0]
-            print "FQDN reverse: " + str(rdns)
+            #print "FQDN reverse: " + str(rdns)
             nameset['rdns']=rdns
         except Exception as e: 
-            print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + ip
+            #print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + ip
             nameset['rdns']=''
 
         # name from banner
@@ -289,8 +292,15 @@ with open(infile,'r') as f:
             bads[badcount]=j_content
             badcount += 1
         overallcount += 1
-        if overallcount % 100 == 0:
-            print >> sys.stderr, "Reading fingerprints, did: " + str(overallcount)
+
+        # update average
+        ipend=time.time()
+        thistime=ipend-ipstart
+        peripaverage=((overallcount*peripaverage)+thistime)/(overallcount+1)
+        if overallcount % 5 == 0:
+            print >> sys.stderr, "Reading fingerprints and rdns, did: " + str(overallcount) + " most recent ip " + thisone.ip + " average time/ip: " + str(peripaverage)
+        #if overallcount % 100 == 0:
+            #print >> sys.stderr, "Reading fingerprints, did: " + str(overallcount)
         del j_content
         del thisone
 f.close()
@@ -400,8 +410,10 @@ for i in range(0,fl):
     keyf.write(bstr + ',\n')
     del bstr
     checkcount += 1
+
     if checkcount % 100 == 0:
         print >> sys.stderr, "Checking colisions, did: " + str(checkcount) + " found: " + str(colcount) + " remote collisions"
+
     if checkcount % 1000 == 0:
         gc.collect()
 

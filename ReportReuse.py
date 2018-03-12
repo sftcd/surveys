@@ -246,7 +246,7 @@ while f:
             else:
                 notrendered.append(cnum)
                 print "Failed to graph cluster " + str(cnum)
-            repf=open("report"+str(cnum)+".txt","w")
+            repf=open("cluster"+str(cnum)+".json","w")
             print >>repf, creps[cnum]
             print >>repf, "\n]\n"
             repf.close()

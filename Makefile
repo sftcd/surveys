@@ -73,6 +73,7 @@ graphclean:
 	@rm -f graph*.dot graph*.dot.svg
 	@rm -f failed*.svg
 	@rm -f graph.done
+	@rm -f cluster*.json
 
 logclean:
 	@rm -f *.out
