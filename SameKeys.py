@@ -118,7 +118,7 @@ with open(infile,'r') as f:
             if asninfo['cc'] != 'IE' and asninfo['cc'] != 'EE':
                 # just record as baddy if the country-code is (now) wrong?
                 # mark it so we can revisit later too
-                print "Bad country for ip",thisone.ip,asninfo['cc']
+                print >>sys.stderr, "Bad country for ip",thisone.ip,asninfo['cc']
                 j_content['wrong_country']=asninfo['cc']
                 badrec=True
 
@@ -197,6 +197,7 @@ with open(infile,'r') as f:
         except Exception as e: 
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
+
         try:
             if thisone.writer=="FreshGrab.py":
                 cert=j_content['p143']['data']['tls']['server_certificates']['certificate']
@@ -212,6 +213,7 @@ with open(infile,'r') as f:
         except Exception as e: 
             #print >> sys.stderr, "fprint exception " + str(e)
             pass
+
         try:
             if thisone.writer=="FreshGrab.py":
                 fp=j_content['p443']['data']['http']['response']['request']['tls_handshake']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
@@ -270,7 +272,7 @@ with open(infile,'r') as f:
             if v != '' and not fqdn_bogon(v):
                 try:
                     rip=socket.gethostbyname(v)
-                    if rip == ip:
+                    if rip == thisone.ip:
                         besty.append(k)
                     else:
                         tmp[k+'-ip']=rip
@@ -298,9 +300,10 @@ with open(infile,'r') as f:
         thistime=ipend-ipstart
         peripaverage=((overallcount*peripaverage)+thistime)/(overallcount+1)
         if overallcount % 5 == 0:
-            print >> sys.stderr, "Reading fingerprints and rdns, did: " + str(overallcount) + " most recent ip " + thisone.ip + " average time/ip: " + str(peripaverage)
-        #if overallcount % 100 == 0:
-            #print >> sys.stderr, "Reading fingerprints, did: " + str(overallcount)
+            print >> sys.stderr, "Reading fingerprints and rdns, did: " + str(overallcount) + \
+                    " most recent ip " + thisone.ip + \
+                    " average time/ip: " + str(peripaverage) \
+                    + " last time: " + str(thistime)
         del j_content
         del thisone
 f.close()

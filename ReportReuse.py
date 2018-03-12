@@ -152,6 +152,7 @@ maxglen=500000
 # open file
 fp=open(args.fname,"r")
 
+jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
 f=getnextfprint(fp)
 while f:
     dynleg=set()
@@ -238,6 +239,15 @@ while f:
                 " legend:"  + str(asizeof.asizeof(dynleg)) +   \
                 " Added " + str(edgesadded) + " edges"
         if clipsdone[cnum] == csize:
+            try:
+                repf=open("cluster"+str(cnum)+".json","w")
+                print >>repf, creps[cnum]
+                print >>repf, "\n]\n"
+                repf.close()
+                del creps[cnum]
+            except:
+                print >>sys.stderr, "Failed to write json file for cluster " + str(cnum)
+
             rv=rendergraph(cnum,gvgraph,dynleg,args.legend,outdir)
             if rv:
                 #print "Rendered graph for cluster " + str(cnum)
@@ -245,23 +255,16 @@ while f:
                 del grr[cnum]
             else:
                 notrendered.append(cnum)
-                print "Failed to graph cluster " + str(cnum)
-            repf=open("cluster"+str(cnum)+".json","w")
-            print >>repf, creps[cnum]
-            print >>repf, "\n]\n"
-            repf.close()
-            del creps[cnum]
+                print >>sys.stderr, "Failed to graph cluster " + str(cnum)
     else:
         clipsdone[cnum] = 1
 
 
-    jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
     fstr=jsonpickle.encode(f)
     if cnum not in creps:
         creps[cnum]="[\n" + fstr 
     else:
         creps[cnum]+= ",\n" + fstr 
-    del fstr
 
     if not args.legend:
         del dynleg
