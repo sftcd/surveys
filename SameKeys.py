@@ -127,7 +127,7 @@ with open(infile,'r') as f:
             #print "FQDN reverse: " + str(rdns)
             nameset['rdns']=rdns
         except Exception as e: 
-            print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + thisone.ip
+            #print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + thisone.ip
             #nameset['rdns']=''
             pass
 
@@ -135,7 +135,7 @@ with open(infile,'r') as f:
         try:
             p25=j_content['p25']
             if thisone.writer=="FreshGrab.py":
-                banner=p25['data']['starttls']['banner'] 
+                banner=p25['data']['banner'] 
             else:
                 banner=p25['smtp']['starttls']['banner'] 
             ts=banner.split()
@@ -146,19 +146,29 @@ with open(infile,'r') as f:
                 banner_fqdn=ts[0][4:]
                 nameset['banner']=banner_fqdn
         except Exception as e: 
-            print >> sys.stderr, "FQDN banner exception " + str(e) + " for record:" + str(overallcount) + " ip:" + thisone.ip
+            #print >> sys.stderr, "FQDN banner exception " + str(e) + " for record:" + str(overallcount) + " ip:" + thisone.ip
             nameset['banner']=''
 
         try:
             # TODO: What names and key parameters to include in analysis?
             if thisone.writer=="FreshGrab.py":
                 fp=j_content['p22']['data']['xssh']['key_exchange']['server_host_key']['fingerprint_sha256'] 
+                shk=j_content['p22']['data']['xssh']['key_exchange']['server_host_key']
+                if shk['algorithm']=='ssh-rsa':
+                    thisone.analysis['p22']['rsalen']=shk['rsa_public_key']['length']
+                else:
+                    thisone.analysis['p22']['alg']=shk['algorithm']
             else:
                 fp=j_content['p22']['ssh']['v2']['server_host_key']['fingerprint_sha256'] 
+                shk=j_content['p22']['ssh']['v2']['server_host_key']
+                if shk['algorithm']=='ssh-rsa':
+                    thisone.analysis['p22']['rsalen']=shk['rsa_public_key']['length']
+                else:
+                    thisone.analysis['p22']['alg']=shk['algorithm']
             thisone.fprints['p22']=fp
             somekey=True
         except Exception as e: 
-            print >> sys.stderr, "p22 exception " + str(e) + " ip:" + thisone.ip
+            #print >> sys.stderr, "p22 exception " + str(e) + " ip:" + thisone.ip
             pass
 
         try:
@@ -174,7 +184,7 @@ with open(infile,'r') as f:
             thisone.fprints['p25']=fp
             somekey=True
         except Exception as e: 
-            print >> sys.stderr, "p25 exception for:" + thisone.ip + ":" + str(e)
+            #print >> sys.stderr, "p25 exception for:" + thisone.ip + ":" + str(e)
             pass
 
         try:
@@ -190,7 +200,7 @@ with open(infile,'r') as f:
             thisone.fprints['p110']=fp
             somekey=True
         except Exception as e: 
-            print >> sys.stderr, "p110 exception for:" + thisone.ip + ":" + str(e)
+            #print >> sys.stderr, "p110 exception for:" + thisone.ip + ":" + str(e)
             pass
 
         try:
@@ -206,7 +216,7 @@ with open(infile,'r') as f:
             thisone.fprints['p143']=fp
             somekey=True
         except Exception as e: 
-            print >> sys.stderr, "p143 exception for:" + thisone.ip + ":" + str(e)
+            #print >> sys.stderr, "p143 exception for:" + thisone.ip + ":" + str(e)
             pass
 
         try:
@@ -222,7 +232,7 @@ with open(infile,'r') as f:
             thisone.fprints['p443']=fp
             somekey=True
         except Exception as e: 
-            print >> sys.stderr, "p443 exception for:" + thisone.ip + ":" + str(e)
+            #print >> sys.stderr, "p443 exception for:" + thisone.ip + ":" + str(e)
             pass
 
         try:
@@ -237,7 +247,7 @@ with open(infile,'r') as f:
             get_certnames('p443',cert,nameset)
             thisone.fprints['p587']=fp
         except Exception as e: 
-            print >> sys.stderr, "p587 exception for:" + thisone.ip + ":" + str(e)
+            #print >> sys.stderr, "p587 exception for:" + thisone.ip + ":" + str(e)
             pass
 
         try:
@@ -253,7 +263,7 @@ with open(infile,'r') as f:
             thisone.fprints['p993']=fp
             somekey=True
         except Exception as e: 
-            print >> sys.stderr, "p587 exception for:" + thisone.ip + ":" + str(e)
+            #print >> sys.stderr, "p587 exception for:" + thisone.ip + ":" + str(e)
             pass
 
         besty=[]
