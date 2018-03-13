@@ -81,7 +81,7 @@ def j2o(jthing):
     ot=OneFP()
     #print json.dumps(jthing)
     ot.ip=jthing['ip']
-    ot.ip_record=-jthing['ip_record']
+    ot.ip_record=jthing['ip_record']
     ot.writer=jthing['writer']
     ot.asn=jthing['asn']
     ot.asndec=jthing['asndec']

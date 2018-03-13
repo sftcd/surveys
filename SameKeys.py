@@ -122,26 +122,29 @@ with open(infile,'r') as f:
         nameset=thisone.analysis['nameset']
         try:
             # name from reverse DNS
-            rdnsrec=socket.gethostbyaddr(ip)
+            rdnsrec=socket.gethostbyaddr(thisone.ip)
             rdns=rdnsrec[0]
             #print "FQDN reverse: " + str(rdns)
             nameset['rdns']=rdns
         except Exception as e: 
             print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + thisone.ip
-            nameset['rdns']=''
+            #nameset['rdns']=''
+            pass
 
         # name from banner
         try:
             p25=j_content['p25']
-            banner=p25['smtp']['starttls']['banner'] 
+            if thisone.writer=="FreshGrab.py":
+                banner=p25['data']['starttls']['banner'] 
+            else:
+                banner=p25['smtp']['starttls']['banner'] 
             ts=banner.split()
             if ts[0]=="220":
                 banner_fqdn=ts[1]
+                nameset['banner']=banner_fqdn
             elif ts[0].startswith("220-"):
                 banner_fqdn=ts[0][4:]
-            else:
-                banner_fqdn=''
-            nameset['banner']=banner_fqdn
+                nameset['banner']=banner_fqdn
         except Exception as e: 
             print >> sys.stderr, "FQDN banner exception " + str(e) + " for record:" + str(overallcount) + " ip:" + thisone.ip
             nameset['banner']=''
