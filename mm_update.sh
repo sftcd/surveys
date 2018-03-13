@@ -22,7 +22,7 @@
 
 # grab and explode updated versions of maxmind's free DBs
 
-set -x
+# set -x
 
 # for testing
 #skipwget=false
@@ -35,6 +35,16 @@ set -x
 DESTDIR=`grep mmdbdir $HOME/code/surveys/SurveyFuncs.py  | head -1 | awk -F\' '{print $2}'`
 # for testing
 #DESTDIR=$PWD/db
+
+if [ ! -d $DESTDIR ]
+then
+	mkdir -p $DESTDIR
+fi
+if [ ! -d $DESTDIR ]
+then
+	echo "Can't create $DESTDIR - exiting"
+	exit 11
+fi
 
 TMPD=`mktemp -d /tmp/mmdbXXXX`
 
