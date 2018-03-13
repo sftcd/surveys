@@ -125,6 +125,8 @@ export GOPATH=$HOME/go
 go get github.com/zmap/zgrab
 cd $GOPATH/src/github.com/zmap/zgrab
 go build
+# put it on PATH
+sudo ln -sf $HOME/go/src/github.com/zmap/zgrab/zgrab /usr/local/bin
 
 # clean up
 cd $starddir
