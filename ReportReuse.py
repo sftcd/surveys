@@ -230,6 +230,12 @@ while f:
                 edgesadded+=len(colours)
                 del colours
 
+    fstr=jsonpickle.encode(f)
+    if cnum not in creps:
+        creps[cnum]="[\n" + fstr 
+    else:
+        creps[cnum]+= ",\n" + fstr 
+
     if cnum in clipsdone:
         clipsdone[cnum] += 1
         if clipsdone[cnum]%100==0:
@@ -259,12 +265,6 @@ while f:
     else:
         clipsdone[cnum] = 1
 
-
-    fstr=jsonpickle.encode(f)
-    if cnum not in creps:
-        creps[cnum]="[\n" + fstr 
-    else:
-        creps[cnum]+= ",\n" + fstr 
 
     if not args.legend:
         del dynleg

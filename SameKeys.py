@@ -135,6 +135,7 @@ with open(infile,'r') as f:
         try:
             p25=j_content['p25']
             if thisone.writer=="FreshGrab.py":
+                print p25['data']['banner']
                 banner=p25['data']['banner'] 
             else:
                 banner=p25['smtp']['starttls']['banner'] 
@@ -176,7 +177,7 @@ with open(infile,'r') as f:
                 tls=j_content['p25']['data']['tls']
                 cert=tls['server_certificates']['certificate']
             else:
-                tls=p25['smtp']['starttls']['tls']
+                tls=j_content['p25']['smtp']['starttls']['tls']
                 cert=tls['certificate']
             fp=cert['parsed']['subject_key_info']['fingerprint_sha256'] 
             get_tls(thisone.writer,'p25',tls,j_content['ip'],thisone.analysis['p25'],scandate)
