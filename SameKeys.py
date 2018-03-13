@@ -90,19 +90,12 @@ with open(infile,'r') as f:
         thisone=OneFP()
         thisone.ip_record=overallcount
         thisone.ip=j_content['ip'].strip()
-
-        #print "Doing " + thisone.ip
-
         if 'writer' in j_content:
             thisone.writer=j_content['writer']
 
-        # amazon is the chief susspect for key sharing, via some 
-        # kind of fronting, at least in .ie
         try:
             asn=j_content['autonomous_system']['name'].lower()
             asndec=int(j_content['autonomous_system']['asn'])
-            if "amazon" in asn:
-                thisone.amazon=True
             thisone.asn=asn
             thisone.asndec=asndec
         except:
@@ -127,7 +120,6 @@ with open(infile,'r') as f:
 
         thisone.analysis['nameset']={}
         nameset=thisone.analysis['nameset']
-        ip=j_content['ip']
         try:
             # name from reverse DNS
             rdnsrec=socket.gethostbyaddr(ip)
@@ -135,7 +127,7 @@ with open(infile,'r') as f:
             #print "FQDN reverse: " + str(rdns)
             nameset['rdns']=rdns
         except Exception as e: 
-            #print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + ip
+            print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + thisone.ip
             nameset['rdns']=''
 
         # name from banner
@@ -151,7 +143,7 @@ with open(infile,'r') as f:
                 banner_fqdn=''
             nameset['banner']=banner_fqdn
         except Exception as e: 
-            #print >> sys.stderr, "FQDN banner exception " + str(e) + " for record:" + str(count)
+            print >> sys.stderr, "FQDN banner exception " + str(e) + " for record:" + str(overallcount) + " ip:" + thisone.ip
             nameset['banner']=''
 
         try:
@@ -163,7 +155,7 @@ with open(infile,'r') as f:
             thisone.fprints['p22']=fp
             somekey=True
         except Exception as e: 
-            #print >> sys.stderr, "fprint exception " + str(e)
+            print >> sys.stderr, "p22 exception " + str(e) + " ip:" + thisone.ip
             pass
 
         try:
@@ -179,7 +171,7 @@ with open(infile,'r') as f:
             thisone.fprints['p25']=fp
             somekey=True
         except Exception as e: 
-            #print >> sys.stderr, "p25 fprint exception for:" + j_content['ip'] + ":" + str(e)
+            print >> sys.stderr, "p25 exception for:" + thisone.ip + ":" + str(e)
             pass
 
         try:
@@ -195,7 +187,7 @@ with open(infile,'r') as f:
             thisone.fprints['p110']=fp
             somekey=True
         except Exception as e: 
-            #print >> sys.stderr, "fprint exception " + str(e)
+            print >> sys.stderr, "p110 exception for:" + thisone.ip + ":" + str(e)
             pass
 
         try:
@@ -211,14 +203,14 @@ with open(infile,'r') as f:
             thisone.fprints['p143']=fp
             somekey=True
         except Exception as e: 
-            #print >> sys.stderr, "fprint exception " + str(e)
+            print >> sys.stderr, "p143 exception for:" + thisone.ip + ":" + str(e)
             pass
 
         try:
             if thisone.writer=="FreshGrab.py":
                 fp=j_content['p443']['data']['http']['response']['request']['tls_handshake']['server_certificates']['certificate']['parsed']['subject_key_info']['fingerprint_sha256'] 
                 cert=j_content['p443']['data']['http']['response']['request']['tls_handshake']['server_certificates']['certificate']
-                get_tls(thisone.writer,'p443',j_content['p443']['data']['http']['response']['request']['tls_handshakee'],j_content['ip'],thisone.analysis['p443'],scandate)
+                get_tls(thisone.writer,'p443',j_content['p443']['data']['http']['response']['request']['tls_handshake'],j_content['ip'],thisone.analysis['p443'],scandate)
             else:
                 fp=j_content['p443']['https']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
                 cert=j_content['p443']['https']['tls']['certificate']
@@ -227,7 +219,7 @@ with open(infile,'r') as f:
             thisone.fprints['p443']=fp
             somekey=True
         except Exception as e: 
-            #print >> sys.stderr, "fprint exception " + str(e)
+            print >> sys.stderr, "p443 exception for:" + thisone.ip + ":" + str(e)
             pass
 
         try:
@@ -242,7 +234,7 @@ with open(infile,'r') as f:
             get_certnames('p443',cert,nameset)
             thisone.fprints['p587']=fp
         except Exception as e: 
-            #print >> sys.stderr, "fprint exception " + str(e)
+            print >> sys.stderr, "p587 exception for:" + thisone.ip + ":" + str(e)
             pass
 
         try:
@@ -258,7 +250,7 @@ with open(infile,'r') as f:
             thisone.fprints['p993']=fp
             somekey=True
         except Exception as e: 
-            #print >> sys.stderr, "fprint exception " + str(e)
+            print >> sys.stderr, "p587 exception for:" + thisone.ip + ":" + str(e)
             pass
 
         besty=[]
@@ -280,7 +272,7 @@ with open(infile,'r') as f:
                     nogood=False
                 except Exception as e: 
                     #oddly, an NXDOMAIN seems to cause an exception, so these happen
-                    #print >> sys.stderr, "Error making DNS query for " + v + " for record:" + str(count) + " " + str(e)
+                    print >> sys.stderr, "Error making DNS query for " + v + " for ip:" + thisone.ip + " " + str(e)
                     pass
         for k in tmp:
             nameset[k]=tmp[k]

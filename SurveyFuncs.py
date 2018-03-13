@@ -37,7 +37,6 @@ class OneFP():
                     'ip',
                     'asn',
                     'asndec',
-                    'amazon',
                     'fprints',
                     'csize',
                     'nsrc',
@@ -50,7 +49,6 @@ class OneFP():
         self.asn=''
         self.asndec=0
         self.clusternum=0
-        self.amazon=False
         self.fprints={}
         self.csize=1
         self.nrcs=0
@@ -88,7 +86,6 @@ def j2o(jthing):
     ot.asn=jthing['asn']
     ot.asndec=jthing['asndec']
     ot.clusternum=jthing['clusternum']
-    ot.amazon=jthing['amazon']
     ot.fprints=jthing['fprints']
     ot.csize=jthing['csize']
     ot.nrcs=jthing['nrcs']
@@ -356,17 +353,42 @@ def get_tls(writer,portstr,tls,ip,tlsdets,scandate):
             tlsdets['cipher_suite']=tls['server_hello']['cipher_suite']['value']
             tlsdets['browser_trusted']=tls['server_certificates']['validation']['browser_trusted']
             tlsdets['self_signed']=tls['server_certificates']['certificate']['parsed']['signature']['self_signed']
-            tlsdets['rsalen']=tls['server_certificates']['certificate']['parsed']['subject_key_info']['rsa_public_key']['length']
             notbefore=dparser.parse(tls['server_certificates']['certificate']['parsed']['validity']['start'])
             notafter=dparser.parse(tls['server_certificates']['certificate']['parsed']['validity']['end'])
+
+            try:
+                spki=tls['server_certificates']['certificate']['parsed']['subject_key_info']
+                if spki['key_algorithm']['name']=='RSA':
+                    tlsdets['rsalen']=spki['rsa_public_key']['length']
+                elif spki['key_algorithm']['name']=='ECDSA':
+                    tlsdets['ecdsacurve']=spki['ecdsa_public_key']['curve']
+                else:
+                    tlsdets['spkialg']=spki['key_algorithm']['name']
+            except:
+                print >>sys.stderr, "RSA exception for ip: " + ip + "spki:" + \
+                                str(tls['server_certificates']['certificate']['parsed']['subject_key_info']) 
+                tlsdets['spkialg']="unknown"
+
         else:
             # censys.io
             tlsdets['cipher_suite']=int(tls['cipher_suite']['id'],16) 
             tlsdets['browser_trusted']=tls['validation']['browser_trusted']
             tlsdets['self_signed']=tls['certificate']['parsed']['signature']['self_signed']
-            tlsdets['rsalen']=tls['certificate']['parsed']['subject_key_info']['rsa_public_key']['length']
             notbefore=dparser.parse(tls['certificate']['parsed']['validity']['start'])
             notafter=dparser.parse(tls['certificate']['parsed']['validity']['end'])
+
+            try:
+                spki=tls['certificate']['parsed']['subject_key_info']
+                if spki['key_algorithm']['name']=='rsa':
+                    tlsdets['rsalen']=spki['rsa_public_key']['length']
+                elif spki['key_algorithm']['name']=='ECDSA':
+                    tlsdets['ecdsacurve']=spki['ecdsa_public_key']['curve']
+                else:
+                    tlsdets['spkialg']=spki['key_algorithm']['name']
+            except:
+                print >>sys.stderr, "RSA exception for ip: " + ip + "spki:" + \
+                                str(tls['server_certificates']['certificate']['parsed']['subject_key_info']) 
+                tlsdets['spkialg']="unknown"
 
         if (notbefore <= scandate and notafter > scandate):
             tlsdets['timely']=True
