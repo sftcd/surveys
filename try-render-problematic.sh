@@ -60,7 +60,7 @@ fi
 # all the other graphs (outdir from GraphKeyReUse3) as that's
 # where the summary.txt file will be put
 
-list=`cat summary.txt | grep "not rendered" \
+list=`cat summary.txt | grep "not rendered" | tail -1\
 		| sed -e 's/^.*\[//' \
 		| sed -e 's/\].*$//' \
 		| sed -e 's/, / /g'`
@@ -105,7 +105,7 @@ do
 			target=graph$gr.dot.$fmt
 			if [ ! -f $target ]
 			then
-				echo "Trying $gr..."
+				echo "Trying $gr with $eng and $fmt..."
 				timeout 120s $eng $engparms -T$fmt graph$gr.dot >$target
 				if (( $? != 0 ))
 				then
@@ -141,7 +141,11 @@ do
 	done
 	if [ "$nogood" == "True" ]
 	then
-		baddies+=" "$gr
+		therealready=`echo $baddies | grep $gr`
+		if [[ "$theerealredy" == "" ]]
+		then
+			baddies+=" "$gr
+		fi
 	fi
 done
 
