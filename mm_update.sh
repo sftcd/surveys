@@ -22,7 +22,7 @@
 
 # grab and explode updated versions of maxmind's free DBs
 
-# set -x
+set -x
 
 # for testing
 #skipwget=false
@@ -32,7 +32,7 @@
 #fi
 
 # just configure that directory in one place
-DESTDIR=`grep mmdbdir $HOME/code/surveys/SurveyFuncs.py  | head -1 | awk -F\' '{print $2}'`
+DESTDIR=`grep mmdbdir $HOME/code/surveys/SurveyFuncs.py  | head -1 | awk -F\' '{print $2}' | sed -e 's/\/$//'`
 # for testing
 #DESTDIR=$PWD/db
 
@@ -69,11 +69,25 @@ do
 		dbdate=`ls -d "GeoLite2-$db"_* | awk -F"_" '{print $2}'`
 		dirname="GeoLite2-$db"_"$dbdate"
 		fname="GeoLite2-$db"
-		cp $dirname/$fname.mmdb $DESTDIR$fname-$dbdate.mmdb
+		cp $dirname/$fname.mmdb $DESTDIR/$fname-$dbdate.mmdb
 		# update link
-		ln -sf $DESTDIR$fname-$dbdate.mmdb $DESTDIR$fname.mmdb
+		ln -sf $DESTDIR/$fname-$dbdate.mmdb $DESTDIR/$fname.mmdb
 	fi
 done
+
+
+# get the CSV for countries (also for IPv6!) so we can start our own zmap 
+# if we want
+now=`date +%Y%m%d`
+wget http://geolite.maxmind.com/download/geoip/database/GeoIPCountryCSV.zip
+unzip GeoIPCountryCSV.zip 
+cp GeoIPCountryWhois.csv $DESTDIR/GeoIPCountryWhois-$now.csv
+ln -sf $DESTDIR/GeoIPCountryWhois-$now.csv $DESTDIR/GeoIPCountryWhois.csv
+
+wget http://geolite.maxmind.com/download/geoip/database/GeoIPv6.csv.gz
+gunzip GeoIPv6.csv.gz
+cp GeoIPv6.csv $DESTDIR/GeoIPv6-$now.csv
+ln -sf $DESTDIR/GeoIPv6-$now.csv $DESTDIR/GeoIPv6.csv 
 
 popd
 # clean up
