@@ -78,23 +78,25 @@ sudo -H pip install --upgrade pip
 # leave the list as-in anyway as it does no harm other than some 
 # warnings
 sudo -H pip install  argparse
-sudo -H pip install  copy
 sudo -H pip install  datetime
-sudo -H pip install  dateutil 
-sudo -H pip install  gc
-sudo -H pip install  geoip2.database
-sudo -H pip install  graphviz 
-sudo -H pip install  import os
-sudo -H pip install  json
+sudo -H pip install  python-dateutil
+sudo -H pip install  geoip2
+sudo -H pip install  graphviz
 sudo -H pip install  jsonpickle
-sudo -H pip install  pympler 
-sudo -H pip install  pytz 
-sudo -H pip install  socket
-sudo -H pip install  subprocess
-sudo -H pip install  sys
-sudo -H pip install  tempfile
-sudo -H pip install  time
+sudo -H pip install  pympler
+sudo -H pip install  pytz
 
+# these are imports that I don't think need a pip install
+# but not sure:-)
+#sudo -H pip install  gc
+#sudo -H pip install  copy
+#sudo -H pip install  os
+#sudo -H pip install  sys
+#sudo -H pip install  json
+#sudo -H pip install  socket
+#sudo -H pip install  subprocess
+#sudo -H pip install  time
+#sudo -H pip install  tempfile
 # golang, zmap and zgrab 
 # ubuntu's golang version isn't currently recent enough, need to go for
 # a stable version from upstream

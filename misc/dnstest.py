@@ -43,6 +43,9 @@ else:
 
     start=datetime.datetime.utcnow()
     try:
+        #answers=dns.resolver.query(dnsname,"CNAME")
+        #for rdata in answers:
+            #print rdata
         answers=dns.resolver.query(dnsname,"A")
         for rdata in answers:
             #print rdata
