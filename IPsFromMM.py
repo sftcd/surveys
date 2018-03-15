@@ -111,9 +111,9 @@ if os.path.isfile(outfile) and not os.access(outfile,os.W_OK):
     print >> sys.stderr, "Can't write onput file " + outfile + " - exiting"
     sys.exit(1)
 
-print "4: " + v4file + " do: " + str(dov4)
-print "6: " + v6file + " do: " + str(dov6)
-print "outfile: " + outfile + "[.v4|.v6]"
+#print "4: " + v4file + " do: " + str(dov4)
+#print "6: " + v6file + " do: " + str(dov6)
+#print "outfile: " + outfile + "[.v4|.v6]"
 
 if dov4:
     lc=0 # lines count

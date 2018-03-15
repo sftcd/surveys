@@ -33,13 +33,14 @@ echo "Rnning $0 at $NOW"
 
 function usage()
 {
-	echo "$0 [-s <source-code-directory>] [-r <results-directory>] [-p <inter-dir>] [-c <country>] [-i <ips-src>]"
-	echo "\tsource-code-directory defaults to \$HOME/code/surveys"
-	echo "\tcountry must be IE or EE, default is IE"
-	echo "\tresults-directory defaults to \$HOME/data/smtp/runs"
-	echo "\tinter-directory is a directory with intermediate results we process further"
-	echo "\tips-src is a file with json lines like censys.io's (original censys.io input used if not supplied"
-	echo "\tskips comma-sep list of stages to skip: grab,fresh,cluster,graph"
+	echo "$0 [-m] [-s <source-code-directory>] [-r <results-directory>] [-p <inter-dir>] [-c <country>] [-i <ips-src>]"
+	echo "	-m means do the maxmind thing"
+	echo "	source-code-directory defaults to \$HOME/code/surveys"
+	echo "	country must be IE or EE, default is IE"
+	echo "	results-directory defaults to \$HOME/data/smtp/runs"
+	echo "	inter-directory is a directory with intermediate results we process further"
+	echo "	ips-src is a file with json lines like censys.io's (original censys.io input used if not supplied"
+	echo "	skips comma-sep list of stages to skip: grab,fresh,cluster,graph"
 	exit 99
 }
 
@@ -48,9 +49,10 @@ country="IE"
 outdir=$HOME/data/smtp/runs
 ipssrc=''
 pdir=''
+domm='no'
 
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -s bash -o s:r:c:i:p:h -l srcdir:,resdir:,country:,ips:,process:,help -- "$@")
+if ! options=$(getopt -s bash -o ms:r:c:i:p:h -l mm,srcdir:,resdir:,country:,ips:,process:,help -- "$@")
 then
 	# something went wrong, getopt will put out an error message for us
 	exit 1
@@ -61,6 +63,7 @@ while [ $# -gt 0 ]
 do
 	case "$1" in
 		-h|--help) usage;;
+		-m|--mm) domm="yes" ;;
 		-s|--srcdir) srcdir="$2"; shift;;
 		-r|--resdir) outdir="$2"; shift;;
 		-i|--ips) ipssrc="$2"; shift;;
@@ -159,12 +162,16 @@ echo "Starting at $NOW, log in $logf"
 echo "Starting at $NOW, log in $logf" >>$logf
 
 # Variables to have set
+unset SKIP_MM
+unset SKIP_ZMAP
 unset SKIP_GRAB
 unset SKIP_FRESH
 unset SKIP_CLUSTER
 unset SKIP_GRAPH
 
 # files uses as tell-tales
+TELLTALE_MM="mm-ips."$country".v4"
+TELLTALE_ZMAP="zmap.ips"
 TELLTALE_GRAB="input.ips"
 TELLTALE_FRESH="records.fresh"
 TELLTALE_CLUSTER="collisions.json"
@@ -174,6 +181,14 @@ if [ "$pdir" != "" ]
 then
 	# figure out where we're at...
 	# if we have a $TELLTALE_GRAB then no need to grab
+	if [ -f $TELLTALE_MM ]
+	then
+		SKIP_MM=yes
+	fi
+	if [ -f $TELLTALE_ZMAP ]
+	then
+		SKIP_ZMAP=yes
+	fi
 	if [ -f $TELLTALE_GRAB ]
 	then
 		SKIP_GRAB=yes
@@ -197,6 +212,44 @@ fi
 
 # now do each step in the process, where that step is wanted and needed
 # Steps:
+
+# -1: IPs from maxmind, 0: zmap for port 25
+# if there's a "GRAB" telltale then don't do 
+if [ "$SKIP_MM" ]
+then
+	echo "Skipping maxmind"
+	echo "Skipping maxmind" >>$logf
+else
+	if [[ "$domm" == "yes" ]]
+	then
+		echo "starting maxmind"
+		echo "starting maxmind" >>$logf
+		$srcdir/IPsFromMM.py -c $country >>$logf 2>&1 
+		echo "maxmind done"
+		echo "maxmind done" >>$logf
+	fi
+fi
+
+if [ "$SKIP_ZMAP" ]
+then
+	echo "Skipping zmap"
+	echo "Skipping zmap" >>$logf
+else
+	# only if we've done the mm thing
+	if [[ "$domm" == "yes" && -f $TELLTALE_MM ]]
+	then
+		echo "starting zmap"
+		echo "starting zmap" >>$logf
+		sudo zmap -p 25 --whitelist-file=$TELLTALE_MM >$TELLTALE_ZMAP 2>>$logf
+		cp $TELLTALE_ZMAP $TELLTALE_GRAB
+		echo "zmap done"
+		echo "zmap done" >>$logf
+	else
+		echo "no zmap whitelist: $TELLTALE_MM"
+		echo "no zmap whitelist: $TELLTALE_MM" >>$logf
+	fi
+fi
+
 # 1. GrabIPs from censys.io original source or from some other json input provided
 if [ "$SKIP_GRAB" ]
 then
