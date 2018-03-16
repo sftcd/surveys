@@ -53,7 +53,7 @@ parser.add_argument('-c','--country',
 args=parser.parse_args()
 
 def_country="IE"
-def_indir=os.eniron['HOME']+'/code/surveys/mmdb'
+def_indir=os.environ['HOME']+'/code/surveys/mmdb'
 def_outfile="mm-ips."+def_country
 def_v4file='GeoIPCountryWhois.csv'
 def_v6file='GeoIPv6.csv'

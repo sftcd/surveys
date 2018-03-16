@@ -85,6 +85,7 @@ sudo -H pip install  graphviz
 sudo -H pip install  jsonpickle
 sudo -H pip install  pympler
 sudo -H pip install  pytz
+sudo -H pip install  netaddr
 
 # these are imports that I don't think need a pip install
 # but not sure:-)
