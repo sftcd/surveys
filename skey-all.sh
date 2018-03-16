@@ -266,7 +266,7 @@ else
 		then
 		orig_file_$orig_ee
 	fi
-	if [ "X$ipssrc" == "X" ]
+	if [[ "$domm" == "no" && "X$ipssrc" == "X" ]]
 	then
 		infile=$orig_file
 	else

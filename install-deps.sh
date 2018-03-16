@@ -38,7 +38,7 @@ sudo apt-get update
 sudo apt-get -y upgrade
 
 # maybe we got this script some weird way...
-sudo apt-get -y install git
+sudo apt-get -y install git unzip
 if [ ! -d $HOME/code ]
 then
 	mkdir -p $HOME/code
