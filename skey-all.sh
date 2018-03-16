@@ -106,13 +106,13 @@ fi
 
 # for now our baseline is 20171130 from censys
 orig_ee=$HOME/data/smtp/EE/ipv4.20171130.json
-if [ "$domm" == "no" && ! -f $orig_ee ]
+if [[ "$domm" == "no" && ! -f $orig_ee ]]
 then
 	echo "Can't find $orig_ee - exiting"
 	exit 7
 fi
 orig_ie=$HOME/data/smtp/IE/ipv4.20171130.json
-if [ "$domm" == "no" && ! -f $orig_ie ]
+if [[ "$domm" == "no" && ! -f $orig_ie ]]
 then
 	echo "Can't find $orig_ie - exiting"
 	exit 6
