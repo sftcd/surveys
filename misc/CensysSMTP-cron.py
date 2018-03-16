@@ -33,7 +33,7 @@ if len(sys.argv)==2:
     country=sys.argv[1]
 
 # top of our storage tree
-TOP="/home/stephen/data/smtp/"+country+"/"
+TOP=os.environ['HOME']+"/data/smtp/"+country+"/"
 
 if not os.path.isdir(TOP):
     print "Don't have a place for",country,"stuff - exiting"

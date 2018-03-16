@@ -22,7 +22,7 @@
 
 # grab and explode updated versions of maxmind's free DBs
 
-set -x
+# set -x
 
 # for testing
 #skipwget=false
@@ -32,7 +32,8 @@ set -x
 #fi
 
 # just configure that directory in one place
-DESTDIR=`grep mmdbdir $HOME/code/surveys/SurveyFuncs.py  | head -1 | awk -F\' '{print $2}' | sed -e 's/\/$//'`
+dpath=`grep mmdbpath $HOME/code/surveys/SurveyFuncs.py  | head -1 | awk -F\' '{print $2}' | sed -e 's/\/$//'`
+DESTDIR=$HOME/$dpath
 # for testing
 #DESTDIR=$PWD/db
 

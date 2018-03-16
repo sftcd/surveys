@@ -50,7 +50,8 @@ outdir=$HOME/data/smtp/runs
 ipssrc=''
 pdir=''
 domm='no'
-mmdbdir=$HOME/code/surveys/mmdb
+dpath=`grep mmdbpath $HOME/code/surveys/SurveyFuncs.py  | head -1 | awk -F\' '{print $2}' | sed -e 's/\/$//'`
+mmdbdir=$HOME/$dpath
 
 # options may be followed by one colon to indicate they have a required argument
 if ! options=$(getopt -s bash -o ms:r:c:i:p:h -l mm,srcdir:,resdir:,country:,ips:,process:,help -- "$@")

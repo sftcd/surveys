@@ -24,7 +24,7 @@ import json
 import jsonpickle
 import copy
 import graphviz as gv
-import sys, socket
+import os, sys, socket
 import geoip2.database
 from dateutil import parser as dparser  # for parsing time from comand line and certs
 
@@ -307,7 +307,8 @@ def edgename(ip1,ip2):
 
 # MaxMind stuff
 
-mmdbdir='/home/stephen/code/surveys/mmdb/'
+mmdbpath='code/surveys/mmdb/'
+mmdbdir=os.environ['HOME']+'/'+mmdbpath
 
 def mm_setup():
     global asnreader
