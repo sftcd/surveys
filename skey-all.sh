@@ -245,7 +245,8 @@ else
 		echo "starting zmap"
 		echo "starting zmap" >>$logf
 		sudo zmap -p 25 --whitelist-file=$TELLTALE_MM >$TELLTALE_ZMAP 2>>$logf
-		cp $TELLTALE_ZMAP $TELLTALE_GRAB
+		ln -s $TELLTALE_ZMAP $TELLTALE_GRAB
+		SKIP_GRAB="yes"
 		echo "zmap done"
 		echo "zmap done" >>$logf
 	else
