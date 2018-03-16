@@ -30,7 +30,7 @@ import subprocess
 from SurveyFuncs import *
 
 # command line arg handling 
-parser=argparse.ArgumentParser(description='Do a confirmation scan of ssh collisions')
+parser=argparse.ArgumentParser(description='Do a confirmation scan of ssh key hashes')
 parser.add_argument('-i','--input',     
                     dest='infile',
                     help='file containing list of collisions')
@@ -57,7 +57,7 @@ if args.outfile is not None and os.path.isfile(args.outfile) and not os.access(a
     print >> sys.stderr, "Can't write to output file " + args.outfile + " - exiting"
     sys.exit(1)
 
-# default to a 100ms wait between zgrab calls
+# default to a 100ms wait between checks
 defsleep=0.1
 
 if args.outfile is not None:
@@ -117,7 +117,9 @@ while f:
     if 'p22' not in f.fprints:
         print >>out_f, "Ignoring",ip,"no SSH involved"
     else:
+        print >>out_f,  f.fprints['p22']
         hkey=gethostkey(ip)
+        print  >>out_f, "\t"+str(hkey)
         ipsdone[ip]=hkey
         for ind in f.rcs:
             pip=f.rcs[ind]['ip']
@@ -130,6 +132,7 @@ while f:
                 else:
                     pkey=gethostkey(pip)
                     ipsdone[pip]=pkey
+                print  >>out_f, "\t\t"+str(pkey)
                 if anymatch(pkey,hkey):
                     matches+=1
                 else:
@@ -139,7 +142,7 @@ while f:
                     mismatches+=1
     f=getnextfprint(fp)
 
-print >>out_f, "ipcount,ttcount,matches,mismatches"
+print >>out_f, "ipcount,22count,matches,mismatches"
 print >>out_f, ipcount,ttcount,matches,mismatches
 #print >>out_f, ipsdone
 

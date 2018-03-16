@@ -164,7 +164,6 @@ with open(infile,'r') as f:
             nameset['banner']=''
 
         try:
-            # TODO: What names and key parameters to include in analysis?
             if thisone.writer=="FreshGrab.py":
                 fp=j_content['p22']['data']['xssh']['key_exchange']['server_host_key']['fingerprint_sha256'] 
                 shk=j_content['p22']['data']['xssh']['key_exchange']['server_host_key']

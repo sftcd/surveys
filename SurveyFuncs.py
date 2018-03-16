@@ -205,10 +205,18 @@ def getnextfprint(fp):
     jstr=""
     while line:
         jstr += line
-        if line=="}\n":
+        if line=="}\n": 
+            break
+        if line=="},\n":
+            # same as above but take away the "," at the end
+            #print "|"+jstr[-10:]+"|"
+            jstr=jstr.strip()
+            jstr=jstr.strip(',')
+            #print "|"+jstr[-10:]+"|"
             break
         line=fp.readline()
     if line:
+        #print jstr
         jthing=json.loads(jstr)
         onething=j2o(jthing)
         del jthing
