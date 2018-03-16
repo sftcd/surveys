@@ -53,6 +53,12 @@ domm='no'
 dpath=`grep mmdbpath $HOME/code/surveys/SurveyFuncs.py  | head -1 | awk -F\' '{print $2}' | sed -e 's/\/$//'`
 mmdbdir=$HOME/$dpath
 
+# this form of assignment allows you to override this by setting an env
+# var of this name - usually I dislike this kind of opacity but in this
+# case I'll likely wanna play with different b/w on different hosts so
+# it seems ok
+${zmap_parms:="-B 100K"}
+
 # options may be followed by one colon to indicate they have a required argument
 if ! options=$(getopt -s bash -o ms:r:c:i:p:h -l mm,srcdir:,resdir:,country:,ips:,process:,help -- "$@")
 then
@@ -244,7 +250,7 @@ else
 	then
 		echo "starting zmap"
 		echo "starting zmap" >>$logf
-		sudo zmap -p 25 --whitelist-file=$TELLTALE_MM >$TELLTALE_ZMAP 2>>$logf
+		sudo zmap $zmap_parms -p 25 --whitelist-file=$TELLTALE_MM >$TELLTALE_ZMAP 2>>$logf
 		ln -s $TELLTALE_ZMAP $TELLTALE_GRAB
 		SKIP_GRAB="yes"
 		echo "zmap done"
