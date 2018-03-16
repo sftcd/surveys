@@ -25,6 +25,7 @@ import json, jsonpickle
 import time
 import subprocess
 import copy
+from SurveyFuncs import *
 
 # use zgrab to grab fresh records for a set of IPs
 
@@ -45,10 +46,19 @@ parser.add_argument('-p','--ports',
 parser.add_argument('-s','--sleep',     
                     dest='sleepsecs',
                     help='number of seconds to sleep between zgrabs (fractions allowed')
+parser.add_argument('-c','--country',     
+                    dest='country',
+                    help='country in which we\'re interested')
 args=parser.parse_args()
 
 # default (all) ports to scan - added in 587 for fun (wasn't in original scans)
 defports=['22', '25', '110', '143', '443', '587', '993']
+
+# default country 
+def_country='IE'
+country=def_country
+if args.country is not None:
+    country=args.country
 
 # default timeout for zgrab, in seconds
 ztimeout=' -timeout 2'
@@ -102,12 +112,19 @@ peripaverage=0
 
 out_f=open(args.outfile,"w")
 
+# initialise mm
+mm_setup()
+
 with open(args.infile,'r') as f:
     checkcount=0
     for ip in f:
+        ip=ip.strip() # lose the CRLF
+        # check country matches
+        if not mm_ipcc(ip,country):
+            print >>sys.stderr, ip + " is not in " + country + " - skipping"
+            continue
         ipstart=time.time()
         jthing={}
-        ip=ip.strip() # lose the CRLF
         jthing['ip']=ip
         jthing['writer']="FreshGrab.py"
         for port in ports:

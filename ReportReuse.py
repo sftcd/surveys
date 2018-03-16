@@ -91,8 +91,17 @@ parser.add_argument('-l','--legend',
 parser.add_argument('-n','--neato',
                     help='switch to neato graphviz thing (default=sfdp)',
                     action='store_true')
+parser.add_argument('-c','--country',     
+                    dest='country',
+                    help='country in which we\'re interested')
 args=parser.parse_args()
 
+
+# default country 
+def_country='IE'
+country=def_country
+if args.country is not None:
+    country=args.country
 
 # if this then just print legend
 if args.fname is None and args.legend:
@@ -192,9 +201,9 @@ while f:
             #print "fixing up asn info",asninfo
             f.asn=asninfo['asn']
             f.asndec=asninfo['asndec']
-            if asninfo['cc'] != 'IE' and asninfo['cc'] != 'EE':
+            if asninfo['cc'] != country:
                 # TODO: what to actually if the country-code is (now) wrong?
-                print "Bad country for ip",f.ip,asninfo['cc']
+                print "Bad country for ip",f.ip,"ASN-CC:",asninfo['cc'],"Asked for CC:",country
 
         asncol=asn2colour(f.asndec)
 

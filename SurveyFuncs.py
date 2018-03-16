@@ -313,9 +313,16 @@ def mm_setup():
     global asnreader
     global cityreader
     global countryreader
+    global countrycodes
     asnreader=geoip2.database.Reader(mmdbdir+'GeoLite2-ASN.mmdb')
     cityreader=geoip2.database.Reader(mmdbdir+'GeoLite2-City.mmdb')
     countryreader=geoip2.database.Reader(mmdbdir+'GeoLite2-Country.mmdb')
+    countrycodes=[]
+    with open(mmdbdir+'countrycodes.txt') as ccf:
+        for line in ccf:
+            cc=line.strip()
+            countrycodes.append(cc)
+    ccf.close()
 
 def mm_info(ip):
     rv={}
@@ -336,6 +343,16 @@ def mm_info(ip):
     if cityresponse.country.iso_code != countryresponse.country.iso_code:
         rv['cc-city']=cityresponse.country.iso_code
     return rv
+
+def mm_ipcc(ip,cc):
+    # is cc really a country code? can come from command line, so check...
+    if cc not in countrycodes:
+        return False
+    countryresponse=countryreader.country(ip)
+    if cc == countryresponse.country.iso_code:
+        return True
+    else:
+        return False
 
 # analyse the tls details - this ought work for other ports as
 # well as p25

@@ -50,6 +50,7 @@ outdir=$HOME/data/smtp/runs
 ipssrc=''
 pdir=''
 domm='no'
+mmdbdir=$HOME/code/surveys/mmdb
 
 # options may be followed by one colon to indicate they have a required argument
 if ! options=$(getopt -s bash -o ms:r:c:i:p:h -l mm,srcdir:,resdir:,country:,ips:,process:,help -- "$@")
@@ -88,16 +89,18 @@ then
 	usage
 fi
 
-if [[ "$country" != "IE" && "$country" != "EE" ]]
-then
-	echo "Can't do country $country yet, only EE and IE"
-	usage
-fi
-
 if [ "$outdir" == "" ]
 then
 	echo "No <results-diretory> set"
 	usage
+fi
+
+# check if country is known
+cknown=`grep $country $mmdbdir/countrycodes.txt`
+if [[ "$country" != "$cknown" ]]
+then
+	echo "Country $country isn't known"
+	exit 87
 fi
 
 # for now our baseline is 20171130 from censys
@@ -298,7 +301,7 @@ else
 	echo "Getting fresh records" 
 	echo "Getting fresh records" >>$logf 
 	# this takes a looooooooooong time - maybe >1 day! 
-	$srcdir/FreshGrab.py -i $TELLTALE_GRAB -o $TELLTALE_FRESH >>$logf 2>&1 
+	$srcdir/FreshGrab.py -i $TELLTALE_GRAB -o $TELLTALE_FRESH -c $country >>$logf 2>&1 
 	if [ "$?" != "0" ]
 	then
 		echo "Error ($?) from FreshGrab.py"
@@ -316,7 +319,7 @@ else
 	echo "Clustering records" 
 	echo "Clustering records" >>$logf 
 	# this takes a few minutes at least
-	$srcdir/SameKeys.py -i $TELLTALE_FRESH -o $TELLTALE_CLUSTER >>$logf 2>&1 
+	$srcdir/SameKeys.py -i $TELLTALE_FRESH -o $TELLTALE_CLUSTER -c $country >>$logf 2>&1 
 	if [ "$?" != "0" ]
 	then
 		echo "Error ($?) from SameKeys.py"
@@ -334,7 +337,7 @@ else
 	echo "Graphing records" 
 	echo "Graphing records" >>$logf 
 	# this takes a few minutes at least
-	$srcdir/ReportReuse.py -f $TELLTALE_CLUSTER -l -o . >>$logf 2>&1 
+	$srcdir/ReportReuse.py -f $TELLTALE_CLUSTER -l -o . -c $country >>$logf 2>&1 
 	if [ "$?" != "0" ]
 	then
 		echo "Error ($?) from ReportReuse.py"

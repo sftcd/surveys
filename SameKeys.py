@@ -54,6 +54,9 @@ argparser.add_argument('-p','--ports',
 argparser.add_argument('-s','--scandate',     
                     dest='scandatestring',
                     help='time at which to evaluate certificate validity')
+argparser.add_argument('-c','--country',     
+                    dest='country',
+                    help='country in which we\'re interested')
 args=argparser.parse_args()
 
 # scandate is needed to determine certificate validity, so we support
@@ -65,6 +68,11 @@ else:
     scandate=dparser.parse(args.scandatestring).replace(tzinfo=pytz.UTC)
     print >> sys.stderr, "Scandate: using " + args.scandatestring + "\n"
 
+
+def_country='IE'
+country=def_country
+if args.country is not None:
+    country=args.country
 
 if args.infile is not None:
     infile=args.infile
@@ -98,6 +106,10 @@ with open(infile,'r') as f:
             asndec=int(j_content['autonomous_system']['asn'])
             thisone.asn=asn
             thisone.asndec=asndec
+            if j_content['location']['country_code'] != country:
+                print "Bad country for ip",thisone.ip,"location:",j_content['location']['country_code'],"Asked for CC:",country
+                print >>sys.stderr, "Bad country for ip",thisone.ip,country
+                badrec=True
         except:
             # look that chap up ourselves
             mm_inited=False
@@ -108,10 +120,11 @@ with open(infile,'r') as f:
             #print "fixing up asn info",asninfo
             thisone.asn=asninfo['asn']
             thisone.asndec=asninfo['asndec']
-            if asninfo['cc'] != 'IE' and asninfo['cc'] != 'EE':
+            if asninfo['cc'] != country:
                 # just record as baddy if the country-code is (now) wrong?
                 # mark it so we can revisit later too
                 print >>sys.stderr, "Bad country for ip",thisone.ip,asninfo['cc']
+                print "Bad country for ip",thisone.ip,"asn:",asninfo['cc'],"Asked for CC:",country
                 j_content['wrong_country']=asninfo['cc']
                 badrec=True
 
