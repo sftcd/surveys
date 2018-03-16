@@ -92,7 +92,7 @@ ln -sf $DESTDIR/GeoIPv6-$now.csv $DESTDIR/GeoIPv6.csv
 
 # create a list of country codes from that (who knows, it might change
 # over time:-)
-cat GeoIPv6.csv | awk -F, '{print $5}' | sort | uniq >$DESTDIR/countrycodes-$now.txt
+cat GeoIPv6.csv | awk -F, '{print $5}' | sort | uniq | sed -e 's/ "//' | sed -e 's/"//g' >$DESTDIR/countrycodes-$now.txt
 ln -sf $DESTDIR/countrycodes-$now.txt $DESTDIR/countrycodes.txt
 
 popd

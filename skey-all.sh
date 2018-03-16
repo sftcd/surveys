@@ -29,7 +29,7 @@ function whenisitagain()
 NOW=$(whenisitagain)
 startdir=`/bin/pwd`
 
-echo "Rnning $0 at $NOW"
+echo "Running $0 at $NOW"
 
 function usage()
 {
