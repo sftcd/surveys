@@ -197,10 +197,24 @@ def getnextfprint(fp):
     # fprint is a json structure, pretty-printed, so we'll
     # read to the first line that's just an "{" until
     # the next line that's just a "}"
+    # or...
+    # sometimes we might get one fp structure per line
+    # surrounded with a '[' at the top and a ']' at
+    # the end, in that case fps are separated with a 
+    # line containing a single comma, i.e. ",\n"
+    # the first thing on fp lines in such cases is
+    # '{"fprints":' so we'll take such a line as holding
+    # an entire json fp
+    magicfpstr='"fprints":'
     line=fp.readline()
     while line:
         if line=="{\n":
             break
+        if line.startswith(magicfpstr):
+            jthing=json.loads(line)
+            onething=j2o(jthing)
+            del jthing
+            return onething
         line=fp.readline()
     jstr=""
     while line:
