@@ -57,7 +57,10 @@ mmdbdir=$HOME/$dpath
 # var of this name - usually I dislike this kind of opacity but in this
 # case I'll likely wanna play with different b/w on different hosts so
 # it seems ok
-${zmap_parms:="-B 100K"}
+if [[ "$zmap_parms" == "" ]]
+then
+	zmap_parms="-B 100K"
+fi
 
 # options may be followed by one colon to indicate they have a required argument
 if ! options=$(getopt -s bash -o ms:r:c:i:p:h -l mm,srcdir:,resdir:,country:,ips:,process:,help -- "$@")
