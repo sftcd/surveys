@@ -109,6 +109,8 @@ fp=open(args.infile,"r")
 
 ipsdone={}
 
+ipmatrix={}
+
 ipcount=0
 ttcount=0
 matches=0
@@ -120,6 +122,7 @@ while f:
     if 'p22' not in f.fprints:
         print >>out_f, "Ignoring",ip,"no SSH involved"
     else:
+        ttcount+=1
         print >>out_f,  "Checking " + ip + " recorded as: " + f.fprints['p22']
         hkey=gethostkey(ip)
         if hkey:
@@ -131,8 +134,20 @@ while f:
             pip=f.rcs[ind]['ip']
             str_colls=f.rcs[ind]['str_colls']
             if 'p22' in str_colls:
-                ttcount+=1
+                if ip in ipmatrix:
+                    if pip in ipmatrix[ip]:
+                        print >>out_f, "\tChecking",ip,"vs",pip,"done already"
+                        continue
+                else:
+                    ipmatrix[ip]={}
+                ipmatrix[ip][pip]=True
                 print >>out_f, "\tChecking",ip,"vs",pip
+                if pip in ipmatrix:
+                    if ip in ipmatrix[pip]:
+                        continue
+                else:
+                    ipmatrix[pip]={}
+                ipmatrix[pip][ip]=True
                 if pip in ipsdone:
                     pkey=ipsdone[pip]
                 else:
@@ -157,6 +172,9 @@ print >>out_f, "TwentyTwo,"+args.infile+","+str(ipcount)+","+str(ttcount)+","+st
 #print >>out_f, ipsdone
 
 print >>out_f, "Ran ",sys.argv[0:]," started at ",time.asctime(time.localtime(time.time()))
+
+#jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
+#print jsonpickle.encode(ipmatrix)
 
 if args.outfile:
     out_f.close()
