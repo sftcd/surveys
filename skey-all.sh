@@ -113,20 +113,6 @@ then
 	exit 87
 fi
 
-# for now our baseline is 20171130 from censys
-orig_ee=$HOME/data/smtp/EE/ipv4.20171130.json
-if [[ "$domm" == "no" && ! -f $orig_ee ]]
-then
-	echo "Can't find $orig_ee - exiting"
-	exit 7
-fi
-orig_ie=$HOME/data/smtp/IE/ipv4.20171130.json
-if [[ "$domm" == "no" && ! -f $orig_ie ]]
-then
-	echo "Can't find $orig_ie - exiting"
-	exit 6
-fi
-
 
 # place for results - might get changed by pdir
 resdir=$outdir/$country\-$NOW
@@ -271,10 +257,18 @@ then
 	echo "Skipping grab" >>$logf
 else
 
+
+	orig_ie=$HOME/data/smtp/IE/ipv4.20171130.json
 	orig_file=$orig_ie
 	if [ "$country" == "EE" ]
-		then
-		orig_file_$orig_ee
+	then
+		orig_ee=$HOME/data/smtp/EE/ipv4.20171130.json
+		orig_file=$orig_ee
+	fi
+	if [[ "$domm" != "no" && ! -f $orig_file ]]
+	then
+		echo "Can't find $orig_ie - exiting"
+		exit 6
 	fi
 	if [[ "$domm" == "no" && "X$ipssrc" == "X" ]]
 	then
