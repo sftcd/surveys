@@ -205,13 +205,13 @@ def getnextfprint(fp):
     # the first thing on fp lines in such cases is
     # '{"fprints":' so we'll take such a line as holding
     # an entire json fp
-    magicfpstr='"fprints":'
+    magicfpstr='{"fprints":'
     line=fp.readline()
     while line:
         if line=="{\n":
             break
         if line.startswith(magicfpstr):
-            jthing=json.loads(line)
+            jthing=json.loads(line.strip())
             onething=j2o(jthing)
             del jthing
             return onething
