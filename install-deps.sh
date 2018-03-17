@@ -69,7 +69,7 @@ sudo apt-get -y install zmap
 ./mm_update.sh
 
 # install pip
-sudo apt-get -y install python-pip
+sudo apt-get -y install python-pip graphviz
 
 sudo -H pip install --upgrade pip
  
