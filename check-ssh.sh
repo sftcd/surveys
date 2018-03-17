@@ -85,6 +85,19 @@ do
 	$srcdir/TwentyTwos.py -i $file >>$ofall 2>&1
 done
 
+# summarise...
+
+summary=`grep "^TwentyTwo" $ofall | sort | uniq | \
+			awk -F, '{print $2,$3,$4,$5,$6,$7,"\n"}' | \
+			sed 's/cluster//' | sort -n | sed -e 's/.json//' | sed -e 's/ /,/g' | sed -e 's/,,//' `
+tmpf=`mktemp /tmp/sshccheck-XXXX`
+for word in $summary
+do
+		echo $word >>$tmpf
+done
+cat $tmpf 
+cat $tmpf >>$ofall
+rm -f $tmpf
 
 NOW=$(whenisitagain)
 echo "Overall Finished at $NOW" >>$ofall
