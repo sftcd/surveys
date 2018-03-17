@@ -89,6 +89,9 @@ def gethostkey(ip):
     return rv
 
 def anymatch(one,other):
+    # might handle both-empty case nicely
+    if one == other:
+        return True
     try:
         for x in one:
             for y in other:
@@ -117,33 +120,40 @@ while f:
     if 'p22' not in f.fprints:
         print >>out_f, "Ignoring",ip,"no SSH involved"
     else:
-        print >>out_f,  f.fprints['p22']
+        print >>out_f,  "Checking " + ip + " recorded as: " + f.fprints['p22']
         hkey=gethostkey(ip)
-        print  >>out_f, "\t"+str(hkey)
+        if hkey:
+            print  >>out_f, "keys at " + ip + " now are:"+str(hkey)
+        else:
+            print  >>out_f, "No ssh keys visible at " + ip + " now"
         ipsdone[ip]=hkey
         for ind in f.rcs:
             pip=f.rcs[ind]['ip']
             str_colls=f.rcs[ind]['str_colls']
             if 'p22' in str_colls:
                 ttcount+=1
-                print >>out_f, "Checking",ip,"vs",pip
+                print >>out_f, "\tChecking",ip,"vs",pip
                 if pip in ipsdone:
                     pkey=ipsdone[pip]
                 else:
                     pkey=gethostkey(pip)
                     ipsdone[pip]=pkey
-                print  >>out_f, "\t\t"+str(pkey)
+                if pkey:
+                    print  >>out_f, "\t"+ "keys at " + pip + " now are: " + str(pkey)
+                else:
+                    print  >>out_f, "\tNo ssh keys visible at " + pip + " now"
+
                 if anymatch(pkey,hkey):
                     matches+=1
                 else:
-                    print >>out_f, "EEK - Discrepency between",ip,"and",pip
-                    print >>out_f, hkey
-                    print >>out_f, pkey
+                    print >>out_f, "EEK - Discrepency between "+ ip +" and " + pip 
+                    print >>out_f, "EEK - " + ip + " == " + str(hkey)
+                    print >>out_f, "EEK - " + pip + " == " + str(pkey)
                     mismatches+=1
     f=getnextfprint(fp)
 
-print >>out_f, "ipcount,22count,matches,mismatches"
-print >>out_f, ipcount,ttcount,matches,mismatches
+print >>out_f, "TwentyTwo,infile,ipcount,22count,matches,mismatches"
+print >>out_f, "TwentyTwo,"+args.infile+","+str(ipcount)+","+str(ttcount)+","+str(matches)+","+str(mismatches)
 #print >>out_f, ipsdone
 
 print >>out_f, "Ran ",sys.argv[0:]," started at ",time.asctime(time.localtime(time.time()))
