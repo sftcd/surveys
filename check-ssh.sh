@@ -23,6 +23,15 @@
 # check to see if our ssh findings are correct, using different s/w from
 # zgrab
 
+# for now, this just checks if the relationships in the cluster still do
+# exist
+
+# TODO: add a comparison of the keys we see with the two different sets of
+# code - need to figure out hash input in zgrab first though and that's not
+# yet obvious
+
+# TODO: integrate into skey-all.sh
+
 #set -x
 
 function whenisitagain()
