@@ -26,11 +26,16 @@ import os, sys, argparse, tempfile, gc
 import json, jsonpickle
 import time
 import subprocess
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
+import binascii
 
 from SurveyFuncs import *
 
 # command line arg handling 
-parser=argparse.ArgumentParser(description='Do a confirmation scan of ssh key hashes')
+parser=argparse.ArgumentParser(description='Do a confirmation scan of TLS key hashes')
 parser.add_argument('-i','--input',     
                     dest='infile',
                     help='file containing list of collisions')
@@ -39,7 +44,8 @@ parser.add_argument('-o','--output_file',
                     help='file in which to put json results (one per line)')
 parser.add_argument('-s','--sleep',     
                     dest='sleepsecs',
-                    help='number of seconds to sleep between ssh-keyscan (fractions allowed')
+                    help='number of seconds to sleep between openssl s_client calls (fractions allowed')
+
 args=parser.parse_args()
 
 def usage():
@@ -70,32 +76,59 @@ print >>out_f, "Running ",sys.argv[0:]," starting at",time.asctime(time.localtim
 sleepval=defsleep
 if args.sleepsecs is not None:
     sleepval=float(args.sleepsecs)
-    print >>out_f, "Will sleep for " + str(sleepval) + " seconds between ssh-keyscans"
+    print >>out_f, "Will sleep for " + str(sleepval) + " seconds between openssl s_client calls"
 
 opensslparms={ 
         'p22': "ignore me - I shouldn't be used here", 
-        'p25': "s_client",
-        'p110': "foo",
-        'p143': "foo",
-        'p443': "foo",
-        'p587': "foo",
-        'p993': "foo"
+        'p25': "-starttls smtp",
+        'p110': "-starttls pop3",
+        'p143': "-starttls imap",
+        'p443': "",
+        'p587': "-starttls smtp",
+        'p993': ""
+        }
+
+opensslpno={ 
+        'p22': 22,
+        'p25': 25,
+        'p110': 110,
+        'p143': 143,
+        'p443': 443,
+        'p587': 587,
+        'p993': 993
         }
 
 def gettlsserverkey(ip,portstr):
     rv=[]
-    return "dummy"
+    print 'Doing gettlsserverkey',ip,portstr
     try:
-        cmd='openssl ' + opensslparms[portstr] + ' ' + ip
+        cmd='openssl s_client -connect ' + ip +':'+ str(opensslpno[portstr]) + ' ' + opensslparms[portstr] 
+        #print "***|" + cmd + "|***"
         proc=subprocess.Popen(cmd.split(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         time.sleep(sleepval)
         pc=proc.communicate()
         lines=pc[0].split('\n')
+        incert=False
+        pem_data=''
         for x in range(0,len(lines)):
-            foo=lines[x].split()
-            if foo[2]!='':
-                rv.append(foo[2])
+            if lines[x]=='-----BEGIN CERTIFICATE-----':
+                incert=True
+            if lines[x]=='-----END CERTIFICATE-----':
+                pem_data += lines[x] + '\n'
+                incert=False
+            if incert:
+                pem_data += lines[x] + '\n'
+        #print pem_data
+        cert = x509.load_pem_x509_certificate(pem_data, default_backend())
+        pubk=cert.public_key()
+        pubbytes=pubk.public_bytes(encoding=serialization.Encoding.DER,format=serialization.PublicFormat.SubjectPublicKeyInfo)
+        #pubbytes=pubk.public_bytes(encoding=serialization.Encoding.PEM,format=serialization.PublicFormat.PKCS1)
+        digest=hashes.Hash(hashes.SHA256(),backend=default_backend())
+        digest.update(pubbytes)
+        spki_hash=binascii.hexlify(digest.finalize())
+        rv.append(spki_hash)
     except Exception as e:
+        print >> sys.stderr, "gettlsserverkey exception:" + str(e)  
         pass
     return rv
 
@@ -156,7 +189,7 @@ while f:
             if hkey:
                 print  >>out_f, "keys at " + ip + portstr + " now are:"+str(hkey)
             else:
-                print  >>out_f, "No ssh keys visible at " + ip + portstr + " now"
+                print  >>out_f, "No TLS keys visible at " + ip + portstr + " now"
             ipsdone[ip]=hkey
             for ind in f.rcs:
                 pip=f.rcs[ind]['ip']
@@ -186,7 +219,7 @@ while f:
                     if pkey:
                         print  >>out_f, "\t"+ "keys at " + pip + portstr + " now are: " + str(pkey)
                     else:
-                        print  >>out_f, "\tNo ssh keys visible at " + pip + portstr + " now"
+                        print  >>out_f, "\tNo TLS keys visible at " + pip + portstr + " now"
 
                     if anymatch(pkey,hkey):
                         matches+=1

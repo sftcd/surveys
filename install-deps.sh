@@ -86,6 +86,7 @@ sudo -H pip install  jsonpickle
 sudo -H pip install  pympler
 sudo -H pip install  pytz
 sudo -H pip install  netaddr
+sudo -H pip install  cryptography
 
 # these are imports that I don't think need a pip install
 # but not sure:-)
