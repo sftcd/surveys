@@ -20,15 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# check to see if our ssh findings are correct, using different s/w from
+# check to see if our ssh and TLS findings are correct, using different s/w from
 # zgrab
 
 # for now, this just checks if the relationships in the cluster still do
 # exist
 
-# TODO: add a comparison of the keys we see with the two different sets of
-# code - need to figure out hash input in zgrab first though and that's not
-# yet obvious
+# TODO: need to figure out hash input in zgrab first though and that's not
+# yet obvious, I'm not seeing the same hash values yet
 
 # TODO: integrate into skey-all.sh
 
@@ -83,7 +82,7 @@ then
 	usage
 fi
 
-ofall="ssh-results-$NOW.out"
+ofall="validation-results-$NOW.out"
 echo "Starting at $NOW, log in $ofall" 
 echo "Starting at $NOW, log in $logf" >$ofall
 
@@ -92,6 +91,7 @@ do
 	echo "Doing $file"
 	echo "Doing $file" >>$ofall
 	$srcdir/TwentyTwos.py -i $file >>$ofall 2>&1
+	$srcdir/CheckTlSPorts.py -i $file >>$ofall 2>&1
 done
 
 # summarise...
@@ -100,6 +100,18 @@ summary=`grep "^TwentyTwo" $ofall | sort | uniq | \
 			awk -F, '{print $2,$3,$4,$5,$6,$7,"\n"}' | \
 			sed 's/cluster//' | sort -n | sed -e 's/.json//' | sed -e 's/ /,/g' | sed -e 's/,,//' `
 tmpf=`mktemp /tmp/sshccheck-XXXX`
+for word in $summary
+do
+		echo $word >>$tmpf
+done
+cat $tmpf 
+cat $tmpf >>$ofall
+rm -f $tmpf
+
+summary=`grep "^TLSKey" $ofall | sort | uniq | \
+			awk -F, '{print $2,$3,$4,$5,$6,$7,"\n"}' | \
+			sed 's/cluster//' | sort -n | sed -e 's/.json//' | sed -e 's/ /,/g' | sed -e 's/,,//' `
+tmpf=`mktemp /tmp/tlscheck-XXXX`
 for word in $summary
 do
 		echo $word >>$tmpf
