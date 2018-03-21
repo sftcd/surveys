@@ -91,7 +91,7 @@ do
 	echo "Doing $file"
 	echo "Doing $file" >>$ofall
 	$srcdir/TwentyTwos.py -i $file >>$ofall 2>&1
-	$srcdir/CheckTlSPorts.py -i $file >>$ofall 2>&1
+	$srcdir/CheckTLSPorts.py -i $file >>$ofall 2>&1
 done
 
 # summarise...

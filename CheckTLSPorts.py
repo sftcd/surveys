@@ -78,6 +78,16 @@ if args.sleepsecs is not None:
     sleepval=float(args.sleepsecs)
     print >>out_f, "Will sleep for " + str(sleepval) + " seconds between openssl s_client calls"
 
+opensslcmd={ 
+        'p22': "ignore me - I shouldn't be used here", 
+        'p25': "openssl s_client -connect ",
+        'p110': "openssl s_client -connect ",
+        'p143': "openssl s_client -connect ",
+        'p443': "openssl s_client -connect ",
+        'p587': "openssl s_client -connect ",
+        'p993': "openssl s_client -connect  "
+        }
+
 opensslparms={ 
         'p22': "ignore me - I shouldn't be used here", 
         'p25': "-starttls smtp",
@@ -100,9 +110,9 @@ opensslpno={
 
 def gettlsserverkey(ip,portstr):
     rv=[]
-    print 'Doing gettlsserverkey',ip,portstr
+    #print >> sys.stdout,'Doing gettlsserverkey '+ip+portstr
     try:
-        cmd='openssl s_client -connect ' + ip +':'+ str(opensslpno[portstr]) + ' ' + opensslparms[portstr] 
+        cmd=opensslcmd[portstr] + ' ' + ip +':'+ str(opensslpno[portstr]) + ' ' + opensslparms[portstr] 
         #print "***|" + cmd + "|***"
         proc=subprocess.Popen(cmd.split(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         time.sleep(sleepval)
@@ -147,15 +157,28 @@ def anymatch(one,other):
         pass
     return False
 
+ipmatrix={}
+def donealready(ip1,ip2,p1,p2):
+    if ip1 not in ipmatrix:
+        ipmatrix[ip1]={}
+    if ip2 not in ipmatrix[ip1]:
+        ipmatrix[ip1][ip2]={}
+    if p1 not in ipmatrix[ip1][ip2]:
+        ipmatrix[ip1][ip2][p1]={}
+    if p1 not in ipmatrix[ip1][ip2]:
+        ipmatrix[ip1][ip2][p1]={}
+    if p2 not in ipmatrix[ip1][ip2][p1]:
+        ipmatrix[ip1][ip2][p1][p2]=True
+        #print "\t\tdonealready: ",ip1,p1,ip2,p2,"is not done"
+        return False
+    #print "\t\tdonealready: ",ip1,p1,ip2,p2,"is",str(ipmatrix[ip1][ip2][p1][p2])
+    return ipmatrix[ip1][ip2][p1][p2]
+
 # mainline processing
 
 fp=open(args.infile,"r")
 
 ipsdone={}
-
-ipmatrix={}
-
-
 
 ipcount=0
 ttcount=0
@@ -183,54 +206,58 @@ while f:
             if portstr=='p22':
                 continue
             tlscount+=1 # count of ips with some tls
-            print >>out_f,  "Checking " + ip + portstr + " recorded as: " + f.fprints['p22']
+            print >>out_f,  "Checking " + ip + ":" + portstr + " recorded as: " + f.fprints[portstr]
 
             hkey=gettlsserverkey(ip,portstr)
             if hkey:
-                print  >>out_f, "keys at " + ip + portstr + " now are:"+str(hkey)
+                print  >>out_f, "\tkeys at " + ip + ':' + portstr + " now are:"+str(hkey)
             else:
-                print  >>out_f, "No TLS keys visible at " + ip + portstr + " now"
+                print  >>out_f, "\tNo TLS keys visible at " + ip + portstr + " now"
             ipsdone[ip]=hkey
             for ind in f.rcs:
                 pip=f.rcs[ind]['ip']
-    
-                str_colls=f.rcs[ind]['str_colls']
+                mask=f.rcs[ind]['ports']
 
-                if 'p22' in str_colls:
-                    if ip in ipmatrix:
-                        if pip in ipmatrix[ip]:
-                            print >>out_f, "\tChecking",ip,portstr,"vs",pip,"done already"
-                            continue
-                    else:
-                        ipmatrix[ip]={}
-                    ipmatrix[ip][pip]=True
-                    print >>out_f, "\tChecking",ip,portstr,"vs",pip
-                    if pip in ipmatrix:
-                        if ip in ipmatrix[pip]:
-                            continue
-                    else:
-                        ipmatrix[pip]={}
-                    ipmatrix[pip][ip]=True
+                for innerstr in portstrings:
+                    # no need to cehck p22
+                    if innerstr=='p22':
+                        continue
+                    # no need to check if no collision on these ports
+                    if not checkmask(mask,portstr,innerstr):
+                        #print "\t"+ ip + ":" + portstr + " and " + pip + ":" + innerstr + " don't collide"
+                        continue
+                    # no need to check if we've checked before
+                    if donealready(ip,pip,portstr,innerstr):
+                        print "\t"+ ip + ":" + portstr + " and " + pip + ":" + innerstr + " done already"
+                        continue;
+                    # yeah, both directions
+                    if donealready(pip,ip,innerstr,portstr):
+                        print "\t"+ ip + ":" + portstr + " and " + pip + ":" + innerstr + " done already"
+                        continue;
+
+                    print >>out_f, "\tChecking",ip,':',portstr,"vs",pip
+
                     if pip in ipsdone:
                         pkey=ipsdone[pip]
                     else:
                         pkey=gettlsserverkey(pip,portstr)
                         ipsdone[pip]=pkey
+
                     if pkey:
-                        print  >>out_f, "\t"+ "keys at " + pip + portstr + " now are: " + str(pkey)
+                        print  >>out_f, "\t"+ "keys at " + pip + ':' +  portstr + " now are: " + str(pkey)
                     else:
                         print  >>out_f, "\tNo TLS keys visible at " + pip + portstr + " now"
 
                     if anymatch(pkey,hkey):
                         matches+=1
                     else:
-                        print >>out_f, "EEK - Discrepency between "+ ip +" and " + pip 
-                        print >>out_f, "EEK - " + ip + " == " + str(hkey)
-                        print >>out_f, "EEK - " + pip + " == " + str(pkey)
+                        print >>out_f, "EEK - Discrepency between "+ ip +":"+portstr +" and " + pip +":" +innerstr
+                        print >>out_f, "EEK - " + ip + ":" + portstr+ " == " + str(hkey)
+                        print >>out_f, "EEK - " + pip + ":" +innerstr + " == " + str(pkey)
                         mismatches+=1
     f=getnextfprint(fp)
 
-print >>out_f, "TLSKey,infile,ipcount,22count,matches,mismatches"
+print >>out_f, "TLSKey,infile,ipcount,tlscount,matches,mismatches"
 print >>out_f, "TLSKey,"+args.infile+","+str(ipcount)+","+str(tlscount)+","+str(matches)+","+str(mismatches)
 #print >>out_f, ipsdone
 

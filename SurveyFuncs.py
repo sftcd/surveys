@@ -159,6 +159,20 @@ def portindex(pname):
     print >>sys.stderr, "Error - unknown port: " + pname
     return -1
 
+def checkmask(mask,k1,k2):
+    match=False
+    try:
+        lp=portindex(k1)
+        rp=portindex(k2)
+        intmask=int(mask,16)
+        if (intmask & (1<<(rp+8*lp)))!=0:
+            match=True
+        #print "\t\tcheckmask ",mask,k1,k2,"result is: ", str(match)
+    except Exception as e: 
+        print >> sys.stderr, "checkmask exception, k1: " + k1 + " k2: " + k2 + " mask:" + mask + " exception: " + str(e)  
+        pass
+    return match
+
 def collmask(mask,k1,k2):
     try:
         lp=portindex(k1)
@@ -352,21 +366,28 @@ def mm_setup():
 def mm_info(ip):
     rv={}
     rv['ip']=ip
-    asnresponse=asnreader.asn(ip)
-    rv['asndec']=asnresponse.autonomous_system_number
-    rv['asn']=asnresponse.autonomous_system_organization
-    cityresponse=cityreader.city(ip)
-    countryresponse=countryreader.country(ip)
-    #print asnresponse
-    #print cityresponse
-    rv['lat']=cityresponse.location.latitude
-    rv['long']=cityresponse.location.longitude
-    #print "\n"
-    #print "\n"
-    #print countryresponse
-    rv['cc']=cityresponse.country.iso_code
-    if cityresponse.country.iso_code != countryresponse.country.iso_code:
-        rv['cc-city']=cityresponse.country.iso_code
+    try:
+        asnresponse=asnreader.asn(ip)
+        rv['asndec']=asnresponse.autonomous_system_number
+        rv['asn']=asnresponse.autonomous_system_organization
+        cityresponse=cityreader.city(ip)
+        countryresponse=countryreader.country(ip)
+        #print asnresponse
+        #print cityresponse
+        rv['lat']=cityresponse.location.latitude
+        rv['long']=cityresponse.location.longitude
+        #print "\n"
+        #print "\n"
+        #print countryresponse
+        rv['cc']=cityresponse.country.iso_code
+        if cityresponse.country.iso_code != countryresponse.country.iso_code:
+            rv['cc-city']=cityresponse.country.iso_code
+    except Exception as e: 
+        print >>sys.stderr, "mm_info exception for " + ip + str(e)
+        rv['asndec']='unknown'
+        rv['asn']=-1
+        rv['cc']='unknown'
+        rv['cc-city']='unknown'
     return rv
 
 def mm_ipcc(ip,cc):
