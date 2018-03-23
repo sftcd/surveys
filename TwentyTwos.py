@@ -26,6 +26,7 @@ import os, sys, argparse, tempfile, gc
 import json, jsonpickle
 import time
 import subprocess
+import binascii
 
 from SurveyFuncs import *
 
@@ -75,16 +76,36 @@ if args.sleepsecs is not None:
 def gethostkey(ip):
     rv=[]
     try:
-        cmd='/usr/bin/ssh-keyscan ' + ip
-        proc=subprocess.Popen(cmd.split(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         time.sleep(sleepval)
-        pc=proc.communicate()
+        cmd='/usr/bin/ssh-keyscan ' + ip 
+        proc_scan=subprocess.Popen(cmd.split(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        pc=proc_scan.communicate()
         lines=pc[0].split('\n')
+        #print "lines: " + str(lines) + "\n"
         for x in range(0,len(lines)):
-            foo=lines[x].split()
-            if foo[2]!='':
-                rv.append(foo[2])
+            #print lines[x]
+            if lines[x]=='\n' or lines[x]=='' or lines[x][0]=='#':
+                continue
+            # pass to ssh-keygen
+            cmd='/usr/bin/ssh-keygen -l -f -'
+            proc_hash=subprocess.Popen(cmd.split(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=None)
+            pc=proc_hash.communicate(input=lines[x])
+            b64hashes=pc[0].split('\n')
+            for y in range(0,len(b64hashes)):
+                if b64hashes[y]=='\n' or b64hashes[y]=='' or b64hashes[y]==[]:
+                    continue
+                #print b64hashes[y]
+                foo=b64hashes[y].split()
+                #print foo
+                fooh=foo[1][7:]
+                #print fooh
+                barh=binascii.a2b_base64(fooh+'===')
+                #print str(barh)
+                ahhash=binascii.hexlify(barh)
+                #print ahhash
+                rv.append(ahhash)
     except Exception as e:
+        print >>out_f, "gethostkey",ip,e
         pass
     return rv
 
