@@ -105,7 +105,7 @@ def gethostkey(ip):
                 #print ahhash
                 rv.append(ahhash)
     except Exception as e:
-        print >>out_f, "gethostkey",ip,e
+        #print >>out_f, "gethostkey",ip,e
         pass
     return rv
 
