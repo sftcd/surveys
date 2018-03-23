@@ -26,9 +26,6 @@
 # for now, this just checks if the relationships in the cluster still do
 # exist
 
-# TODO: need to figure out hash input in zgrab first though and that's not
-# yet obvious, I'm not seeing the same hash values yet
-
 # TODO: integrate into skey-all.sh
 
 #set -x
