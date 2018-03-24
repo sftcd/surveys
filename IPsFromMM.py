@@ -64,6 +64,7 @@ outfile=def_outfile
 
 if args.country is not None:
     country=args.country
+    outfile="mm-ips."+country
 
 if args.indir is not None:
     indir=args.indir
