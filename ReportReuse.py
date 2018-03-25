@@ -91,11 +91,21 @@ parser.add_argument('-l','--legend',
 parser.add_argument('-n','--neato',
                     help='switch to neato graphviz thing (default=sfdp)',
                     action='store_true')
+parser.add_argument('-g','--rendergraph',     
+                    dest='rendergraph',
+                    help='include generation of graphic form of cluster graph')
 parser.add_argument('-c','--country',     
                     dest='country',
                     help='country in which we\'re interested')
 args=parser.parse_args()
 
+
+# default render graphs == off (due to diskspace)
+dorendergraph=False
+
+# if this then just print legend
+if args.rendergraph is not None:
+    dorendergraph=True
 
 # default country 
 def_country='IE'
@@ -263,14 +273,15 @@ while f:
             except:
                 print >>sys.stderr, "Failed to write json file for cluster " + str(cnum)
 
-            rv=rendergraph(cnum,gvgraph,dynleg,args.legend,outdir)
-            if rv:
-                #print "Rendered graph for cluster " + str(cnum)
-                clipsdone[cnum] = -1
-                del grr[cnum]
-            else:
-                notrendered.append(cnum)
-                print >>sys.stderr, "Failed to graph cluster " + str(cnum)
+            if dorendergraph:
+                rv=rendergraph(cnum,gvgraph,dynleg,args.legend,outdir)
+                if rv:
+                    #print "Rendered graph for cluster " + str(cnum)
+                    clipsdone[cnum] = -1
+                    del grr[cnum]
+                else:
+                    notrendered.append(cnum)
+                    print >>sys.stderr, "Failed to graph cluster " + str(cnum)
     else:
         clipsdone[cnum] = 1
 

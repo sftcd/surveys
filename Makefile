@@ -34,6 +34,23 @@ cname="IE"
 colf="collisions.json"
 gdir="."
 
+# note this may be a system or $HOME/bin thing, depending if you've
+# built graphviz locally, which seems better in some ways, even if
+# it's still flakey
+dotcmd='neato'
+# this helps neato, but will be ignored or barf for others
+dotparms="-Gepsilon=1.5"
+
+# how to make a .svg from a .dot
+%.dot.svg: %.dot
+	${dotcmd} -Tsvg ${dotparms} $(<) >$(@)
+
+DOTS=$(wildcard *.dot)
+
+SVGS=$(patsubst %.dot,%.dot.svg, $(DOTS))
+
+images: $(SVGS)
+
 all: help
 	
 help: justcleaning
