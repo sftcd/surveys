@@ -298,7 +298,7 @@ with open(infile,'r') as f:
                     nogood=False
                 except Exception as e: 
                     #oddly, an NXDOMAIN seems to cause an exception, so these happen
-                    print >> sys.stderr, "Error making DNS query for " + v + " for ip:" + thisone.ip + " " + str(e)
+                    #print >> sys.stderr, "Error making DNS query for " + v + " for ip:" + thisone.ip + " " + str(e)
                     pass
         for k in tmp:
             nameset[k]=tmp[k]
