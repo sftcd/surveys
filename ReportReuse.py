@@ -48,7 +48,7 @@ outdir="graphs"
 
 # graph rendering func
 
-def rendergraph(cnum,gvgraph,dynleg,legendwanted,odir):
+def rendergraph(cnum,gvgraph,dynleg,legendwanted,odir,dorender):
     #print "Graphing cluster: " + str(cnum)
     # optional legend...
     if legendwanted:
@@ -63,10 +63,14 @@ def rendergraph(cnum,gvgraph,dynleg,legendwanted,odir):
     # render if not too big... this can fail due to graphviz bugginess (I assume)
     try:
         glen=len(gvgraph.source)
-        if glen > maxglen:
-            print "Not rendering graph for cluster "+ str(cnum) + " - too long: " + str(glen)
+        if not dorender or glen > maxglen:
+            if dorender:
+                print "Not rendering graph for cluster "+ str(cnum) + " - too long: " + str(glen)
             gvgraph.save(odir + "/graph"+str(cnum)+".dot")
-            return False
+            if not dorender:
+                return True
+            else:
+                return False
         else:
             gvgraph.render(odir + "/graph"+str(cnum)+".dot")
             return True
@@ -273,15 +277,14 @@ while f:
             except:
                 print >>sys.stderr, "Failed to write json file for cluster " + str(cnum)
 
-            if dorendergraph:
-                rv=rendergraph(cnum,gvgraph,dynleg,args.legend,outdir)
-                if rv:
-                    #print "Rendered graph for cluster " + str(cnum)
-                    clipsdone[cnum] = -1
-                    del grr[cnum]
-                else:
-                    notrendered.append(cnum)
-                    print >>sys.stderr, "Failed to graph cluster " + str(cnum)
+            rv=rendergraph(cnum,gvgraph,dynleg,args.legend,outdir,dorendergraph)
+            if rv:
+                #print "Rendered graph for cluster " + str(cnum)
+                clipsdone[cnum] = -1
+                del grr[cnum]
+            else:
+                notrendered.append(cnum)
+                print >>sys.stderr, "Failed to graph cluster " + str(cnum)
     else:
         clipsdone[cnum] = 1
 
