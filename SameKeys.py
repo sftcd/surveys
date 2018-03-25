@@ -148,7 +148,7 @@ with open(infile,'r') as f:
         try:
             p25=j_content['p25']
             if thisone.writer=="FreshGrab.py":
-                print p25['data']['banner']
+                #print p25['data']['banner']
                 banner=p25['data']['banner'] 
             else:
                 banner=p25['smtp']['starttls']['banner'] 
