@@ -96,20 +96,28 @@ parser.add_argument('-n','--neato',
                     help='switch to neato graphviz thing (default=sfdp)',
                     action='store_true')
 parser.add_argument('-g','--rendergraph',     
-                    dest='rendergraph',
-                    help='include generation of graphic form of cluster graph')
+                    help='include generation of graphic form of cluster graph',
+                    action='store_true')
 parser.add_argument('-c','--country',     
                     dest='country',
                     help='country in which we\'re interested')
+parser.add_argument('-a','--anonymise',     
+                    help='replace IP in graphs with index',
+                    action='store_true')
 args=parser.parse_args()
 
 
 # default render graphs == off (due to diskspace)
 dorendergraph=False
-
 # if this then just print legend
-if args.rendergraph is not None:
+if args.rendergraph:
     dorendergraph=True
+
+print "Dorender=",dorendergraph
+
+doanon=False
+if args.anonymise:
+    doanon=True
 
 # default country 
 def_country='IE'
@@ -153,7 +161,8 @@ if not os.access(outdir,os.W_OK):
 # cluster and hence same with edges
 # need to be careful with memory for the edges - on EE data those
 # seem to explode
-ipdone=set()
+#ipdone=set()
+ipdone=[]
 edgedone=set()
 
 checkcount=0
@@ -221,23 +230,40 @@ while f:
 
         asncol=asn2colour(f.asndec)
 
+        mainind=str(len(ipdone))
         # have we processed this node already?
         if f.ip not in ipdone:
-            gvgraph.node(f.ip,color=asncol,style="filled")
-            ipdone.add(f.ip)
+            if doanon:
+                gvgraph.node(mainind,color=asncol,style="filled")
+            else:
+                gvgraph.node(f.ip,color=asncol,style="filled")
+            #ipdone.add(f.ip)
+            ipdone.append(f.ip)
+        else:
+            mainind=str(ipdone.index(f.ip))
 
         # process peers ("key sharers") for this node
         for recn in f.rcs:
             cip=f.rcs[recn]['ip']
             ename=edgename(f.ip,cip)
             backename=edgename(cip,f.ip)
+            cind=str(len(ipdone))
             if cip not in ipdone:
                 try:
                     ccol=asn2colour(f.rcs[recn]['asndec'])
-                    gvgraph.node(cip,color=ccol,style="filled")
+                    if doanon:
+                        gvgraph.node(cind,color=asncol,style="filled")
+                    else:
+                        gvgraph.node(cip,color=ccol,style="filled")
                 except:
-                    gvgraph.node(cip,color=asncol,style="filled")
-                ipdone.add(cip)
+                    if doanon:
+                        gvgraph.node(cind,color=asncol,style="filled")
+                    else:
+                        gvgraph.node(cip,color=asncol,style="filled")
+                #ipdone.add(cip)
+                ipdone.append(cip)
+            else:
+                cind=str(ipdone.index(cip))
 
             # add edge for that to this
             if ename not in edgedone and backename not in edgedone:
@@ -248,7 +274,10 @@ while f:
                 else:
                     mask2colours(f.rcs[recn]['ports'],colours,dynleg)
                 for col in colours:
-                    gvgraph.edge(f.ip,cip,color=col)
+                    if doanon:
+                        gvgraph.edge(mainind,cind,color=col)
+                    else:
+                        gvgraph.edge(f.ip,cip,color=col)
                 edgedone.add(ename)
                 edgesadded+=len(colours)
                 del colours

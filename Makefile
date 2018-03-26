@@ -64,7 +64,7 @@ clusters:
 	$(srcdir)/SameKeys.py -i ${fname} -o ${colf}
 
 graphs:
-	$(srcdir)/ReportReuse.py -f ${colf} -l -o ${gdir}
+	$(srcdir)/ReportReuse.py -f ${colf} -l -o ${gdir} -a
 
 justcleaning:
 	@echo "Targets are:"
