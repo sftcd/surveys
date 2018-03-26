@@ -71,11 +71,20 @@ then
 	dotlist=`ls graph*.dot`
 	for dotty in $dotlist
 	do
-			if [ ! -f $dotty.svg ]
+		tbd="yes"
+		for format in $formats
+		do
+			if [ -f $dotty.$format ]
 			then
-				gr=`echo $dotty | sed -e 's/graph//' | sed -e 's/.dot//'`
-				list="$list $gr"
+				tbd="no"
+				break
 			fi
+		done
+		if [ "$tbd" == "yes" ]
+		then
+			gr=`echo $dotty | sed -e 's/graph//' | sed -e 's/.dot//'`
+			list="$list $gr"
+		fi
 	done
 	if [ "$list" == "" ]
 	then
