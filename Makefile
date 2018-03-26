@@ -42,14 +42,17 @@ dotcmd='neato'
 dotparms="-Gepsilon=1.5"
 
 # how to make a .svg from a .dot
+# if you don't want a timeout, then try this, but graphviz is buggy
+# and a memory hog sometimes so I'd leave in the timeout call
 %.dot.svg: %.dot
-	${dotcmd} -Tsvg ${dotparms} $(<) >$(@)
+	timeout 120s ${dotcmd} -Tsvg ${dotparms} $(<) >$(@)
 
 DOTS=$(wildcard *.dot)
 
 SVGS=$(patsubst %.dot,%.dot.svg, $(DOTS))
 
 images: $(SVGS)
+	find . -name '*.dot.svg' -size 0 -exec rm {} \;
 
 all: help
 	
