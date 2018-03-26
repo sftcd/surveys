@@ -45,7 +45,7 @@ dotparms="-Gepsilon=1.5"
 # if you don't want a timeout, then try this, but graphviz is buggy
 # and a memory hog sometimes so I'd leave in the timeout call
 %.dot.svg: %.dot
-	timeout 120s ${dotcmd} -Tsvg ${dotparms} $(<) >$(@)
+	- timeout --preserve-status 120s ${dotcmd} -Tsvg ${dotparms} $(<) >$(@)
 
 DOTS=$(wildcard *.dot)
 

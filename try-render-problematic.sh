@@ -67,8 +67,21 @@ list=`cat summary.txt | grep "not rendered" | tail -1\
 
 if [ "$list" == "" ]
 then
-	echo "Nothing to do"
-	exit 0
+	# see if there are any .dot with no matching .svg
+	dotlist=`ls graph*.dot`
+	for dotty in $dotlist
+	do
+			if [ ! -f $dotty.svg ]
+			then
+				gr=`echo $dotty | sed -e 's/graph//' | sed -e 's/.dot//'`
+				list="$list $gr"
+			fi
+	done
+	if [ "$list" == "" ]
+	then
+		echo "Nothing to do"
+		exit 0
+	fi
 fi
 
 # which graphviz engine
@@ -110,6 +123,9 @@ do
 				if (( $? != 0 ))
 				then
 					mv $target failed-$gr.dot.$fmt
+				else 
+					echo "Did $gr seemingly ok"
+					break
 				fi
 			else
 				echo "Skipping $gr..."
@@ -136,6 +152,7 @@ do
 			if (( $size > $minsize ))
 			then
 				nogood=False
+				break
 			fi
 		fi
 	done
