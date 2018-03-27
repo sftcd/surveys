@@ -229,7 +229,6 @@ while f:
                 print "Bad country for ip",f.ip,"ASN-CC:",asninfo['cc'],"Asked for CC:",country
 
         asncol=asn2colour(f.asndec)
-
         mainind=str(len(ipdone))
         # have we processed this node already?
         if f.ip not in ipdone:
@@ -252,7 +251,7 @@ while f:
                 try:
                     ccol=asn2colour(f.rcs[recn]['asndec'])
                     if doanon:
-                        gvgraph.node(cind,color=asncol,style="filled")
+                        gvgraph.node(cind,color=ccol,style="filled")
                     else:
                         gvgraph.node(cip,color=ccol,style="filled")
                 except:
