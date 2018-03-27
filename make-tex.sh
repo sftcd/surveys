@@ -132,6 +132,14 @@ hark=$((100*inclusters/somecrypto))
 numclusters=`ls cluster*.json | wc -l`
 #echo $numclusters
 
+# calculate median and average
+median=`cat clustersizes.csv | sed -n -e '/collider/,$p' | grep -v "collider" | grep -v ",n" | sort -n | \
+		awk ' { a[i++]=$1; } END { x=int((i+1)/2); if (x < (i+1)/2) print (a[x-1]+a[x])/2; else print a[x-1]; }' `
+#echo $median
+
+average=`cat clustersizes.csv | sed -n -e '/collider/,$p' | grep -v "collider" | grep -v ",n" | sort -n | \
+		awk ' BEGIN { count=0;total=0}{ total+=$1;count++ } END { print total/count; }' `
+#echo $average
 
 # from here down we start to make changes to disk ...
 
@@ -183,6 +191,8 @@ cat >$texfile <<EOF
 	\hline HARK & $hark\% \\\\
 	\hline Number of clusters & $numclusters \\\\
 	\hline Biggest cluster size & $biggest \\\\
+	\hline Median cluster size & $median \\\\
+	\hline Avverage cluster size & $average \\\\
 	\hline
 	\end{tabular}
 	\label{tab:run-$runname}
