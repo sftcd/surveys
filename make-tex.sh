@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-#set -x
+# set -x
 
 function convdate()
 {
@@ -52,9 +52,10 @@ function usage()
 
 outdir=.
 csizefile="clustersizes.csv"
+country="IE"
 
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -s bash -o hr: -l resdir:,help -- "$@")
+if ! options=$(getopt -s bash -o hr:c: -l country:,resdir:,help -- "$@")
 then
 	# something went wrong, getopt will put out an error message for us
 	exit 1
@@ -66,6 +67,7 @@ do
 	case "$1" in
 		-h|--help) usage;;
 		-r|--resdir) outdir="$2"; shift;;
+		-c|--country) country="$2"; shift;;
 		(--) shift; break;;
 		(-*) echo "$0: error - unrecognized option $1" 1>&2; exit 1;;
 		(*)  break;;
@@ -104,11 +106,11 @@ zmapips=`wc -l records.fresh | awk '{print $1}'`
 #echo $zmapips
 ooc=`grep wrong_country dodgy.json | wc -l`
 #echo $ooc
-if [[ "$ooc" == "0" ]]
+if [[ "$country" == "" && "$ooc" == "0" ]]
 then
 	# weird check here as I'm depending on the out of country error to tell me what country
 	# we wanted - TODO: FIXME
-	echo "This is odd - zero out of country?"
+	echo "This is odd - zero out of country and I don't know what country! - exiting"
 	exit 2
 fi
 incountry=$((zmapips-ooc))
@@ -117,13 +119,16 @@ dodgies=`grep '^  "' dodgy.json | wc -l`
 #echo $dodgies
 nocryptoseen=$((dodgies-ooc))
 #echo $nocryptoseen
-country=`grep "Asked for " *.out | awk '{print $11}' | sort | uniq -c | sort -n | tail -1 | awk '{print $2}'`
+if [[ "$country" == "" ]]
+then
+	country=`grep "Asked for " *.out | awk '{print $11}' | sort | uniq -c | sort -n | tail -1 | awk '{print $2}'`
+fi
 #echo $country
 somecrypto=$((incountry-nocryptoseen))
 #echo $somecrypto
 pcsome=$((100*somecrypto/incountry))
 #echo $pcsome
-noncluster=`tail -1 clustersizes.csv | awk -F, '{print $1}'`
+noncluster=`grep ",n" clustersizes.csv | awk -F, '{print $1}'`
 #echo $noncluster
 inclusters=$((somecrypto-noncluster))
 #echo $inclusters
@@ -133,12 +138,12 @@ numclusters=`ls cluster*.json | wc -l`
 #echo $numclusters
 
 # calculate median and average
-median=`cat clustersizes.csv | sed -n -e '/collider/,$p' | grep -v "collider" | grep -v ",n" | sort -n | \
-		awk ' { a[i++]=$1; } END { x=int((i+1)/2); if (x < (i+1)/2) print (a[x-1]+a[x])/2; else print a[x-1]; }' `
+median=`cat clustersizes.csv | sed -n -e '/collider/,$p' | grep -v "collider" | grep -v ",n" | sort -V | \
+		awk -F, ' { a[i++]=$1; } END { x=int((i+1)/2); if (x < (i+1)/2) print (a[x-1]+a[x])/2; else print a[x-1]; }' `
 #echo $median
 
 average=`cat clustersizes.csv | sed -n -e '/collider/,$p' | grep -v "collider" | grep -v ",n" | sort -n | \
-		awk ' BEGIN { count=0;total=0}{ total+=$1;count++ } END { print total/count; }' `
+		awk -F, ' BEGIN { count=0;total=0}{ total+=$1;count++ } END { print total/count; }' `
 #echo $average
 
 # from here down we start to make changes to disk ...
