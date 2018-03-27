@@ -1,0 +1,199 @@
+#!/bin/bash
+
+# Copyright (C) 2018 Stephen Farrell, stephen.farrell@cs.tcd.ie
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
+#set -x
+
+function convdate()
+{
+	# we expect that to be <somethingnondecimal>YYYYmmdd-HHMMSS[.out]
+	dec=`echo $1 | sed -e 's/[a-zA-Z]//g'` 
+	if [ "${dec:0}" == "-" ]
+	then
+	 	dec=${dec:1}
+	fi
+	d1=`echo $dec | sed -e 's/-.*//'`
+	d2=`echo $dec | sed -e 's/.*-//' | sed -e 's/\..*//' | sed 's/.\{2\}/&:/g' | sed -e 's/:$//'`
+	date -d"$d1 $d2" +"%Y-%m-%d %H:%M:%S"
+}
+	
+function whenisitagain()
+{
+	date -u +%Y%m%d-%H%M%S
+}
+NOW=$(whenisitagain)
+startdir=`/bin/pwd`
+
+function usage()
+{
+	echo "$0 [-r <results-directory>]"
+	echo "	results-directory defaults to \$CWD"
+	echo "	makes a latex source file and csv file for this run"
+	exit 99
+}
+
+outdir=.
+csizefile="clustersizes.csv"
+
+# options may be followed by one colon to indicate they have a required argument
+if ! options=$(getopt -s bash -o hr: -l resdir:,help -- "$@")
+then
+	# something went wrong, getopt will put out an error message for us
+	exit 1
+fi
+#echo "|$options|"
+eval set -- "$options"
+while [ $# -gt 0 ]
+do
+	case "$1" in
+		-h|--help) usage;;
+		-r|--resdir) outdir="$2"; shift;;
+		(--) shift; break;;
+		(-*) echo "$0: error - unrecognized option $1" 1>&2; exit 1;;
+		(*)  break;;
+	esac
+	shift
+done
+
+if [ ! -d $outdir ]
+then
+	echo "No directory $outdir"
+	usage
+fi
+cd $outdir
+
+if [ ! -f $csizefile ]
+then
+	echo "Can't see $outdir/$csizefile - exiting"
+	cd $startdir
+	exit 1
+fi
+
+echo "Running $0 at $NOW"
+runname=`basename $PWD`
+echo "Run-name is $runname"
+csvfile=cs-$runname.csv
+
+# figure out when run started - oldest date in a *.out file name
+odfile=`ls -t *.out | tail -1`
+startrun=$(convdate $odfile)
+#echo $startrun
+
+scandate=`grep "Scandate" *.out | tail -1 |  awk '{print $5"-"$6}' | sed -e 's/\..*//'`
+#echo $scandate
+
+zmapips=`wc -l records.fresh | awk '{print $1}'`
+#echo $zmapips
+ooc=`grep wrong_country dodgy.json | wc -l`
+#echo $ooc
+if [[ "$ooc" == "0" ]]
+then
+	# weird check here as I'm depending on the out of country error to tell me what country
+	# we wanted - TODO: FIXME
+	echo "This is odd - zero out of country?"
+	exit 2
+fi
+incountry=$((zmapips-ooc))
+#echo $incountry
+dodgies=`grep '^  "' dodgy.json | wc -l`
+#echo $dodgies
+nocryptoseen=$((dodgies-ooc))
+#echo $nocryptoseen
+country=`grep "Asked for " *.out | awk '{print $11}' | sort | uniq -c | sort -n | tail -1 | awk '{print $2}'`
+#echo $country
+somecrypto=$((incountry-nocryptoseen))
+#echo $somecrypto
+pcsome=$((100*somecrypto/incountry))
+#echo $pcsome
+noncluster=`tail -1 clustersizes.csv | awk -F, '{print $1}'`
+#echo $noncluster
+inclusters=$((somecrypto-noncluster))
+#echo $inclusters
+hark=$((100*inclusters/somecrypto))
+#echo $hark
+numclusters=`ls cluster*.json | wc -l`
+#echo $numclusters
+
+
+# from here down we start to make changes to disk ...
+
+if [ -f $csvfile ]
+then
+	# make one backup, just in case
+	cp $csvfile $csvfile.old
+fi
+
+echo "c,s" >$csvfile
+cat clustersizes.csv | sed -n -e '/collider/,$p' | grep -v "collider" | grep -v ",n" | awk -F, '{print $1","$2}'  | sort -V >>$csvfile
+
+biggest=`tail -1 $csvfile | awk -F, '{print $1}'`
+#echo $biggest
+
+texfile=$runname.tex
+
+cat >$texfile <<EOF
+\subsubsection{Results of run $runname}
+
+\begin{figure}
+\centering
+	\begin{tikzpicture}
+	\begin{axis}[xmode=log]
+	\addplot table[x=c, y expr=\thisrow{s}*\thisrow{c}, col sep=comma]{$csvfile};
+	\addplot table[x=c, y=s, col sep=comma]{$csvfile};
+	\end{axis}
+	\end{tikzpicture}
+	\begin{center}
+	\centering
+	\caption[clustediag]{Clustersize distribution for run $runname \footnotesize\centering circle = number of hosts in clusters of given size;square = number of clusters of given size;x = log clustersize }
+	\end{center}
+	\label{fig:csizes-$runname}
+
+	\captionof{table}{Overview of run $runname}
+	\begin{tabular} { | p{4cm} | p{3cm} | }
+	\hline
+	\hline Country & IE \\\\
+	\hline Scan start & $startrun \\\\
+	\hline Scan finish & $scandate \\\\
+	\hline Number of IPs from zmap & $zmapips \\\\
+	\hline Judged ``out of county'' & $ooc \\\\
+	\hline ``In country'' IPs & $incountry \\\\
+	\hline No crypto seen & $nocryptoseen \\\\
+	\hline Some Crypto & $somecrypto \\\\
+	\hline Percent with some crypto & $pcsome\% \\\\
+	\hline Keys only seen on one host & $noncluster \\\\
+	\hline Hosts in clusters & $inclusters \\\\
+	\hline HARK & $hark\% \\\\
+	\hline Number of clusters & $numclusters \\\\
+	\hline Biggest cluster size & $biggest \\\\
+	\hline
+	\end{tabular}
+	\label{tab:run-$runname}
+
+\end{figure}
+
+Table \ref{tab:run-$runname} provides the oveview
+of this run. 
+Cluster sizes are distributed as shown in 
+Figure \ref{fig:csizes-$runname}.
+
+EOF
+
+cd $startdir
