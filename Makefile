@@ -37,7 +37,10 @@ gdir="."
 # note this may be a system or $HOME/bin thing, depending if you've
 # built graphviz locally, which seems better in some ways, even if
 # it's still flakey
-dotcmd='neato'
+#dotcmd='neato'
+# sftp is neater but slower, don't think the epsilon thing 
+# below helps there either but it doesn't hurt (so far)
+dotcmd='sfdp'
 # this helps neato, but will be ignored or barf for others
 dotparms="-Gepsilon=1.5"
 
