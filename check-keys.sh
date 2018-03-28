@@ -41,14 +41,18 @@ echo "Running $0 at $NOW"
 
 function usage()
 {
-	echo "$0 - no parameters:-)"
+	echo "$0 [-c <country-code>] [-i <space-sep list of files>]"
+	echo "  country-code can be IE, EE etc."
+	echo "  list of files should be e.g. \"cluster1.json cluster200.json\" - quotes will be good if >1"
 	exit 99
 }
 
 srcdir=$HOME/code/surveys
+country="IE"
+infiles=""
 
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -s bash -o s:h -l srcdir:,help -- "$@")
+if ! options=$(getopt -s bash -o c:i:s:h -l country:,inputs:,srcdir:,help -- "$@")
 then
 	# something went wrong, getopt will put out an error message for us
 	exit 1
@@ -59,6 +63,8 @@ while [ $# -gt 0 ]
 do
 	case "$1" in
 		-h|--help) usage;;
+		-c|--country) country="$2"; shift;;
+		-i|--input) infiles="$2"; shift;;
 		-s|--srcdir) srcdir="$2"; shift;;
 		(--) shift; break;;
 		(-*) echo "$0: error - unrecognized option $1" 1>&2; exit 1;;
@@ -79,11 +85,24 @@ then
 	usage
 fi
 
+list=""
+if [ "$infiles" != "" ]
+then
+	list=$infiles
+else
+	list=cluster*.json
+fi
+if [ "$infiles" == "" ]
+then
+	echo "Emply list of files to process - exiting"
+	usage
+fi
+
 ofall="validation-results-$NOW.out"
 echo "Starting at $NOW, log in $ofall" 
 echo "Starting at $NOW, log in $logf" >$ofall
 
-for file in cluster*.json 
+for file in $list
 do
 	echo "Doing $file"
 	echo "Doing $file" >>$ofall
