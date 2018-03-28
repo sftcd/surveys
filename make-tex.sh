@@ -176,10 +176,11 @@ cat >$texfile <<EOF
 	\begin{center}
 	\centering
 	\caption[clustediag]{Clustersize distribution for run $runname \footnotesize\centering circle = number of hosts in clusters of given size;square = number of clusters of given size;x = log clustersize }
-	\end{center}
 	\label{fig:csizes-$runname}
+	\end{center}
 
 	\captionof{table}{Overview of run $runname}
+	\label{tab:run-$runname}
 	\begin{tabular} { | p{4cm} | p{3cm} | }
 	\hline
 	\hline Country & IE \\\\
@@ -200,7 +201,6 @@ cat >$texfile <<EOF
 	\hline Avverage cluster size & $average \\\\
 	\hline
 	\end{tabular}
-	\label{tab:run-$runname}
 
 \end{figure}
 
