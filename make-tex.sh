@@ -183,7 +183,7 @@ cat >$texfile <<EOF
 \begin{figure}
 \centering
 	\begin{tikzpicture}
-	\begin{axis}[xmode=log]
+	\begin{axis}[xmode=log, xmax=30000, ymax=3000]
 	\addplot table[x=c, y expr=\thisrow{s}*\thisrow{c}, col sep=comma]{$csvfile};
 	\addplot table[x=c, y=s, col sep=comma]{$csvfile};
 	\end{axis}
