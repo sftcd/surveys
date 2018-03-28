@@ -99,7 +99,7 @@ odfile=`ls -t *.out | tail -1`
 startrun=$(convdate $odfile)
 #echo $startrun
 
-scandate=`grep "Scandate" *.out | tail -1 |  awk '{print $5"-"$6}' | sed -e 's/\..*//'`
+scandate=`grep "Scandate" *.out | tail -1 |  awk '{print $5" "$6}' | sed -e 's/\..*//'`
 #echo $scandate
 
 zmapips=`wc -l records.fresh | awk '{print $1}'`
