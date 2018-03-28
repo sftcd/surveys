@@ -26,7 +26,7 @@ function convdate()
 {
 	# we expect that to be <somethingnondecimal>YYYYmmdd-HHMMSS[.out]
 	dec=`echo $1 | sed -e 's/[a-zA-Z]//g'` 
-	if [ "${dec:0}" == "-" ]
+	if [[ $dec == -* ]]
 	then
 	 	dec=${dec:1}
 	fi
@@ -99,6 +99,12 @@ csvfile=cs-$runname.csv
 odfile=`ls -t *.out | tail -1`
 startrun=$(convdate $odfile)
 #echo $startrun
+# try from runname
+if [ "$srartrun" == "" ]
+then
+	startrun=$(convdate $runname)
+fi
+
 
 scandate=`grep "Scandate" *.out | tail -1 |  awk '{print $5" "$6}' | sed -e 's/\..*//'`
 #echo $scandate
