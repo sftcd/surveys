@@ -186,8 +186,8 @@ cat >$texfile <<EOF
 	\hline Scan start & $startrun \\\\
 	\hline Scan finish & $scandate \\\\
 	\hline Number of IPs from zmap & $zmapips \\\\
-	\hline Judged ``out of county'' & $ooc \\\\
-	\hline ``In country'' IPs & $incountry \\\\
+	\hline Judged \`\`out of county'' & $ooc \\\\
+	\hline \`\`In country'' IPs & $incountry \\\\
 	\hline No crypto seen & $nocryptoseen \\\\
 	\hline Some Crypto & $somecrypto \\\\
 	\hline Percent with some crypto & $pcsome\% \\\\
