@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-set -x
+# set -x
 
 function convdate()
 {
@@ -41,6 +41,7 @@ function whenisitagain()
 }
 NOW=$(whenisitagain)
 startdir=`/bin/pwd`
+srcdir=$HOME/code/surveys/
 
 function usage()
 {
@@ -165,6 +166,15 @@ cat clustersizes.csv | sed -n -e '/collider/,$p' | grep -v "collider" | grep -v 
 biggest=`tail -1 $csvfile | awk -F, '{print $1}'`
 #echo $biggest
 
+if [ ! -f hpk_summary.txt ]
+then
+	echo "Gotta re-count hosts/ports/keys sorry... coupla minutes..."
+	$srcdir/HostPortKeyCount.py -f all-key-fingerprints.json
+fi
+totkeys=`tail -1 hpk_summary.txt | awk '{print $2}'`
+tothostsports=`tail -2 hpk_summary.txt | head -1 | awk '{print $2}'`
+pckeys=$((100*totkeys/tothostsports))
+
 texfile=$runname.tex
 
 cat >$texfile <<EOF
@@ -191,12 +201,19 @@ cat >$texfile <<EOF
 	\hline Country & $country \\\\
 	\hline Scan start & $startrun \\\\
 	\hline Scan finish & $scandate \\\\
+	\hline
 	\hline Number of IPs from zmap & $zmapips \\\\
 	\hline Judged \`\`out of county'' & $ooc \\\\
 	\hline \`\`In country'' IPs & $incountry \\\\
+	\hline
 	\hline No crypto seen & $nocryptoseen \\\\
 	\hline Some Crypto & $somecrypto \\\\
 	\hline Percent with some crypto & $pcsome\% \\\\
+	\hline
+	\hline Total crypto host/ports & $tothostsports \\\\
+	\hline Total unique keys & $totkeys \\\\
+	\hline Percent keys vs. max & $pckeys\% \\\\
+	\hline
 	\hline Keys only seen on one host & $noncluster \\\\
 	\hline Hosts in clusters & $inclusters \\\\
 	\hline HARK & $hark\% \\\\
