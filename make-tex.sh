@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# set -x
+set -x
 
 function convdate()
 {
@@ -101,6 +101,11 @@ startrun=$(convdate $odfile)
 
 scandate=`grep "Scandate" *.out | tail -1 |  awk '{print $5" "$6}' | sed -e 's/\..*//'`
 #echo $scandate
+if [ "$scandate" == "" ]
+then
+	# fall back to now
+	scandate=$(convdate $NOW)
+fi
 
 zmapips=`wc -l records.fresh | awk '{print $1}'`
 #echo $zmapips
@@ -183,7 +188,7 @@ cat >$texfile <<EOF
 	\label{tab:run-$runname}
 	\begin{tabular} { | p{4cm} | p{3cm} | }
 	\hline
-	\hline Country & IE \\\\
+	\hline Country & $country \\\\
 	\hline Scan start & $startrun \\\\
 	\hline Scan finish & $scandate \\\\
 	\hline Number of IPs from zmap & $zmapips \\\\
