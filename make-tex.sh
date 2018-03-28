@@ -125,6 +125,10 @@ then
 	echo "This is odd - zero out of country and I don't know what country! - exiting"
 	exit 2
 fi
+if [[ "$ooc" == "0" ]]
+then
+	# cross-check vs. "Bad country" matching *.out
+fi
 incountry=$((zmapips-ooc))
 #echo $incountry
 dodgies=`grep '^  "' dodgy.json | wc -l`

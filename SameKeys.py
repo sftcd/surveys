@@ -107,9 +107,9 @@ with open(infile,'r') as f:
             thisone.asn=asn
             thisone.asndec=asndec
             if j_content['location']['country_code'] != country:
-                print "Bad country for ip",thisone.ip,"location:",j_content['location']['country_code'],"Asked for CC:",country
-                print >>sys.stderr, "Bad country for ip",thisone.ip,country
                 badrec=True
+                print >>sys.stderr, "Bad country for ip",thisone.ip,"location:",j_content['location']['country_code'],"Asked for CC:",country
+                j_content['wrong_country']=j_content['location']['country_code'] 
         except:
             # look that chap up ourselves
             mm_inited=False
@@ -123,8 +123,7 @@ with open(infile,'r') as f:
             if asninfo['cc'] != country:
                 # just record as baddy if the country-code is (now) wrong?
                 # mark it so we can revisit later too
-                print >>sys.stderr, "Bad country for ip",thisone.ip,asninfo['cc']
-                print "Bad country for ip",thisone.ip,"asn:",asninfo['cc'],"Asked for CC:",country
+                print >>sys.stderr, "Bad country for ip",thisone.ip,"asn:",asninfo['cc'],"Asked for CC:",country
                 j_content['wrong_country']=asninfo['cc']
                 badrec=True
 
