@@ -121,7 +121,7 @@ with open(args.infile,'r') as f:
         ip=ip.strip() # lose the CRLF
         # check country matches
         if not mm_ipcc(ip,country):
-            print >>sys.stderr, ip + " is not in " + country + " - skipping"
+            print >>sys.stderr, "Bad country (fg)" + ip + " is not in " + country + " - skipping"
             continue
         ipstart=time.time()
         jthing={}
