@@ -100,12 +100,12 @@ if args.errfile is not None:
 # default to a 100ms wait between zgrab calls
 defsleep=0.1
 
-print "Running ",sys.argv[0:]," starting at",time.asctime(time.localtime(time.time()))
+print >>sys.stderr, "Running ",sys.argv[0:]," starting at",time.asctime(time.localtime(time.time()))
 
 sleepval=defsleep
 if args.sleepsecs is not None:
     sleepval=float(args.sleepsecs)
-    print "Will sleep for " + str(sleepval) + " seconds between zgrabs"
+    print >>sys.stderr, "Will sleep for " + str(sleepval) + " seconds between zgrabs"
 
 # keep track of how long this is taking per ip
 peripaverage=0
@@ -117,11 +117,13 @@ mm_setup()
 
 with open(args.infile,'r') as f:
     checkcount=0
+    ooc=0
     for ip in f:
         ip=ip.strip() # lose the CRLF
         # check country matches
         if not mm_ipcc(ip,country):
             print >>sys.stderr, "Bad country (fg)" + ip + " is not in " + country + " - skipping"
+            ooc+=1
             continue
         ipstart=time.time()
         jthing={}
@@ -168,5 +170,6 @@ with open(args.infile,'r') as f:
 
 out_f.close()
 
+print >>sys.stderr, "FreshGrab: Out of country: " + str(ooc)
 
-print "Ran ",sys.argv[0:]," finished at",time.asctime(time.localtime(time.time())),"average seconds/ip:",peripaverage
+print >>sys.stderr, "Ran ",sys.argv[0:]," finished at",time.asctime(time.localtime(time.time())),"average seconds/ip:",peripaverage
