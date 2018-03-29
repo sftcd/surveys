@@ -73,6 +73,7 @@ def_country='IE'
 country=def_country
 if args.country is not None:
     country=args.country
+    print >>sys.stderr, "Doing a " + country + "run"
 
 if args.infile is not None:
     infile=args.infile
