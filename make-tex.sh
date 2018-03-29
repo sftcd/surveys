@@ -128,6 +128,8 @@ fi
 if [[ "$ooc" == "0" ]]
 then
 	# cross-check vs. "Bad country" matching *.out
+	# possible over-estimate
+	ooc=`grep "Bad country" *.out | grep "Asked" | awk '{print $5}' | sort | uniq -c | sort | wc -l`
 fi
 incountry=$((zmapips-ooc))
 #echo $incountry
