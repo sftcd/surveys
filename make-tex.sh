@@ -214,7 +214,7 @@ cat >$texfile <<EOF
 	\hline Scan start & $startrun \\\\
 	\hline Scan finish & $scandate \\\\
 	\hline
-	\hline Number of IPs from zmap & $zmapips \\\\
+	\hline Number of IPs from ZMap & $zmapips \\\\
 	\hline Judged \`\`out of county'' & $ooc \\\\
 	\hline \`\`In country'' IPs & $incountry \\\\
 	\hline
@@ -232,7 +232,7 @@ cat >$texfile <<EOF
 	\hline Number of clusters & $numclusters \\\\
 	\hline Biggest cluster size & $biggest \\\\
 	\hline Median cluster size & $median \\\\
-	\hline Avverage cluster size & $average \\\\
+	\hline Average cluster size & $average \\\\
 	\hline
 	\end{tabular}
 
