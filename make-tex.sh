@@ -34,7 +34,7 @@ function convdate()
 	d2=`echo $dec | sed -e 's/.*-//' | sed -e 's/\..*//' | sed 's/.\{2\}/&:/g' | sed -e 's/:$//'`
 	date -d"$d1 $d2" +"%Y-%m-%d %H:%M:%S"
 }
-	
+
 function whenisitagain()
 {
 	date -u +%Y%m%d-%H%M%S
