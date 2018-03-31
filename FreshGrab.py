@@ -110,7 +110,28 @@ if args.sleepsecs is not None:
 # keep track of how long this is taking per ip
 peripaverage=0
 
-out_f=open(args.outfile,"w")
+# what's done is done
+ipdone=set()
+
+# see if outfile is there and has stuff already
+if os.path.isfile(args.outfile):
+    pre_ips=0
+    try:
+        with open(args.outfile,'r') as f:
+            for line in f:
+                j_content = json.loads(line)
+                if 'ip' in j_content:
+                    ipdone.add(j_content['ip'])
+                    pre_ips += 1
+    except Exception as e:
+        # we might hit a non-decoding last line or other badness, not unexpected
+        print >>sys.stderr, "Excetion",args.outfile,"might end badly:",str(e)
+        pass
+    f.close()
+    print >>sys.stderr, "Loaded",str(pre_ips),"previously fetched records from",args.outfile
+
+# now go get more...
+out_f=open(args.outfile,"a")
 
 # initialise mm
 mm_setup()
@@ -120,6 +141,14 @@ with open(args.infile,'r') as f:
     ooc=0
     for ip in f:
         ip=ip.strip() # lose the CRLF
+
+        # if we have this one we're done
+        if ip in ipdone:
+            print >>sys.stderr, ip,"is in ipdone - skipping"
+            continue
+        else: 
+            pass
+            #print >>sys.stderr, "Doing",ip
         # check country matches
         if not mm_ipcc(ip,country):
             print >>sys.stderr, "Bad country (fg)" + ip + " is not in " + country + " - skipping"
