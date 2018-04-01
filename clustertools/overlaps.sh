@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# set -x
+#set -x
 
 # find overlapping clusters from another run
 
@@ -76,7 +76,7 @@ do
 	ols=""
 	for ip in $ips
 	do
-		ol=`grep -l $ip $run2/cluster*.json`
+		ol=`grep -l '^  "ip": "'$ip'"' $run2/cluster*.json`
 		if [[ "$ol" != ""  ]] 
 		then
 			for cl in $ol
