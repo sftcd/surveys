@@ -91,7 +91,7 @@ do
 	done
 	if [[ "$ols" == "" ]]
 	then
-		echo "$file has no ovelaps"
+		echo "$file has no overlaps"
 	else
 		echo "$file overlaps with $run2 clusters $ols"
 	fi
