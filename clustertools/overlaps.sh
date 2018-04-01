@@ -65,12 +65,12 @@ done
 
 if [[ "$infiles" == "" ]]
 then
-	usage
+	infiles="cluster*.json"
+	echo "Doing all clusters here."
 fi
 
 for file in $infiles
 do
-	echo "Doing $file"
 	ips=`$srcdir/clustertools/clips.sh -i $file`
 	#echo $ips
 	ols=""
@@ -86,6 +86,11 @@ do
 			fi
 		fi
 	done
-	echo "$file overlaps with $run2 clusters $ols"
+	if [[ "$ols" == "" ]]
+	then
+		echo "$file has no ovelaps"
+	else
+		echo "$file overlaps with $run2 clusters $ols"
+	fi
 done
 
