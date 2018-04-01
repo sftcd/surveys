@@ -79,11 +79,14 @@ do
 		ol=`grep -l $ip $run2/cluster*.json`
 		if [[ "$ol" != ""  ]] 
 		then
-			cnum=`basename $ol | sed -e 's/cluster//;s/.json//'`
-			if [[ $ols != *"$cnum"* ]]
-			then
-				ols="$cnum $ols"
-			fi
+			for cl in $ol
+			do
+				cnum=`basename $cl | sed -e 's/cluster//;s/.json//'`
+				if [[ $ols != *"$cnum"* ]]
+				then
+					ols="$cnum $ols"
+				fi
+			done
 		fi
 	done
 	if [[ "$ols" == "" ]]
