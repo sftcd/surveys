@@ -20,7 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# Report the collisions, via graphs and text
+# Output the openssl text form of any certificates seen now in a cluster
+# A new connection is made to get these certs
 
 import sys
 import os
@@ -46,7 +47,7 @@ from SurveyFuncs import *
 
 
 # command line arg handling 
-parser=argparse.ArgumentParser(description='Graph the collisions found by SameKeys.py')
+parser=argparse.ArgumentParser(description='Output the openssl text form of any certificates seen now in a cluster')
 parser.add_argument('-f','--file',     
                     dest='fname',
                     help='json file containing cluster details')
