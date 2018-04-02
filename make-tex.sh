@@ -226,7 +226,7 @@ cat >$texfile <<EOF
 	\hline Total unique keys & $totkeys \\\\
 	\hline Percent keys vs. max & $pckeys\% \\\\
 	\hline
-	\hline Keys only seen on one host & $noncluster \\\\
+	\hline Hosts with only local keys & $noncluster \\\\
 	\hline Hosts in clusters & $inclusters \\\\
 	\hline HARK & $hark\% \\\\
 	\hline Number of clusters & $numclusters \\\\
