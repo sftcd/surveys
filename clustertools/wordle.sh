@@ -27,19 +27,46 @@
 function usage()
 {
 	echo "Make a wordle from the names in a cluster file"
-	echo "$0 [-i <space-sep list of files>]"
+	echo "$0 [space-sep list of files]"
 	echo "  list of files should be e.g. \"cluster1.json cluster200.json\" - quotes will be good if >1"
+	echo "If no argument given then we'll try do \"cluster*json\""
 	exit 99
 }
 
 srcdir=$HOME/code/surveys
-infile=$1
+infiles=$1
 tmpf=`mktemp /tmp/wordle.XXXX`
 
-( $srcdir/clustertools/fvs.sh -f banner -i $infile -u
-$srcdir/clustertools/fvs.sh -f p[0-9]*dn -i $infile -u
-$srcdir/clustertools/fvs.sh -f rnds -i $infile -u ) >$tmpf
+if [[ "$infiles" == "" ]]
+then
+	echo "Doing them all..."
+	infiles=cluster*.json
+	if [[ "$infiles" == "" ]]
+	then
+		echo "Can't find clusters - exiting."
+		exit 1
+	fi
+fi
 
-wordcloud_cli.py --text $tmpf --no_collocations >$infile-wordle.png
+count=0
+freq=5
 
-rm -f $tmpf
+for file in $infiles
+do
+
+	bname=`basename $file .json`
+
+	$srcdir/clustertools/fvs.sh -f banner -i $file >$bname.words
+	$srcdir/clustertools/fvs.sh -f p[0-9]*dn -i $file >>$bname.words
+	$srcdir/clustertools/fvs.sh -f rdns -i $file >>$bname.words
+
+	wordcloud_cli.py --text $bname.words --no_collocations >$bname-wordle.png
+
+	((count++))
+	if (((count%freq)==0))
+	then
+		echo "Did $count, last was $bname"
+	fi
+
+done
+

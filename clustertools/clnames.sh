@@ -35,7 +35,14 @@ function usage()
 srcdir=$HOME/code/surveys
 infile=$1
 
-( $srcdir/clustertools/fvs.sh -f banner -i $infile -u
-$srcdir/clustertools/fvs.sh -f p[0-9]*dn -i $infile -u
-$srcdir/clustertools/fvs.sh -f rnds -i $infile -u ) | sort -n
+tmpf=`mktemp /tmp/clnames.XXXX`
+
+$srcdir/clustertools/fvs.sh -f banner -i $infile -u >$tmpf
+$srcdir/clustertools/fvs.sh -f p[0-9]*dn -i $infile -u >>$tmpf
+$srcdir/clustertools/fvs.sh -f rdns -i $infile -u >>$tmpf
+
+cat $tmpf | sort -n
+
+rm -f $tmpf
+
 
