@@ -59,6 +59,7 @@ do
 	$srcdir/clustertools/fvs.sh -f banner -i $file >$bname.words
 	$srcdir/clustertools/fvs.sh -f p[0-9]*dn -i $file >>$bname.words
 	$srcdir/clustertools/fvs.sh -f rdns -i $file >>$bname.words
+	$srcdir/clustertools/fvs.sh -f asn -i $file >>$bname.words
 
 	wordcloud_cli.py --text $bname.words --no_collocations >$bname-wordle.png
 
