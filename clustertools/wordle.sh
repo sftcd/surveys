@@ -35,8 +35,6 @@ function usage()
 
 srcdir=$HOME/code/surveys
 infiles=$1
-tmpf=`mktemp /tmp/wordle.XXXX`
-
 if [[ "$infiles" == "" ]]
 then
 	echo "Doing them all..."

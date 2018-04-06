@@ -57,6 +57,16 @@ SVGS=$(patsubst %.dot,%.dot.svg, $(DOTS))
 images: $(SVGS)
 	find . -name '*.dot.svg' -size 0 -exec rm {} \;
 
+CLUSTERS=$(wildcard cluster*.json)
+
+WORDS=$(patsubst %.json,%.words,$(CLUSTERS))
+
+%.words: %.json
+	- ${srcdir}/clustertools/wordle.sh $(<) 
+
+words: $(WORDS) 
+
+
 all: help
 	
 help: justcleaning
