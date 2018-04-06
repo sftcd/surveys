@@ -74,26 +74,24 @@ then
 	echo "Doing all clusters between $run1 and $run1."
 fi
 
+tmpf=`mktemp /tmp/fpov.XXXX`
 for file in $infiles
 do
 	c1num=`basename $file | sed -e 's/cluster//;s/.json//'`
-	fps=`$srcdir/clustertools/fpsfromcluster.sh $file | awk '{print $2}' | grep -v total`
+	$srcdir/clustertools/fpsfromcluster.sh $file | awk '{print $2}' | grep -v total >$tmpf
 	ols=""
-	for fp in $fps
-	do
-		ol=`grep -l $fp $run2/cluster*.json`
-		if [[ "$ol" != ""  ]] 
-		then
-			for cl in $ol
-			do
-				c2num=`basename $cl | sed -e 's/cluster//;s/.json//'`
-				if [[ $ols != *"$c2num"* ]]
-				then
-					ols="$c2num $ols"
-				fi
-			done
-		fi
-	done
+	ol=`grep -l -F -f $tmpf $run2/cluster*.json`
+	if [[ "$ol" != ""  ]] 
+	then
+		for cl in $ol
+		do
+			c2num=`basename $cl | sed -e 's/cluster//;s/.json//'`
+			if [[ $ols != *"$c2num"* ]]
+			then
+				ols="$c2num $ols"
+			fi
+		done
+	fi
 	if [[ "$ols" == "" ]]
 	then
 		echo "$run1/$c1num has no overlaps with $run2"
@@ -101,4 +99,5 @@ do
 		echo "$run1/$c1num overlaps with $run2/$ols"
 	fi
 done
+rm -f $tmpf
 
