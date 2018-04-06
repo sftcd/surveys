@@ -87,6 +87,7 @@ sudo -H pip install  pympler
 sudo -H pip install  pytz
 sudo -H pip install  netaddr
 sudo -H pip install  cryptography
+sudo -H pip install  wordcloud
 
 # these are imports that I don't think need a pip install
 # but not sure:-)
