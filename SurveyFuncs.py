@@ -579,6 +579,13 @@ def get_fqdns(blob):
         for san in san_fqdns:
             nameset['san'+str(sancount)]=san_fqdns[sancount]
             sancount += 1
+            # there are some CRAAAAAAZZZY huge certs out there - saw one with >1500 SANs
+            # which slows us down loads, so we'll just max out at 20
+            if sancount >= 20:
+                toobig=str(len(san_fqdns))
+                nameset['san'+str(sancount+1)]="Bollox-eoo-many-sans-" + toobig
+                print >> sys.stderr, "Too many bleeding ( " + tobig + ") sans for " + ip 
+                break
     except Exception as e: 
         #these are v. common
         #print >> sys.stderr, "FQDN san exception " + str(e) + " for record:" + str(count)
@@ -633,6 +640,13 @@ def get_certnames(portstring,cert,nameset):
         for san in san_fqdns:
             nameset[portstring+'san'+str(sancount)]=san_fqdns[sancount]
             sancount += 1
+            # there are some CRAAAAAAZZZY huge certs out there - saw one with >1500 SANs
+            # which slows us down loads, so we'll just max out at 20
+            if sancount >= 20:
+                toobig=str(len(san_fqdns))
+                nameset['san'+str(sancount+1)]="Bollox-eoo-many-sans-1-" + toobig
+                print >> sys.stderr, "Too many bleeding ( " + tobig + ") sans "
+                break
     except Exception as e: 
         #these are v. common
         #print >> sys.stderr, "FQDN san exception " + str(e) + " for record:" + str(count)
