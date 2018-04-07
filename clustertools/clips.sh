@@ -67,8 +67,8 @@ fi
 
 if [[ "$douniq" == "yes" ]]
 then
-	grep '^  "'$needle'":' $infiles | sed -e's/^  "ip": "//;s/",//' | sort -V | uniq -c
+	egrep '^   ? ?"'$needle'":' $infiles | sed -e's/    /  /' | sed -e's/^  "ip": "//;s/",//' | sort -V | uniq -c
 else
-	grep '^  "'$needle'":' $infiles | sed -e's/^  "ip": "//;s/",//' | sort -V
+	egrep '^   ? ?"'$needle'":' $infiles | sed -e's/    /  /' | sed -e's/^  "ip": "//;s/",//' | sort -V
 fi
 
