@@ -59,6 +59,12 @@ do
 	shift
 done
 
+if [[ "$needle" == "" || "$infiles" == "" ]]
+then
+	echo "missing inputs"
+	usage
+fi
+
 if [[ "$douniq" == "yes" ]]
 then
 	grep '^  "'$needle'":' $infiles | sed -e's/^  "ip": "//;s/",//' | sort -V | uniq -c
