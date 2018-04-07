@@ -71,7 +71,7 @@ all: help
 	
 help: justcleaning
 
-clean: graphclean logclean
+clean: graphclean collclean logclean wordclean
 
 fullrun:
 	${srcdir}/skey-all.sh ${srcdir} ${datadir} ${cname}
@@ -107,6 +107,10 @@ graphclean:
 	@rm -f failed*.svg
 	@rm -f graph.done
 	@rm -f cluster*.json
+
+wordclean:
+	@rm -f *-wordle.png
+	@rm -f cluster*.words
 
 logclean:
 	@rm -f *.out
