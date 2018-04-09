@@ -133,6 +133,10 @@ go build
 # put it on PATH
 sudo ln -sf $HOME/go/src/github.com/zmap/zgrab/zgrab /usr/local/bin
 
+# get ciphersuite stuff
+cd $HOME/code/survey/clustertools
+wget https://testssl.sh/mapping-rfc.txt
+
 # clean up
 cd $starddir
 echo "Done! (I hope:-)"

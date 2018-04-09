@@ -20,22 +20,31 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# set -x
+#set -x
 
-# extract field values from cluster files
+# extract ciphersuite values from cluster files
 
 function usage()
 {
-	echo "Grep out a not-necessarily top-level field from a json file."
-	echo "$0 [-u] [-f <field>] [-i <space-sep list of files>]"
-	echo "  -u means to run otput through \"uniq -c\""
+	echo "Grep out ciphersuites json files."
+	echo "$0 -i <space-sep list of files>"
 	echo "  list of files should be e.g. \"cluster1.json cluster200.json\" - quotes will be good if >1"
 	exit 99
 }
 
 infiles=""
-needle="ip"
-douniq="no"
+needle="cipher_suite"
+
+# this comes from https://testssl.sh/mapping-rfc.txt, which is GPL
+# I've no idea if re-use of a file like that is a licensing issue,
+# note that I don't distribute that, I download it from install-deps
+# to here - I reckon that's ok, if you disagree send a PR:-)
+stringsfile="$HOME/code/surveys/clustertools/mapping-rfc.txt"
+if [ ! -f $stringsfile ]
+then
+	echo "You need $stringsfile - get it from https://testssl.sh/mapping-rfc.txt"
+	exit 1
+fi
 
 # options may be followed by one colon to indicate they have a required argument
 if ! options=$(getopt -s bash -o uf:i:h -l uniq,field:,inputs:,help -- "$@")
@@ -49,9 +58,7 @@ while [ $# -gt 0 ]
 do
 	case "$1" in
 		-h|--help) usage;;
-		-u|--uniq) douniq="yes" ;;
 		-i|--input) infiles="$2"; shift;;
-		-f|--field) needle="$2"; shift;;
 		(--) shift; break;;
 		(-*) echo "$0: error - unrecognized option $1" 1>&2; exit 1;;
 		(*)  break;;
@@ -59,11 +66,33 @@ do
 	shift
 done
 
-if [[ "$douniq" == "yes" ]]
+nums=1
+# how many infiles we dealing with? changes awk thing to print
+IFS=' ' farr=(${infiles})
+nums=${#farr[@]}
+
+pos=2
+if [[ "$nums" != "1" ]]
 then
-	egrep '"'$needle'": ' $infiles | awk '{print $2}' | grep -v '"",' | sed -e 's/",//' | sed -e 's/"//' | sed -e 's/,$//' | sort | uniq -c | sort -n
-else
-	egrep '"'$needle'": ' $infiles | awk '{print $2}' | grep -v '"",' | sed -e 's/",//' | sed -e 's/"//' | sed -e 's/,$//' | sort 
+	pos=3
 fi
 
+tmpf=`mktemp /tmp/csuite.XXXX`
+tmpf1=`mktemp /tmp/csuite.XXXX`
 
+egrep '"'$needle'": ' $infiles | \
+	awk '{print $'$pos'}' | \
+	grep -v '"",' | \
+	sed -e 's/",//' | \
+	sed -e 's/"//' | \
+	sed -e 's/,$//' | 
+	awk '{printf("x%02X\n",$1)}' >$tmpf
+
+while read line
+do
+	grep $line $stringsfile >>$tmpf1
+done <$tmpf
+
+cat $tmpf1 | sort |  uniq -c | sort -n 
+
+rm -f $tmpf $tmpf1
