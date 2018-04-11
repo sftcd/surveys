@@ -257,7 +257,7 @@ with open(infile,'r') as f:
             else:
                 # censys.io has no p587 for now
                 pass
-            get_certnames('p443',cert,nameset)
+            get_certnames('p587',cert,nameset)
             thisone.fprints['p587']=fp
         except Exception as e: 
             #print >> sys.stderr, "p587 exception for:" + thisone.ip + ":" + str(e)
