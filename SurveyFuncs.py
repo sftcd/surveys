@@ -521,6 +521,34 @@ def fqdn_bogon(dn):
     return False
     
 
+# check if name is a bogon so as to avoid
+# doing e.g. DNS checks, this is a little different
+# from the fqdn check above
+def name_bogon(dn):
+    try:
+        # if it ends-with ".internal" it's bogus
+        if dn.endswith(".internal"):
+            return True
+        # if it ends-with ".example.com" it's bogus
+        if dn.endswith("example.com"):
+            return True
+        # if it ends-with ".localdomain" it's bogus
+        if dn.endswith(".localdomain"):
+            return True
+        # if it ends-with ".local" it's bogus
+        if dn.endswith(".local"):
+            return True
+        # if it ends-with ".arpa" it's bogus
+        if dn.endswith(".arpa"):
+            return True
+        # if it's ESMTP it's bogus
+        if dn=="ESMTP":
+            return True
+    except:
+        return True
+    return False
+    
+
 # figure out what names apply - return the set of names we've found
 # and not found in a dict
 def get_fqdns(blob):
