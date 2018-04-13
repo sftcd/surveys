@@ -132,21 +132,27 @@ def fix443names(f,rf):
     # and repair from cert
     if 'subject_alt_name' in cert['parsed']['extensions']:
         sans=cert['parsed']['extensions']['subject_alt_name'] 
-        san_fqdns=sans['dns_names']
-        # we ignore all non dns_names - there are very few in our data (maybe 145 / 12000)
-        # and they're mostly otherName with opaque OID/value so not that useful. (A few
-        # are emails but we'll skip 'em for now)
-        #print "FQDN san " + str(san_fqdns) 
-        sancount=0
-        for san in san_fqdns:
-            nameset[portstring+'san'+str(sancount)]=san_fqdns[sancount]
-            sancount += 1
-            # there are some CRAAAAAAZZZY huge certs out there - saw one with >1500 SANs
-            # which slows us down loads, so we'll just max out at 20
-            if sancount >= 100:
-                toobig=str(len(san_fqdns))
-                nameset['san'+str(sancount+1)]="Bollox-eoo-many-sans-1-" + toobig
-                print >> sys.stderr, "Too many bleeding ( " + toobig + ") sans "
+        if 'dns_names' in sans:
+            san_fqdns=sans['dns_names']
+            # we ignore all non dns_names - there are very few in our data (maybe 145 / 12000)
+            # and they're mostly otherName with opaque OID/value so not that useful. (A few
+            # are emails but we'll skip 'em for now)
+            #print "FQDN san " + str(san_fqdns) 
+            sancount=0
+            for san in san_fqdns:
+                nameset[portstring+'san'+str(sancount)]=san_fqdns[sancount]
+                sancount += 1
+                # there are some CRAAAAAAZZZY huge certs out there - saw one with >1500 SANs
+                # which slows us down loads, so we'll just max out at 20
+                if sancount >= 100:
+                    toobig=str(len(san_fqdns))
+                    nameset['san'+str(sancount+1)]="Bollox-eoo-many-sans-1-" + toobig
+                    print >> sys.stderr, "Too many bleeding ( " + toobig + ") sans "
+                    break
+        for elname in sans:
+            if elname != 'dns_names':
+                print "SAN found with non dns_nsme for " + f.ip
+                print "\t" + str(sans)
                 break
     return True
 
