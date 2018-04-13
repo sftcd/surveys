@@ -83,13 +83,13 @@ if args.fnames is None:
 theASN=int(args.asn)
 checkcount=0
 
-fpstowrite=[]
 
 for fname in args.fnames.split(' '):
     print "Reading " + fname
 
     # open file
     fp=open(fname,"r")
+    fpstowrite=[]
 
 
     jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
@@ -133,4 +133,5 @@ for fname in args.fnames.split(' '):
     bstr=jsonpickle.encode(fpstowrite)
     out_f.write(bstr+"\n")
     out_f.close()
+    del fpstowrite
 
