@@ -20,13 +20,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# Fix up p443san - but was that p587san overwrote p443san when both
-# were present. Fix is to delve back into records.fresh, pick out 
-# the right record, update the p443san and then produce a new 
+# Fix up p443san - p587 names overwrote p443 names when both
+# were present, or if only p587 was present. 
+
+# Fix is to delve back into records.fresh, pick out 
+# the right record, update the p443 names and then produce a new 
 # collisions.json file. After that, usual make targets can be used
 # to recrate graphs etc. as desired and they should be the same.
 
+# Crap - same problem for p993 overwriting p443 names! Sigh
+
 # For the IE-20180316 run, we need to check/fix 2959 from 9765 records
+# for p587
 
 import os, re, sys, argparse, tempfile, gc
 import json
@@ -107,22 +112,23 @@ def certfromrf(ip,rf):
 # fixup function
 def fix443names(f,rf):
     # grab f.ip record p443 server cert from records.fresh into cert
+    pnum=443
     cert=certfromrf(f.ip,rf)
     if cert is None:
         return False
     nameset=f.analysis['nameset']
-    portstring='p443'
+    portstring='p'+str(pnum)
     dn=cert['parsed']['subject_dn'] 
     dn_fqdn=dn2cn(dn)
     nameset[portstring+'dn'] = dn_fqdn
     # name from cert SAN
     # zap old sans
     oldsancount=0
-    elname='p443san'+str(oldsancount) 
+    elname=portstring+'san'+str(oldsancount) 
     while elname in nameset:
         del nameset[elname]
         oldsancount += 1
-        elname='p443san'+str(oldsancount) 
+        elname=portstring+'san'+str(oldsancount) 
     # and repair from cert
     if 'subject_alt_name' in cert['parsed']['extensions']:
         sans=cert['parsed']['extensions']['subject_alt_name'] 
@@ -164,12 +170,12 @@ zapcount=0
 f=getnextfprint(fp)
 while f:
 
-    if ('p443' in f.fprints) and ('p587' in f.fprints):
+    if ('p443' in f.fprints) and (('p587' in f.fprints) or ('p993' in f.fprints)):
         checkcount += 1
         if fix443names(f,rf):
             fixcount += 1
-    elif ('p443' not in f.fprints) and ('p587' in f.fprints):
-        # that's a case where we don't have a 443 listener, but mistakenly added p587 names instead
+    elif ('p443' not in f.fprints) and (('p587' in f.fprints) or ('p993' in f.fprints)):
+        # that's a case where we don't have a 443 listener, but mistakenly added p587 or p993 names instead
         checkcount += 1
         zapcount += 1
         if 'p443dn' not in f.analysis['nameset']:

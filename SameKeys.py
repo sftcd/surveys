@@ -272,7 +272,7 @@ with open(infile,'r') as f:
                 fp=j_content['p993']['imaps']['tls']['tls']['certificate']['parsed']['subject_key_info']['fingerprint_sha256']
                 cert=j_content['p993']['imaps']['tls']['tls']['certificate']['parsed']
                 get_tls(thisone.writer,'p993',j_content['p993']['imaps']['tls']['tls'],j_content['ip'],thisone.analysis['p993'],scandate)
-            get_certnames('p443',cert,nameset)
+            get_certnames('p993',cert,nameset)
             thisone.fprints['p993']=fp
             somekey=True
         except Exception as e: 
