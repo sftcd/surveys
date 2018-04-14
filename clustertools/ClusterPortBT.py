@@ -85,6 +85,7 @@ if args.fnames is None:
 print "Starting for " + port
 
 checkcount=0
+portcount=0
 fpsdone={}
 
 dnstr=port+'dn'
@@ -101,6 +102,7 @@ for fname in args.fnames.split():
 
         try:
             if port in f.fprints:
+                portcount+=1
                 thisfp=f.fprints[port]
                 certnames=set()
                 bannerdns=set()
@@ -223,4 +225,4 @@ for fp in fpsdone:
         if somenamediff:
             print "    EEK - NameSet change from above"
 
-print "browser-trusted-count: " + str(btcount) + " wildcard-count:" + str(wccount)
+print "browser-trusted-count: " + str(btcount) + " wildcard-count:" + str(wccount) + " out of " + str(portcount)
