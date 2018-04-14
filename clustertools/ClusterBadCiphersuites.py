@@ -53,7 +53,7 @@ def usage():
     sys.exit(99)
 
 # command line arg handling 
-parser=argparse.ArgumentParser(description='Anonymise all the IP addresses that don\'t belong to the given AS for the set of cluster files given')
+parser=argparse.ArgumentParser(description='Count up the keys that are (a) re-used and (b) use RSA key transport')
 parser.add_argument('-i','--infiles',     
                     dest='fnames',
                     help='space separated list of file names')
@@ -185,11 +185,11 @@ for fname in args.fnames.split():
                                     if f.fprints[port] not in fpswithbadcs:
                                         cuk += 1
                                         fpswithbadcs.append(f.fprints[port])
-                                    if cs in dodgycses:
-                                        dodgycses[cs] += 1
-                                    else: 
-                                        dodgycses[cs] = 0
-                                    #print dodgycses
+                            if cs in dodgycses:
+                                dodgycses[cs] += 1
+                            else: 
+                                dodgycses[cs] = 0
+                            #print dodgycses
                                     
 
         except Exception as e: 

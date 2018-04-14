@@ -87,7 +87,7 @@ def certsfromrf(ip,rf):
     found=False
     #print "Called certfromrf looking for " + ip + ", rf.tell says: " + str(rf.tell())
     for line in rf:
-        if re.search(ip,line):
+        if re.search('"ip": "'+ip+'"',line):
             #print "Found " + ip + " in records.fresh at offset " + str(rf.tell())
             found=True
             break
@@ -143,14 +143,14 @@ def fix443names(f,rf):
         if portstring not in certs:
             if portstring+'dn' in f.analysis['nameset']:
                 del f.analysis['nameset']['p443dn']
-                oldsancount=0
+            oldsancount=0
+            elname=portstring+'san'+str(oldsancount) 
+            while elname in f.analysis['nameset']:
+                del f.analysis['nameset'][elname]
+                oldsancount += 1
                 elname=portstring+'san'+str(oldsancount) 
-                while elname in f.analysis['nameset']:
-                    del f.analysis['nameset'][elname]
-                    oldsancount += 1
-                    elname=portstring+'san'+str(oldsancount) 
             continue
-        dn=certs[poststring]['parsed']['subject_dn'] 
+        dn=certs[portstring]['parsed']['subject_dn'] 
         dn_fqdn=dn2cn(dn)
         nameset[portstring+'dn'] = dn_fqdn
         # name from cert SAN
@@ -162,8 +162,8 @@ def fix443names(f,rf):
             oldsancount += 1
             elname=portstring+'san'+str(oldsancount) 
         # and repair from cert
-        if 'subject_alt_name' in certs['portstring']['parsed']['extensions']:
-            sans=certs['portstring']['parsed']['extensions']['subject_alt_name'] 
+        if 'subject_alt_name' in certs[portstring]['parsed']['extensions']:
+            sans=certs[portstring]['parsed']['extensions']['subject_alt_name'] 
             if 'dns_names' in sans:
                 san_fqdns=sans['dns_names']
                 # we ignore all non dns_names - there are very few in our data (maybe 145 / 12000)
@@ -183,7 +183,7 @@ def fix443names(f,rf):
                         break
             for elname in sans:
                 if elname != 'dns_names':
-                    print "SAN found with non dns_nsme for " + f.ip
+                    print "SAN found with non dns_name for " + f.ip
                     print "\t" + str(sans)
                     break
     return True
