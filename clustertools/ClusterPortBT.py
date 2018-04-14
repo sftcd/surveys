@@ -223,4 +223,4 @@ for fp in fpsdone:
         if somenamediff:
             print "    EEK - NameSet change from above"
 
-print "BT-count: " + str(btcount) - "Wc-count:" + str(wccount)
+print "BT-count: " + str(btcount) + "Wc-count:" + str(wccount)
