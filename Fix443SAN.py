@@ -77,7 +77,7 @@ if infile==outfile:
     print "can't overwrite input with output"
     usage()
 
-def certfromrf(ip,rf):
+def certsfromrf(ip,rf):
     # will do real code here shortly...
     # search for the ip from records.fresh
     # the file pointer for records.fresh should (I hope) be ok to
@@ -96,64 +96,96 @@ def certfromrf(ip,rf):
         sys.exit(99)
     # decode the json for that ip
     j_content = json.loads(line)
+    certs={}
     try:
         # FreshGrab.py sourced version
-        cert=j_content['p443']['data']['http']['response']['request']['tls_handshake']['server_certificates']['certificate']
+        certs['p443']=j_content['p443']['data']['http']['response']['request']['tls_handshake']['server_certificates']['certificate']
     except:
         try:
             # censys.io sourced version
-            cert=j_content['p443']['https']['tls']['certificate']
+            certs['p443']=j_content['p443']['https']['tls']['certificate']
         except:
-            print "EEK - Cen't decode cert for " + ip 
-            sys.exit(98)
+            pass
+    try:
+        certs['p587']=j_content['p587']['data']['tls']['server_certificates']['certificate']
+    except:
+        # censys.io has no p587, but sure we'll try anyway - EE/2017 has 1 (yes 1!!) such record, somehow
+        pass
+
+    try:
+        certs['p993']=j_content['p993']['data']['tls']['server_certificates']['certificate']
+    except:
+        try:
+            certs['p993']=j_content['p993']['imaps']['tls']['tls']['certificate']['parsed']
+        except:
+            pass
+
+    if len(certs)==0:
+        print "EEK - Cen't find any certs for " + ip 
+        if 'p443' in j_content:
+            print j_content['p443']
+        if 'p587' in j_content:
+            print j_content['p587']
+        if 'p993' in j_content:
+            print j_content['p993']
+        sys.exit(98)
     # we're done - return the cert
-    return cert
+    return certs
 
 # fixup function
 def fix443names(f,rf):
+    # zap names
     # grab f.ip record p443 server cert from records.fresh into cert
-    pnum=443
-    cert=certfromrf(f.ip,rf)
-    if cert is None:
-        return False
+    certs=certsfromrf(f.ip,rf)
     nameset=f.analysis['nameset']
-    portstring='p'+str(pnum)
-    dn=cert['parsed']['subject_dn'] 
-    dn_fqdn=dn2cn(dn)
-    nameset[portstring+'dn'] = dn_fqdn
-    # name from cert SAN
-    # zap old sans
-    oldsancount=0
-    elname=portstring+'san'+str(oldsancount) 
-    while elname in nameset:
-        del nameset[elname]
-        oldsancount += 1
+    for pnum in 443,587,993:
+        portstring='p'+str(pnum)
+        if portstring not in certs:
+            if portstring+'dn' in f.analysis['nameset']:
+                del f.analysis['nameset']['p443dn']
+                oldsancount=0
+                elname=portstring+'san'+str(oldsancount) 
+                while elname in f.analysis['nameset']:
+                    del f.analysis['nameset'][elname]
+                    oldsancount += 1
+                    elname=portstring+'san'+str(oldsancount) 
+            continue
+        dn=certs[poststring]['parsed']['subject_dn'] 
+        dn_fqdn=dn2cn(dn)
+        nameset[portstring+'dn'] = dn_fqdn
+        # name from cert SAN
+        # zap old sans
+        oldsancount=0
         elname=portstring+'san'+str(oldsancount) 
-    # and repair from cert
-    if 'subject_alt_name' in cert['parsed']['extensions']:
-        sans=cert['parsed']['extensions']['subject_alt_name'] 
-        if 'dns_names' in sans:
-            san_fqdns=sans['dns_names']
-            # we ignore all non dns_names - there are very few in our data (maybe 145 / 12000)
-            # and they're mostly otherName with opaque OID/value so not that useful. (A few
-            # are emails but we'll skip 'em for now)
-            #print "FQDN san " + str(san_fqdns) 
-            sancount=0
-            for san in san_fqdns:
-                nameset[portstring+'san'+str(sancount)]=san_fqdns[sancount]
-                sancount += 1
-                # there are some CRAAAAAAZZZY huge certs out there - saw one with >1500 SANs
-                # which slows us down loads, so we'll just max out at 20
-                if sancount >= 100:
-                    toobig=str(len(san_fqdns))
-                    nameset['san'+str(sancount+1)]="Bollox-eoo-many-sans-1-" + toobig
-                    print >> sys.stderr, "Too many bleeding ( " + toobig + ") sans "
+        while elname in nameset:
+            del nameset[elname]
+            oldsancount += 1
+            elname=portstring+'san'+str(oldsancount) 
+        # and repair from cert
+        if 'subject_alt_name' in certs['portstring']['parsed']['extensions']:
+            sans=certs['portstring']['parsed']['extensions']['subject_alt_name'] 
+            if 'dns_names' in sans:
+                san_fqdns=sans['dns_names']
+                # we ignore all non dns_names - there are very few in our data (maybe 145 / 12000)
+                # and they're mostly otherName with opaque OID/value so not that useful. (A few
+                # are emails but we'll skip 'em for now)
+                #print "FQDN san " + str(san_fqdns) 
+                sancount=0
+                for san in san_fqdns:
+                    nameset[portstring+'san'+str(sancount)]=san_fqdns[sancount]
+                    sancount += 1
+                    # there are some CRAAAAAAZZZY huge certs out there - saw one with >1500 SANs
+                    # which slows us down loads, so we'll just max out at 20
+                    if sancount >= 100:
+                        toobig=str(len(san_fqdns))
+                        nameset['san'+str(sancount+1)]="Bollox-eoo-many-sans-1-" + toobig
+                        print >> sys.stderr, "Too many bleeding ( " + toobig + ") sans "
+                        break
+            for elname in sans:
+                if elname != 'dns_names':
+                    print "SAN found with non dns_nsme for " + f.ip
+                    print "\t" + str(sans)
                     break
-        for elname in sans:
-            if elname != 'dns_names':
-                print "SAN found with non dns_nsme for " + f.ip
-                print "\t" + str(sans)
-                break
     return True
 
 # mainline processing
@@ -169,32 +201,17 @@ colf.write('[\n')
 firstone=True
 
 overallcount=0
-checkcount=0
 fixcount=0
-zapcount=0
 
 f=getnextfprint(fp)
 while f:
 
-    if ('p443' in f.fprints) and (('p587' in f.fprints) or ('p993' in f.fprints)):
-        checkcount += 1
-        if fix443names(f,rf):
-            fixcount += 1
-    elif ('p443' not in f.fprints) and (('p587' in f.fprints) or ('p993' in f.fprints)):
-        # that's a case where we don't have a 443 listener, but mistakenly added p587 or p993 names instead
-        checkcount += 1
-        zapcount += 1
-        if 'p443dn' not in f.analysis['nameset']:
-            print "EEK - no p443dn for " + f.ip
-            sys.exit(97)
-        del f.analysis['nameset']['p443dn']
-        oldsancount=0
-        elname='p443san'+str(oldsancount) 
-        while elname in f.analysis['nameset']:
-            del f.analysis['nameset'][elname]
-            oldsancount += 1
-            elname='p443san'+str(oldsancount) 
+    # if we have either port we have a thing to fix
+    if ('p587' in f.fprints) or ('p993' in f.fprints):
+        fix443names(f,rf)
+        fixcount += 1
 
+    # write it out, fixed or not
     bstr=jsonpickle.encode(f,unpicklable=False)
     if not firstone:
         colf.write('\n,\n')
@@ -204,9 +221,7 @@ while f:
 
     if overallcount % 100 == 0:
         print >> sys.stderr, "Repairing colisions, did: " + str(overallcount) + \
-                " checked: " + str(checkcount) + \
-                " fixed: " + str(fixcount) + \
-                " zapped: " + str(zapcount)
+                " fixed: " + str(fixcount) 
 
     f=getnextfprint(fp)
     overallcount += 1
@@ -217,7 +232,5 @@ colf.write('\n]\n')
 colf.close()
 
 print >> sys.stderr, "Done epairing colisions, did: " + str(overallcount) + \
-                " checked: " + str(checkcount) + \
-                " fixed: " + str(fixcount) + \
-                " zapped: " + str(zapcount)
+                " fixed: " + str(fixcount)
 

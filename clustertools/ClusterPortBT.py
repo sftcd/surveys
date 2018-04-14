@@ -90,7 +90,7 @@ fpsdone={}
 dnstr=port+'dn'
 sanstr=port+'san'
 
-for fname in args.fnames.split(' '):
+for fname in args.fnames.split():
     print "Reading " + fname
 
     # open file
@@ -164,7 +164,7 @@ print "Overall:" + str(checkcount)
         #print "    " + str(val)
 
 # see if there's any very dubious ones...
-print "Dodgy browser-trusted fingerprints for port("+port+"):"
+print "Multi-hosted browser-trusted fingerprints for port("+port+"):"
 dodgycount=0
 for fp in fpsdone:
     lv=len(fpsdone[fp])
@@ -180,7 +180,7 @@ for fp in fpsdone:
     if somebt:
         # maybe dodgy!!
         dodgycount += 1
-        print "Dodgy-fp: " + fp 
+        print "Key -fp: " + fp + " occurs " + str(lv) + " times:"
         firstone=True
         vcp=set()
         lastbt=True

@@ -156,7 +156,7 @@ coau=0
 fpswithbadcs=[]
 dodgycses={}
 
-for fname in args.fnames.split(' '):
+for fname in args.fnames.split():
     print "Reading " + fname
 
     # open file

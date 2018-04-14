@@ -84,7 +84,7 @@ theASN=int(args.asn)
 checkcount=0
 
 
-for fname in args.fnames.split(' '):
+for fname in args.fnames.split():
     print "Reading " + fname
 
     # open file

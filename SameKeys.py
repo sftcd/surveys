@@ -174,10 +174,10 @@ with open(infile,'r') as f:
             else:
                 fp=j_content['p22']['ssh']['v2']['server_host_key']['fingerprint_sha256'] 
                 shk=j_content['p22']['ssh']['v2']['server_host_key']
-                if shk['algorithm']=='ssh-rsa':
+                if shk['key_algorithm']=='ssh-rsa':
                     thisone.analysis['p22']['rsalen']=shk['rsa_public_key']['length']
                 else:
-                    thisone.analysis['p22']['alg']=shk['algorithm']
+                    thisone.analysis['p22']['alg']=shk['key_algorithm']
             thisone.fprints['p22']=fp
             somekey=True
         except Exception as e: 
@@ -254,11 +254,11 @@ with open(infile,'r') as f:
                 cert=j_content['p587']['data']['tls']['server_certificates']['certificate']
                 get_tls(thisone.writer,'p587',j_content['p587']['data']['tls'],j_content['ip'],thisone.analysis['p587'],scandate)
                 somekey=True
+                get_certnames('p587',cert,nameset)
+                thisone.fprints['p587']=fp
             else:
                 # censys.io has no p587 for now
                 pass
-            get_certnames('p587',cert,nameset)
-            thisone.fprints['p587']=fp
         except Exception as e: 
             #print >> sys.stderr, "p587 exception for:" + thisone.ip + ":" + str(e)
             pass
@@ -276,7 +276,7 @@ with open(infile,'r') as f:
             thisone.fprints['p993']=fp
             somekey=True
         except Exception as e: 
-            #print >> sys.stderr, "p587 exception for:" + thisone.ip + ":" + str(e)
+            #print >> sys.stderr, "p993 exception for:" + thisone.ip + ":" + str(e)
             pass
 
         besty=[]
@@ -447,6 +447,7 @@ accumcount=0
 
 # do clustersizes
 clustersizes={}
+clustersizes[0]=0
 for f in fingerprints:
     if f.clusternum in clustersizes:
         clustersizes[f.clusternum]+=1
