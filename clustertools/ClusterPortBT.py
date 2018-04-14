@@ -56,7 +56,7 @@ def usage():
     sys.exit(99)
 
 # command line arg handling 
-parser=argparse.ArgumentParser(description='Anonymise all the IP addresses that don\'t belong to the given AS for the set of cluster files given')
+parser=argparse.ArgumentParser(description='Count keys that are (a) re-used for given port and (b) are/aren\'t browser-trusted')
 parser.add_argument('-i','--infiles',     
                     dest='fnames',
                     help='space separated list of file names')
@@ -91,7 +91,7 @@ dnstr=port+'dn'
 sanstr=port+'san'
 
 for fname in args.fnames.split():
-    print "Reading " + fname
+    print >>sys.stderr, "Reading " + fname
 
     # open file
     fp=open(fname,"r")
@@ -104,22 +104,31 @@ for fname in args.fnames.split():
                 thisfp=f.fprints[port]
                 certnames=set()
                 bannerdns=set()
+                wildcardseen=False
                 # include banner, if there, for p25 or if banner is a besty
                 if 'banner' in f.analysis['nameset'] and ('banner' in f.analysis['nameset']['besty'] or port=='p25'):
                     # scrub doofus names
                     if not name_bogon(f.analysis['nameset']['banner']):
                         bannerdns.add(f.analysis['nameset']['banner'])
+                    if '*' in f.analysis['nameset']['banner']:
+                        wildcardseen=True
                 if 'rnds' in f.analysis['nameset']:
                     if not name_bogon(f.analysis['nameset']['rdns']):
                         bannerdns.add(f.analysis['nameset']['rdns'])
+                    if '*' in f.analysis['nameset']['rdns']:
+                        wildcardseen=True
                 if dnstr in f.analysis['nameset']:
                     if not name_bogon(f.analysis['nameset'][dnstr]):
                         certnames.add(f.analysis['nameset'][dnstr])
-                for sanind in range(0,20):
+                    if '*' in f.analysis['nameset'][dnstr]: 
+                        wildcardseen=True
+                for sanind in range(0,MAXSAN):
                     sst=sanstr+str(sanind)
                     if sst in f.analysis['nameset']:
                         if not name_bogon(f.analysis['nameset'][sst]):
                             certnames.add(f.analysis['nameset'][sst])
+                        if '*' in f.analysis['nameset'][sst]:
+                            wildcardseen=True
                     else:
                         # get out of loop when we see 1st not there
                         break
@@ -127,6 +136,7 @@ for fname in args.fnames.split():
                 accum={}
                 accum['ip']=f.ip
                 accum['bt']=bt
+                accum['wildcard']=wildcardseen
                 accum['certnames']=certnames
                 accum['bannerdns']=bannerdns
                 #if bt:
@@ -155,7 +165,7 @@ for fname in args.fnames.split():
     # close file
     fp.close()
 
-print "Overall:" + str(checkcount) 
+print >>sys.stderr, "Overall:" + str(checkcount) 
 
 #print "All fingerprints for port("+port+"):"
 #for fp in fpsdone:
@@ -165,22 +175,28 @@ print "Overall:" + str(checkcount)
 
 # see if there's any very dubious ones...
 print "Multi-hosted browser-trusted fingerprints for port("+port+"):"
-dodgycount=0
+btcount=0
+wccount=0
 for fp in fpsdone:
     lv=len(fpsdone[fp])
     if lv<=1:
         continue
     somebt=False
     notallbt=False
+    somewildcard=False
     for val in fpsdone[fp]:
         if val['bt']:
             somebt=True
         else:
             notallbt=True
+        if val['wildcard']:
+            somewildcard=True
+    if somewildcard:
+        wccount+=1
     if somebt:
         # maybe dodgy!!
-        dodgycount += 1
-        print "Key -fp: " + fp + " occurs " + str(lv) + " times:"
+        btcount += 1
+        print "key-fp: " + fp + " occurs " + str(lv) + " times:"
         firstone=True
         vcp=set()
         lastbt=True
@@ -207,4 +223,4 @@ for fp in fpsdone:
         if somenamediff:
             print "    EEK - NameSet change from above"
 
-print "Dodgy-count: " + str(dodgycount)
+print "BT-count: " + str(btcount) - "Wc-count:" + str(wccount)

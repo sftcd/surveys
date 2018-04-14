@@ -74,6 +74,10 @@ CERTTYPE_EXPIRED=3          # browser-trusted but not timely
 CERTTYPE_SCEXPIRED=4        # self-cert but not timely
 CERTTYPE_OTHER=5            # oddbballs, don't expect any
 
+# A few certs have waaay too many sans (1500+), we're only bothering with this
+# many at most
+MAXSAN=100
+
 def printOneFP(f):
     print jsonpickle.encode(f)
 
@@ -609,7 +613,7 @@ def get_fqdns(blob):
             sancount += 1
             # there are some CRAAAAAAZZZY huge certs out there - saw one with >1500 SANs
             # which slows us down loads, so we'll just max out at 20
-            if sancount >= 100:
+            if sancount >= MAXSAN:
                 toobig=str(len(san_fqdns))
                 nameset['san'+str(sancount+1)]="Bollox-eoo-many-sans-" + toobig
                 print >> sys.stderr, "Too many bleeding ( " + toobig + ") sans for " + ip 
@@ -670,7 +674,7 @@ def get_certnames(portstring,cert,nameset):
             sancount += 1
             # there are some CRAAAAAAZZZY huge certs out there - saw one with >1500 SANs
             # which slows us down loads, so we'll just max out at 20
-            if sancount >= 100:
+            if sancount >= MAXSAN:
                 toobig=str(len(san_fqdns))
                 nameset['san'+str(sancount+1)]="Bollox-eoo-many-sans-1-" + toobig
                 print >> sys.stderr, "Too many bleeding ( " + toobig + ") sans "

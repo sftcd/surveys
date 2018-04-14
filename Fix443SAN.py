@@ -176,7 +176,7 @@ def fix443names(f,rf):
                     sancount += 1
                     # there are some CRAAAAAAZZZY huge certs out there - saw one with >1500 SANs
                     # which slows us down loads, so we'll just max out at 20
-                    if sancount >= 100:
+                    if sancount >= MAXSAN:
                         toobig=str(len(san_fqdns))
                         nameset['san'+str(sancount+1)]="Bollox-eoo-many-sans-1-" + toobig
                         print >> sys.stderr, "Too many bleeding ( " + toobig + ") sans "
