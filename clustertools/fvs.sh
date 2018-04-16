@@ -61,9 +61,9 @@ done
 
 if [[ "$douniq" == "yes" ]]
 then
-	egrep '"'$needle'": ' $infiles | awk '{print $2}' | grep -v '"",' | sed -e 's/",//' | sed -e 's/"//' | sed -e 's/,$//' | sort | uniq -c | sort -n
+	egrep -h '"'$needle'": ' $infiles | awk '{print $2}' | grep -v '"",' | sed -e 's/",//' | sed -e 's/"//' | sed -e 's/,$//' | sort | uniq -c | sort -n
 else
-	egrep '"'$needle'": ' $infiles | awk '{print $2}' | grep -v '"",' | sed -e 's/",//' | sed -e 's/"//' | sed -e 's/,$//' | sort 
+	egrep -h '"'$needle'": ' $infiles | awk '{print $2}' | grep -v '"",' | sed -e 's/",//' | sed -e 's/"//' | sed -e 's/,$//' | sort 
 fi
 
 

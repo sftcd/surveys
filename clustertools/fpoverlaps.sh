@@ -22,11 +22,16 @@
 
 #set -x
 
-# find overlapping clusters from another run
+# find overlapping keys between clusters in different runs
+# this one is mainly intended for checking cross-border 
+# run it pairwise e.g.:
+# 	$ cd $HOME/data/smtp/runs
+# 	$ fpoverlaps.sh -1 IE-20180316-181141 -2 EE-20180324-214756 >IE-EE-18.out 2>&1 &
+# it's not quick but who cares:-)
 
 function usage()
 {
-	echo "Find clusters from another run that overlap with these ones"
+	echo "Find clusters from another run that have keys that overlap with these ones"
 	echo "$0 [-i <space-sep list of files>] [-1 <run>] [-2 <run>]" 
 	echo "  -1 means to take these clusters from this run"
 	echo "  -2 means to compare these clusters to that run"
@@ -66,34 +71,33 @@ done
 if [[ "$infiles" == "" ]]
 then
 	infiles=`ls $run1/cluster*.json`
-	echo "Doing all clusters between $run1 and $run1."
+	echo "Doing all clusters between $run1 and $run2."
 fi
 
+tmpf=`mktemp /tmp/fpov.XXXX`
 for file in $infiles
 do
-	ips=`$srcdir/clustertools/clips.sh -i $file`
-	#echo $ips
+	c1num=`basename $file | sed -e 's/cluster//;s/.json//'`
+	$srcdir/clustertools/fpsfromcluster.sh $file | awk '{print $2}' | grep -v total >$tmpf
 	ols=""
-	for ip in $ips
-	do
-		ol=`grep -l '^  "ip": "'$ip'"' $run2/cluster*.json`
-		if [[ "$ol" != ""  ]] 
-		then
-			for cl in $ol
-			do
-				cnum=`basename $cl | sed -e 's/cluster//;s/.json//'`
-				if [[ $ols != *"$cnum"* ]]
-				then
-					ols="$cnum $ols"
-				fi
-			done
-		fi
-	done
+	ol=`grep -l -F -f $tmpf $run2/cluster*.json`
+	if [[ "$ol" != ""  ]] 
+	then
+		for cl in $ol
+		do
+			c2num=`basename $cl | sed -e 's/cluster//;s/.json//'`
+			if [[ $ols != *"$c2num"* ]]
+			then
+				ols="$c2num $ols"
+			fi
+		done
+	fi
 	if [[ "$ols" == "" ]]
 	then
-		echo "$file has no overlaps"
+		echo "$run1/$c1num has no overlaps with $run2"
 	else
-		echo "$file overlaps with $run2 clusters $ols"
+		echo "$run1/$c1num overlaps with $run2/$ols"
 	fi
 done
+rm -f $tmpf
 

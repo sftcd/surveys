@@ -342,7 +342,10 @@ else
 	echo "Graphing records" 
 	echo "Graphing records" >>$logf 
 	# this takes a few minutes at least
-	$srcdir/ReportReuse.py -f $TELLTALE_CLUSTER -a -l -o . -c $country >>$logf 2>&1 
+	# with legend
+	# $srcdir/ReportReuse.py -f $TELLTALE_CLUSTER -a -l -o . -c $country >>$logf 2>&1 
+	# without legend
+	$srcdir/ReportReuse.py -f $TELLTALE_CLUSTER -a -o . -c $country >>$logf 2>&1 
 	if [ "$?" != "0" ]
 	then
 		echo "Error ($?) from ReportReuse.py"
