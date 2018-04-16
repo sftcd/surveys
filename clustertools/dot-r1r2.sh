@@ -59,9 +59,15 @@ fprev="fp$r2s$r1s.out"
 r1nodes=`ls -v $r1f/cluster*.json | sed -e 's/.*cluster//' | sed -e 's/\.json//'`
 r2nodes=`ls -v $r2f/cluster*.json | sed -e 's/.*cluster//' | sed -e 's/\.json//'`
 
+r1arr=($r1nodes)
+r2arr=($r2nodes)
+r1count=${#r1arr[@]}
+r2count=${#r2arr[@]}
+
 # output files from here
 fullgraph="fg-$r1s$r2s.dot"
-subgraph="sg-$r1s$r2s.dot"
+complexgraph="sg-$r1s$r2s.dot"
+zapgraph="zg-$r1s$r2s.dot"
 
 # preamble
 cat >$fullgraph <<EOF
@@ -70,8 +76,8 @@ digraph {
 	packMode="array_u";
 	graph [compound=true;splines=true;overlap=false]
 
-subgraph r$r1s {
-	rank="same"
+	subgraph r$r1s {
+		rank="same"
 EOF
 
 for node in $r1nodes
@@ -152,6 +158,11 @@ zcount="0"
 keeps=""
 kcount="0"
 
+# file names for node list
+unlinked="unlinked-clusters.txt"
+locallinked="local-linked-clusters.txt"
+complexlinked="complex-linked-clusters.txt"
+
 for node in $nodes
 do
 	# count occurrences
@@ -161,8 +172,17 @@ do
 	then
 		zaps="$node $zaps"
 		((zcount++))
+		if ((count == 1 ))
+		then
+			echo $node >>$unlinked
+		fi
+		if ((count == 5 ))
+		then
+			echo $node >>$locallinked
+		fi
 	else
 		keeps="$node $keeps"
+		echo $node >>$complexlinked
 		((kcount++))
 	fi
 done
@@ -172,15 +192,87 @@ echo "keeps: $kcount"
 
 ztmpf=`mktemp ./zaps.XXXX`
 ktmpf=`mktemp ./keep.XXXX`
+kntmpf=`mktemp ./keepn.XXXX`
 
 echo "$zaps" | sed -e 's/ /\n/g' | sed -e '/^$/d' >$ztmpf
 echo "$keeps" | sed -e 's/ /\n/g' | sed -e '/^$/d' >$ktmpf
 
-grep -w -v -f $ztmpf $fullgraph >$subgraph
+# we need to extend keeps to add in nodes that are mentioned
+# in edges
+grep -v filled $fullgraph | \
+		grep -w -f $ktmpf | \
+		sed -e 's/ -> / /g' | \
+		sed -e 's/\[col.*//' | \
+		sed -e 's/ /\n/' | \
+		sed -e 's/ //g' | \
+		sort | uniq >$kntmpf
+
+# need to take some back out of zaps so...
+
+grep -w -f $ztmpf $fullgraph >$zapgraph
 
 # next one needs pre/postamble etc., but gives good graph:-)
 # ... when manually done: TODO: automate
-grep -w  -f $ktmpf $fullgraph >k.$subgraph
+# preamble
+cat >$complexgraph <<EOF
 
+digraph {
+	packMode="array_u";
+	graph [compound=true;splines=true;overlap=false]
 
-rm -f $ztmpf $ktmpf
+	subgraph r$r1s {
+		rank="same"
+EOF
+
+grep "filled" $fullgraph | grep -w -f $kntmpf -  >>$complexgraph
+
+echo "}" >>$complexgraph 
+
+grep " \-" $fullgraph | grep -w -f $ktmpf -  >>$complexgraph
+
+echo "}" >>$complexgraph 
+
+rm -f $ztmpf 
+rm -f $ktmpf $kntmpf
+
+# Summarise
+fwdulcount=`grep "^r$r1s" $unlinked | sort | uniq | wc -l`
+revulcount=`grep "^r$r2s" $unlinked | sort | uniq | wc -l`
+fwdscount=`grep "^r$r1s" $locallinked | sort | uniq | wc -l`
+revscount=`grep "^r$r2s" $locallinked | sort | uniq | wc -l`
+fwdccount=`grep filled $complexgraph | grep "^r$r1s" | sort | uniq | wc -l`
+revccount=`grep filled $complexgraph | grep "^r$r2s" | sort | uniq | wc -l`
+totalcount=`grep -c filled $fullgraph`
+
+echo "Run1 clusters: $r1count"
+echo "Run2 clusters: $r2count"
+totcheck=$((r1count+r2count))
+echo "Total clusters: $totcheck"
+
+echo ""
+
+echo "Run1 clusters: $r1count"
+echo "    Unlinked forward: $fwdulcount"
+echo "    Simply linked forward: $fwdscount"
+echo "    Complex linked forward: $fwdccount"
+fwdcheck=$((fwdulcount+ fwdscount+ fwdccount))
+if ((r1count != fwdcheck)) 
+then
+		echo "    EEK error counting (off by $((r1count-fwdcheck))" 
+fi
+
+echo "Run2 clusters: $r2count"
+echo "    Unlinked reverse: $revulcount"
+echo "    Simply linked reverse: $revscount"
+echo "    Complex linked revsrse: $revccount"
+revcheck=$((revulcount+ revscount+ revccount))
+if ((r2count != revcheck)) 
+then
+		echo "    EEK error counting (off by $((r2count-revcheck))" 
+fi
+
+echo "Total clusters check: $totalcount"
+if ((totalcount!=totcheck))
+then
+	echo "ERK - error counting (off by $((totalcount-totcheck))"
+fi
