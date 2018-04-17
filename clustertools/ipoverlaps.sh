@@ -79,6 +79,10 @@ do
 		ol=`grep -l '^  "ip": "'$ip'"' $run2/cluster*.json`
 		if [[ "$ol" != ""  ]] 
 		then
+			#set -x
+			#echo "found $ip in $ol"
+			#ol1=`grep -l '^  "ip": "'$ip'"' $ol`
+			#set +x
 			for cl in $ol
 			do
 				cnum=`basename $cl | sed -e 's/cluster//;s/.json//'`

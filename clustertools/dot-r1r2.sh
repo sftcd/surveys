@@ -75,6 +75,55 @@ function wordinlist()
 	echo $1 | grep -w $2
 }
 
+function takewordfromlist()
+{
+	res=`echo $1 | sed -e 's/ '$2' / /'`
+	# needle=" $2 "
+	#res=${1/$needle}
+	echo "$res"
+}
+
+function listout()
+{
+	#echo "listout $1 $2"
+	echo "$3" | sed -e 's/ /\n/g' | sed -e 's/^/r'$2'c/' | sort -V >$1 
+	sed -i '1d' $1
+}
+
+function listevol()
+{
+	outf=$1
+	inf=$2
+	ipfp=$3
+	from=$4
+	to=$5
+	nodes=$6
+
+	tmpf=`mktemp /tmp/levol.XXXX`
+
+	for node in $nodes
+	do
+		if [[ "$ipfp" == "ip" ]]
+		then
+			needle="cluster$node.json"
+			others=`grep "$needle" $inf | awk '{for (i=6;i<=NF;i++){print $i}}'`
+		elif [[ "$ipfp" == "fp" ]]
+		then
+			needle="\/$node overlaps with"
+			others=`grep "$needle" $inf | awk '{print $4}' | sed -e 's/.*\///'`
+		else
+			echo "EEK - odd input to listevol $3"
+			exit 2
+		fi
+		for other in $others
+		do
+			echo "r$from"c$node" -> r$to"c"$other" >>$tmpf
+		done
+	done
+	cat $tmpf | sort -V >$outf
+	rm -f $tmpf
+}
+
 # shortnames for runs. TODO: Add fullnames as argument, derive shortnames
 r1f="$HOME/data/smtp/runs/IE-20171130-000000"
 r2f="$HOME/data/smtp/runs/IE-20180316-181141"
@@ -118,8 +167,8 @@ fullgraph="fg-$r1s$r2s.dot"
 fullgraphimg="fg-$r1s$r2s.$imgfmt"
 complexgraph="sg-$r1s$r2s.dot"
 complexgraphimg="sg-$r1s$r2s.$imgfmt"
-zapgraph="zg-$r1s$r2s.dot"
-zapgraphimg="zg-$r1s$r2s.$imgfmt"
+restgraph="zg-$r1s$r2s.dot"
+restgraphimg="zg-$r1s$r2s.$imgfmt"
 
 # We want to get the set of clusters that...
 # disappear (exist in r1 but no IPs or FPs in r2)
@@ -138,6 +187,18 @@ revbothevol=""
 # complicated (multiple evolvers) - there's not many so we'll study 'em
 fwdcomplexevol=""
 revcomplexevol=""
+
+# file names for node list
+dc_text="disappeared.txt"
+fi_text="fwd-ip.txt"
+fp_text="fwd-fp.txt"
+fb_text="fwd-both.txt"
+ap_text="appeared.txt"
+ri_text="rev-ip.txt"
+rp_text="rev-fp.txt"
+rb_text="rev-both.txt"
+fc_text="fwd-complex.txt"
+rc_text="rev-complex.txt"
 
 for r1node in $r1nodes
 do
@@ -206,11 +267,6 @@ do
 	fi
 done
 
-#echo "Disappeared $disappeared"
-#echo "Lone IP evol $fwdipevol"
-#echo "Lone FP evol $fwdfpevol"
-#echo "Both evol $fwdbothevol"
-#echo "Complex $fwdcomplexevol"
 
 dc_count=$(wordcount "$disappeared")
 fi_count=$(wordcount "$fwdipevol")
@@ -276,7 +332,7 @@ do
 		revcomplexevol="$r2node $revcomplexevol"
 	elif [[ "$ipevol" == "true" && "$fpevol" == "true" ]]
 	then
-		revbothevol="$r1node $revbothevol"
+		revbothevol="$r2node $revbothevol"
 	elif [[ "$fpevol" == "true" && "$ipevol" == "false" ]]
 	then
 		revfpevol="$r2node $revfpevol"
@@ -304,6 +360,231 @@ echo "Complex: $rc_count"
 echo "Total: $((ap_count+ri_count+rp_count+rb_count+rc_count))"
 echo "Check: $r2count"
 echo
+
+# cross-check for complexity, e.g. if fwdip x->y and fwdfp x->z
+# then it's complex
+movers=""
+othermovers=""
+for cnum in $fwdbothevol
+do
+	needle1="cluster$cnum.json"
+	others1=`grep "$needle1" $ipfwd | awk '{for (i=6;i<=NF;i++){print $i}}'`
+	needle2="/$cnum overlaps with"
+	others2=`grep "$needle2" $fpfwd | awk '{for (i=4;i<=NF;i++){print $i}}' | sed -e 's/.*\///'`
+	if [[ "$others1" != "$others2" ]]
+	then
+		echo "Mismatch for r17c$cnum: [$others1] [$others2]"
+		# tee up a move for that to complex
+		movers="$cnum $movers"
+		othermovers="$others1 $others2 $othermovers"
+	fi
+done
+for move in $movers
+do
+	fwdbothevol=$(takewordfromlist "$fwdbothevol" $move)
+	fwdcomplexevol="$move $fwdcomplexevol"
+done
+for omove in $othermovers
+do
+	revbothevol=$(takewordfromlist "$revbothevol" $omove)
+	revipevol=$(takewordfromlist "$revipevol" $omove)
+	revfpevol=$(takewordfromlist "$revfpevol" $omove)
+	revcomplexevol="$omove $revcomplexevol"
+done
+
+# and the other one...
+movers=""
+othermovers=""
+for cnum in $revbothevol
+do
+	needle1="cluster$cnum.json"
+	others1=`grep "$needle1" $iprev | awk '{for (i=6;i<=NF;i++){print $i}}'`
+	needle2="/$cnum overlaps with"
+	others2=`grep "$needle2" $fprev | awk '{for (i=4;i<=NF;i++){print $i}}' | sed -e 's/.*\///'`
+	if [[ "$others1" != "$others2" ]]
+	then
+		echo "Mismatch for r18c$cnum: [$others1] [$others2]"
+		# tee up a move for that to complex
+		movers="$cnum $movers"
+		othermovers="$others1 $others2 $othermovers"
+	fi
+done
+for move in $movers
+do
+	revbothevol=$(takewordfromlist "$revbothevol" $move)
+	revcomplexevol="$move $revcomplexevol"
+done
+for omove in $othermovers
+do
+	fwdbothevol=$(takewordfromlist "$fwdbothevol" $omove)
+	fwdipevol=$(takewordfromlist "$fwdipevol" $omove)
+	fwdfpevol=$(takewordfromlist "$fwdfpevol" $omove)
+	fwdcomplexevol="$omove $fwdcomplexevol"
+done
+
+# do some pruning
+# anything linked to complex... is complex and take
+# out of other lists
+for cnum in $fwdcomplexevol
+do
+	# find the set of peers for this node
+	needle1="cluster$cnum.json"
+	others1=`grep "$needle1" $ipfwd | awk '{for (i=6;i<=NF;i++){print $i}}'`
+	needle2="/$cnum overlaps with"
+	others2=`grep "$needle2" $fpfwd | awk '{for (i=4;i<=NF;i++){print $i}}' | sed -e 's/.*\///'`
+	for other in $others1 $others2
+	do
+		#echo "Other: $other"
+		#echo "RCE: $revcomplexevol"
+		# add to rev complex if not there already
+		if [[ $(wordinlist "$revcomplexevol" $other) != "" ]]
+		then
+			#echo "r$r1s"c"$cnum other r$r2s-$other is already complex"
+			foo="bar"
+		else
+			if [[ $(wordinlist "$revipevol" $other) != "" ]]
+			then
+				revipevol=$(takewordfromlist "$revipevol" $other)
+				revcomplexevol="$other $revcomplexevol"
+				#echo "Because of r$r1s"c"$cnum moved r$r2s-$other from revip to complex"
+			elif [[ $(wordinlist "$revfpevol" $other) != "" ]]
+			then
+				revfpevol=$(takewordfromlist "$revfpevol" $other)
+				revcomplexevol="$other $revcomplexevol"
+				#echo "Because of r$r1s-c$cnum moved r$r2s-$other from revfp to complex"
+			elif [[ $(wordinlist "$revbothevol" $other) != "" ]]
+			then
+				revbothevol=$(takewordfromlist "$revbothevol" $other)
+				revcomplexevol="$other $revcomplexevol"
+				#echo "Because of r$r1s-c$cnum moved r$r2s-$other from revboth to complex"
+			fi
+		fi
+	done
+done
+
+# and same in other direction
+for cnum in $revcomplexevol
+do
+	# find the set of peers for this node
+	needle="cluster$cnum.json"
+	others1=`grep "$needle" $iprev | awk '{for (i=6;i<=NF;i++){print $i}}'`
+	needle2="/$cnum overlaps with"
+	others2=`grep "$needle2" $fprev | awk '{for (i=4;i<=NF;i++){print $i}}' | sed -e 's/.*\///'`
+	for other in $others1 $others2
+	do
+		# add to rev complex if not there already
+		if [[ $(wordinlist "$fwdcomplexevol" $other) != "" ]]
+		then
+			#echo "r$r2s"c"$cnum other r$r1s-$other is already complex"
+			foo="bar"
+		else
+			if [[ $(wordinlist "$fwdipevol" $other) != "" ]]
+			then
+				fwdipevol=$(takewordfromlist "$fwdipevol" $other)
+				fwdcomplexevol="$other $fwdcomplexevol"
+				#echo "Because of r$r2s-c$cnum moved r$r1s-$other from revip to complex"
+			elif [[ $(wordinlist "$fwdfpevol" $other) != "" ]]
+			then
+				fwdfpevol=$(takewordfromlist "$fwdfpevol" $other)
+				fwdcomplexevol="$other $fwdcomplexevol"
+				#echo "Because of r$r2s-c$cnum moved r$r1s-$other from revfp to complex"
+			elif [[ $(wordinlist "$fwdbothevol" $other) != "" ]]
+			then
+				fwdbothevol=$(takewordfromlist "$fwdbothevol" $other)
+				fwdcomplexevol="$other $fwdcomplexevol"
+				#echo "Because of r$r2s-c$cnum moved r$r1s-$other from revboth to complex"
+			fi
+		fi
+	done
+done
+
+dc_count=$(wordcount "$disappeared")
+fi_count=$(wordcount "$fwdipevol")
+fp_count=$(wordcount "$fwdfpevol")
+fb_count=$(wordcount "$fwdbothevol")
+fc_count=$(wordcount "$fwdcomplexevol")
+echo "Forward:" 
+echo "Disappeared: $dc_count"
+echo "Lone IP evol: $fi_count"
+echo "Lone FP evol: $fp_count"
+echo "Both evol: $fb_count"
+echo "Complex: $fc_count"
+echo "Total: $((dc_count+fi_count+fp_count+fb_count+fc_count))"
+echo "Check: $r1count"
+echo 
+
+ap_count=$(wordcount "$appeared")
+ri_count=$(wordcount "$revipevol")
+rp_count=$(wordcount "$revfpevol")
+rb_count=$(wordcount "$revbothevol")
+rc_count=$(wordcount "$revcomplexevol")
+echo "Reverse:"
+echo "Appeared: $ap_count"
+echo "Lone IP evol: $ri_count"
+echo "Lone FP evol: $rp_count"
+echo "Both evol: $rb_count"
+echo "Complex: $rc_count"
+echo "Total: $((ap_count+ri_count+rp_count+rb_count+rc_count))"
+echo "Check: $r2count"
+echo
+
+echo "fwdcomplex: $fwdcomplexevol"
+echo "revcomplex: $revcomplexevol"
+
+ctmpf="/tmp/complex.XXXX"
+rm -f $cp_text
+listevol $ctmpf $ipfwd "ip" $r1s $r2s "$fwdcomplexevol"
+cat $ctmpf >>$fc_text
+listevol $ctmpf $fpfwd "fp" $r1s $r2s "$fwdcomplexevol"
+cat $ctmpf >>$fc_text
+cat $fc_text | sort -V | uniq >$ctmpf
+mv $ctmpf $fc_text
+listevol $ctmpf $iprev "ip" $r2s $r1s "$revcomplexevol"
+mv $ctmpf $rc_text
+listevol $ctmpf $fprev "fp" $r2s $r1s "$revcomplexevol"
+cat $ctmpf >>$rc_text
+cat $rc_text | sort -V | uniq >$ctmpf
+mv $ctmpf $rc_text
+
+
+# output remaining to files, before making graphs
+listout $dc_text $r1s "$disappeared"
+listout $ap_text $r2s "$appeared"
+
+listevol $fi_text $ipfwd "ip" $r1s $r2s "$fwdipevol"
+listevol $fp_text $fpfwd "fp" $r1s $r2s "$fwdfpevol"
+
+listevol $ri_text $iprev "ip" $r2s $r1s "$revipevol"
+listevol $rp_text $fprev "fp" $r2s $r1s "$revfpevol"
+
+btmpf="/tmp/both.XXXX"
+listevol $btmpf $ipfwd "ip" $r1s $r2s "$fwdbothevol"
+mv $btmpf $fb_text
+listevol $btmpf $fpfwd "fp" $r1s $r2s "$fwdbothevol"
+cat $btmpf >>$fb_text
+cat $fb_text | sort -V | uniq >$btmpf
+mv $btmpf $fb_text
+listevol $btmpf $iprev "ip" $r2s $r1s "$revbothevol"
+mv $btmpf $rb_text
+listevol $btmpf $fprev "fp" $r2s $r1s "$revbothevol"
+cat $btmpf >>$rb_text
+cat $rb_text | sort -V | uniq >$btmpf
+mv $btmpf $rb_text
+
+
+#echo "Forward:"
+#echo "Disappeared $disappeared"
+#echo "Lone IP evol $fwdipevol"
+#echo "Lone FP evol $fwdfpevol"
+#echo "Both evol $fwdbothevol"
+#echo "Complex $fwdcomplexevol"
+#echo "Reverse:"
+#echo "Appeared $disappeared"
+#echo "Lone IP evol $revipevol"
+#echo "Lone FP evol $revfpevol"
+#echo "Both evol $revbothevol"
+#echo "Complex $revcomplexevol"
+
 
 exit
 
@@ -369,21 +650,7 @@ echo "" >>$fullgraph
 
 endgraph $fullgraph
 
-# make small graph
-# zap any nodes/edges that are only mentioned one or five times!
-# one => no edges, just the node
-# five => only one pair 
-
-nodes=`grep filled $fullgraph | awk '{print $1}'`
-zaps=""
-zcount="0"
-keeps=""
-kcount="0"
-
-# file names for node list
-unlinked="unlinked-clusters.txt"
-locallinked="local-linked-clusters.txt"
-complexlinked="complex-linked-clusters.txt"
+# make rest graph
 
 for node in $nodes
 do
@@ -440,18 +707,18 @@ grep " \-" $fullgraph | grep -w -f $ktmpf -  >>$complexgraph
 endgraph $complexgraph 
 
 # TODO: need to take some back out of zaps so...
-preamble $zapgraph
-subgraph $zapgraph "r$r1s"
-grep "filled" $fullgraph | grep -w -f $ztmpf -  >>$zapgraph
-endgraph $zapgraph 
-grep " \-" $fullgraph | grep -w -f $ztmpf -  >>$zapgraph
-endgraph $zapgraph 
+preamble $restgraph
+subgraph $restgraph "r$r1s"
+grep "filled" $fullgraph | grep -w -f $ztmpf -  >>$restgraph
+endgraph $restgraph 
+grep " \-" $fullgraph | grep -w -f $ztmpf -  >>$restgraph
+endgraph $restgraph 
 
 # render images
 echo "Rendering $fullgraph with $gvtool"
 $gvtool -T$imgfmt $fullgraph >$fullgraphimg
 $gvtool -T$imgfmt $complexgraph >$complexgraphimg
-$gvtool -T$imgfmt $zapgraph >$zapgraphimg
+$gvtool -T$imgfmt $restgraph >$restgraphimg
 
 # Summarise
 fwdulcount=`grep "^r$r1s" $unlinked | sort | uniq | wc -l`
