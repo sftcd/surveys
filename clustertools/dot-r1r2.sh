@@ -31,7 +31,7 @@
 # but that's not needed really 'till we do another IE run, in a 
 # month or two, so we'll let it be superhacky for now
 
-# couple of preamble etc functions:
+# couple of graphviz snippet functions:
 
 function preamble()
 {
@@ -62,6 +62,17 @@ cat >>$1 <<EOF
 	}
 
 EOF
+}
+
+function wordcount()
+{
+	thearr=($1)
+	echo ${#thearr[@]}
+}
+
+function wordinlist()
+{
+	echo $1 | grep -w $2
 }
 
 # shortnames for runs. TODO: Add fullnames as argument, derive shortnames
@@ -98,8 +109,9 @@ r2arr=($r2nodes)
 r1count=${#r1arr[@]}
 r2count=${#r2arr[@]}
 
-# image format
+# image format and graphviz tool to use
 imgfmt="png"
+gvtool=sfdp
 
 # output files from here
 fullgraph="fg-$r1s$r2s.dot"
@@ -108,6 +120,128 @@ complexgraph="sg-$r1s$r2s.dot"
 complexgraphimg="sg-$r1s$r2s.$imgfmt"
 zapgraph="zg-$r1s$r2s.dot"
 zapgraphimg="zg-$r1s$r2s.$imgfmt"
+
+# We want to get the set of clusters that...
+# disappear (exist in r1 but no IPs or FPs in r2)
+disappeared=""
+# appear (not ips or fps in r1 but exist in r2)
+appeared=""
+# lone-evolvers with only IP changes 
+fwdipevol=""
+revipevol=""
+# lone-evolvers with only FP changes 
+fwdfpevol=""
+revfpevol=""
+# lone-evolvers with IP and FP changes 
+fwdbothevol=""
+revbothevol=""
+# complicated (multiple evolvers) - there's not many so we'll study 'em
+fwdcomplexevol=""
+revcomplexevol=""
+
+for r1node in $r1nodes
+do
+	iprec=`grep "cluster$r1node.json" $ipfwd` 
+	if [[ $iprec == *"no overlap"* ]]
+	then
+		fprec=`grep "/$r1node has no overlap" $fpfwd` 
+		if [[ $fprec != "" ]]
+		then
+			disappeared="$r1node $disappeared"
+		fi
+	fi
+done
+
+for r1node in $r1nodes
+do
+	if [[ $(wordinlist "$disappeared" $r1node) != "" ]]
+	then
+		#echo "Not checking $r1node - it disappeared"
+		continue
+	fi
+	ipevol="false"
+	fpevol="false"
+	complex="false"
+	iprec=`grep "cluster$r1node.json overlaps with" $ipfwd` 
+	if [[ $iprec != "" ]]
+	then
+		ipevol="true"
+		iparr=($iprec)
+		fieldcount=${#iparr[@]}
+		if ((fieldcount>6))
+		then
+			#echo "$r1node is complex $fieldcount"
+			complex="true"
+		fi
+	fi
+	fprec=`grep "/$r1node overlaps with" $fpfwd` 
+	if [[ $fprec != "" ]]
+	then
+		fpevol="true"
+		fparr=($fprec)
+		fieldcount=${#fparr[@]}
+		if ((fieldcount>4))
+		then
+			#echo "$r1node is complex $fieldcount"
+			complex="true"
+		fi
+	fi
+	if [[ "$complex" == "true" ]]
+	then
+		#echo "$r1node: $ipevol $fpevol $complex"
+		fwdcomplexevol="$r1node $fwdcomplexevol"
+	elif [[ "$ipevol" == "true" && "$fpevol" == "true" ]]
+	then
+		fwdbothevol="$r1node $fwdbothevol"
+	elif [[ "$fpevol" == "true" && "$ipevol" == "false" ]]
+	then
+		fwdfpevol="$r1node $fwdfpevol"
+	elif [[ "$fpevol" == "false" && "$ipevol" == "true" ]]
+	then
+		fwdipevol="$r1node $fwdipevol"
+	elif [[ "$fpevol" == "false" && "$ipevol" == "false" ]]
+	then
+		echo "EEK - error: $r1node: $ipevol $fpevol $complex"
+		exit 1
+	fi
+done
+
+#echo "Disappeared $disappeared"
+#echo "Lone IP evol $fwdipevol"
+#echo "Lone FP evol $fwdfpevol"
+#echo "Both evol $fwdbothevol"
+#echo "Complex $fwdcomplexevol"
+
+dc_count=$(wordcount "$disappeared")
+fi_count=$(wordcount "$fwdipevol")
+fp_count=$(wordcount "$fwdfpevol")
+fb_count=$(wordcount "$fwdbothevol")
+fc_count=$(wordcount "$fwdcomplexevol")
+echo "Disappeared: $dc_count"
+echo "Lone IP evol: $fi_count"
+echo "Lone FP evol: $fp_count"
+echo "Both evol: $fb_count"
+echo "Complex: $fc_count"
+echo "Total: $((dc_count+fi_count+fp_count+fb_count+fc_count))"
+echo "Check: $r1count"
+
+for r2node in $r2nodes
+do
+	iprec=`grep "cluster$r2node.json" $iprev` 
+	if [[ $iprec == *"no overlap"* ]]
+	then
+		fprec=`grep "/$r2node has no overlap" $fprev` 
+		if [[ $fprec != "" ]]
+		then
+			appeared="$r1node $disappeared"
+		fi
+	fi
+done
+
+ap_count=$(wordcount "$appeared")
+echo "Appeared: $ap_count"
+
+exit
 
 preamble $fullgraph 
 subgraph $fullgraph "r$r1s"
@@ -231,27 +365,29 @@ grep -v filled $fullgraph | \
 		sed -e 's/ //g' | \
 		sort | uniq >$kntmpf
 
-# need to take some back out of zaps so...
-
-grep -w -f $ztmpf $fullgraph >$zapgraph
 
 # next one needs pre/postamble etc., but gives good graph:-)
 # ... when manually done: TODO: automate
-# preamble
 preamble $complexgraph
 subgraph $complexgraph "r$r1s"
-
 grep "filled" $fullgraph | grep -w -f $kntmpf -  >>$complexgraph
-
 endgraph $complexgraph 
-
 grep " \-" $fullgraph | grep -w -f $ktmpf -  >>$complexgraph
-
 endgraph $complexgraph 
+
+# TODO: need to take some back out of zaps so...
+preamble $zapgraph
+subgraph $zapgraph "r$r1s"
+grep "filled" $fullgraph | grep -w -f $ztmpf -  >>$zapgraph
+endgraph $zapgraph 
+grep " \-" $fullgraph | grep -w -f $ztmpf -  >>$zapgraph
+endgraph $zapgraph 
 
 # render images
-sfdp -T$imgfmt $fullgraph >$fullgraphimg
-sfdp -Tpng $complexgraph >$complexgraphimg
+echo "Rendering $fullgraph with $gvtool"
+$gvtool -T$imgfmt $fullgraph >$fullgraphimg
+$gvtool -T$imgfmt $complexgraph >$complexgraphimg
+$gvtool -T$imgfmt $zapgraph >$zapgraphimg
 
 # Summarise
 fwdulcount=`grep "^r$r1s" $unlinked | sort | uniq | wc -l`
