@@ -217,6 +217,7 @@ fi_count=$(wordcount "$fwdipevol")
 fp_count=$(wordcount "$fwdfpevol")
 fb_count=$(wordcount "$fwdbothevol")
 fc_count=$(wordcount "$fwdcomplexevol")
+echo "Forward:" 
 echo "Disappeared: $dc_count"
 echo "Lone IP evol: $fi_count"
 echo "Lone FP evol: $fp_count"
@@ -224,6 +225,7 @@ echo "Both evol: $fb_count"
 echo "Complex: $fc_count"
 echo "Total: $((dc_count+fi_count+fp_count+fb_count+fc_count))"
 echo "Check: $r1count"
+echo 
 
 for r2node in $r2nodes
 do
@@ -233,13 +235,75 @@ do
 		fprec=`grep "/$r2node has no overlap" $fprev` 
 		if [[ $fprec != "" ]]
 		then
-			appeared="$r1node $disappeared"
+			appeared="$r2node $appeared"
 		fi
 	fi
 done
 
+for r2node in $r2nodes
+do
+	if [[ $(wordinlist "$appeared" $r2node) != "" ]]
+	then
+		continue
+	fi
+	ipevol="false"
+	fpevol="false"
+	complex="false"
+	iprec=`grep "cluster$r2node.json overlaps with" $iprev` 
+	if [[ $iprec != "" ]]
+	then
+		ipevol="true"
+		iparr=($iprec)
+		fieldcount=${#iparr[@]}
+		if ((fieldcount>6))
+		then
+			complex="true"
+		fi
+	fi
+	fprec=`grep "/$r2node overlaps with" $fprev` 
+	if [[ $fprec != "" ]]
+	then
+		fpevol="true"
+		fparr=($fprec)
+		fieldcount=${#fparr[@]}
+		if ((fieldcount>4))
+		then
+			complex="true"
+		fi
+	fi
+	if [[ "$complex" == "true" ]]
+	then
+		revcomplexevol="$r2node $revcomplexevol"
+	elif [[ "$ipevol" == "true" && "$fpevol" == "true" ]]
+	then
+		revbothevol="$r1node $revbothevol"
+	elif [[ "$fpevol" == "true" && "$ipevol" == "false" ]]
+	then
+		revfpevol="$r2node $revfpevol"
+	elif [[ "$fpevol" == "false" && "$ipevol" == "true" ]]
+	then
+		revipevol="$r2node $revipevol"
+	elif [[ "$fpevol" == "false" && "$ipevol" == "false" ]]
+	then
+		echo "EEK - error: $r2node: $ipevol $fpevol $complex"
+		exit 1
+	fi
+done
+
 ap_count=$(wordcount "$appeared")
+ri_count=$(wordcount "$revipevol")
+rp_count=$(wordcount "$revfpevol")
+rb_count=$(wordcount "$revbothevol")
+rc_count=$(wordcount "$revcomplexevol")
+echo "Reverse:"
 echo "Appeared: $ap_count"
+echo "Lone IP evol: $ri_count"
+echo "Lone FP evol: $rp_count"
+echo "Both evol: $rb_count"
+echo "Complex: $rc_count"
+echo "Total: $((ap_count+ri_count+rp_count+rb_count+rc_count))"
+echo "Check: $r2count"
+echo
 
 exit
 
