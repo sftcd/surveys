@@ -22,13 +22,47 @@
 
 # set -x
 
-# Make a dot file comparing IP address and fingerprint overlaps
+# Make some dot files comparing IP address and fingerprint overlaps
 # between clusters of two runs from the same population.
+# And whack out a summary at the end too.
 
 # We've manually done the calls to ipoverlaps.sh and fpoverlaps.sh
 # for IE-20171130 and IE-20180316 already. TODO: add those here
 # but that's not needed really 'till we do another IE run, in a 
 # month or two, so we'll let it be superhacky for now
+
+# couple of preamble etc functions:
+
+function preamble()
+{
+# preamble
+cat >$1 <<EOF
+
+digraph {
+	packMode="array_u";
+	graph [compound=true;splines=true;overlap=false]
+
+EOF
+}
+
+function subgraph()
+{
+cat >>$1 <<EOF
+
+	subgraph $2 {
+		rank="same"
+
+EOF
+}
+
+function endgraph()
+{
+cat >>$1 <<EOF
+
+	}
+
+EOF
+}
 
 # shortnames for runs. TODO: Add fullnames as argument, derive shortnames
 r1f="$HOME/data/smtp/runs/IE-20171130-000000"
@@ -64,43 +98,34 @@ r2arr=($r2nodes)
 r1count=${#r1arr[@]}
 r2count=${#r2arr[@]}
 
+# image format
+imgfmt="png"
+
 # output files from here
 fullgraph="fg-$r1s$r2s.dot"
+fullgraphimg="fg-$r1s$r2s.$imgfmt"
 complexgraph="sg-$r1s$r2s.dot"
+complexgraphimg="sg-$r1s$r2s.$imgfmt"
 zapgraph="zg-$r1s$r2s.dot"
+zapgraphimg="zg-$r1s$r2s.$imgfmt"
 
-# preamble
-cat >$fullgraph <<EOF
-
-digraph {
-	packMode="array_u";
-	graph [compound=true;splines=true;overlap=false]
-
-	subgraph r$r1s {
-		rank="same"
-EOF
+preamble $fullgraph 
+subgraph $fullgraph "r$r1s"
 
 for node in $r1nodes
 do
 	echo "r"$r1s"c"$node [color=$r1ncol style="filled"] >>$fullgraph
 done
-cat >>$fullgraph <<EOF
-	}
 
-	subgraph r$r2s {
-		rank="same"
-
-EOF
+endgraph $fullgraph
+subgraph $fullgraph "r$r2s"
 
 for node in $r2nodes
 do
 	echo "r"$r2s"c"$node [color=$r2ncol style="filled"] >>$fullgraph
 done
 
-cat >>$fullgraph <<EOF
-	}
-
-EOF
+endgraph $fullgraph
 
 # forward FPs
 grep -v "Doing" $fpfwd | \
@@ -144,8 +169,7 @@ grep -v "Doing" $iprev | \
 	   	sort -n  >>$fullgraph
 echo "" >>$fullgraph
 
-# postamble
-echo "}" >>$fullgraph
+endgraph $fullgraph
 
 # make small graph
 # zap any nodes/edges that are only mentioned one or five times!
@@ -214,26 +238,20 @@ grep -w -f $ztmpf $fullgraph >$zapgraph
 # next one needs pre/postamble etc., but gives good graph:-)
 # ... when manually done: TODO: automate
 # preamble
-cat >$complexgraph <<EOF
-
-digraph {
-	packMode="array_u";
-	graph [compound=true;splines=true;overlap=false]
-
-	subgraph r$r1s {
-		rank="same"
-EOF
+preamble $complexgraph
+subgraph $complexgraph "r$r1s"
 
 grep "filled" $fullgraph | grep -w -f $kntmpf -  >>$complexgraph
 
-echo "}" >>$complexgraph 
+endgraph $complexgraph 
 
 grep " \-" $fullgraph | grep -w -f $ktmpf -  >>$complexgraph
 
-echo "}" >>$complexgraph 
+endgraph $complexgraph 
 
-rm -f $ztmpf 
-rm -f $ktmpf $kntmpf
+# render images
+sfdp -T$imgfmt $fullgraph >$fullgraphimg
+sfdp -Tpng $complexgraph >$complexgraphimg
 
 # Summarise
 fwdulcount=`grep "^r$r1s" $unlinked | sort | uniq | wc -l`
@@ -276,3 +294,6 @@ if ((totalcount!=totcheck))
 then
 		echo "    EEK - error counting (off by $((totalcount-totcheck)) )"
 fi
+
+# cleanup
+rm -f $ztmpf $ktmpf $kntmpf
