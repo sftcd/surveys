@@ -268,11 +268,11 @@ echo "    Complex linked revsrse: $revccount"
 revcheck=$((revulcount+ revscount+ revccount))
 if ((r2count != revcheck)) 
 then
-		echo "    EEK error counting (off by $((r2count-revcheck))" 
+		echo "    EEK error counting (off by $((r2count-revcheck)) )" 
 fi
 
 echo "Total clusters check: $totalcount"
 if ((totalcount!=totcheck))
 then
-	echo "ERK - error counting (off by $((totalcount-totcheck))"
+		echo "    EEK - error counting (off by $((totalcount-totcheck)) )"
 fi
