@@ -591,8 +591,8 @@ mv $btmpf $rb_text
 
 preamble $complexgraph
 subgraph $complexgraph "legend"
-echo 'IP-overlaps-are-$ipcol [color="'$ipcol'"]' >>$complexgraph
-echo 'FP-overlaps-are-$ipcol [color="'$fpcol'"]' >>$complexgraph
+echo 'ipn [label="IP links" color="'$ipcol'"]' >>$complexgraph
+echo 'fpn [label="FP links" color="'$fpcol'"]' >>$complexgraph
 endgraph $complexgraph 
 subgraph $complexgraph "r$r1s"
 for node in $fwdcomplexevol
