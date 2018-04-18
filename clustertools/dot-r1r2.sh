@@ -77,7 +77,12 @@ function wordinlist()
 
 function takewordfromlist()
 {
+	# I expected the next statement to work but it didn't - can't see
+	# why so feckit I expanded it to be inefficiently working ;-)
+	#res=`echo $1 | sed -e 's/[^]'$2'[ $]/ /'`
 	res=`echo $1 | sed -e 's/ '$2' / /'`
+	res=`echo $res | sed -e 's/^'$2' / /'`
+	res=`echo $res | sed -e 's/ '$2'$/ /'`
 	# needle=" $2 "
 	#res=${1/$needle}
 	echo "$res"
@@ -135,10 +140,8 @@ r1ncol="orange"
 r2ncol="green"
 
 # edge colours
-ipfwdcol="black"
-iprevcol="blue"
-fpfwdcol="red"
-fprevcol="gray"
+ipcol="black"
+fpcol="blue"
 
 # working dir. TODO: derive from arguments
 wdir="$HOME/data/smtp/runs/ie-17-18"
@@ -197,8 +200,8 @@ ap_text="appeared.txt"
 ri_text="rev-ip.txt"
 rp_text="rev-fp.txt"
 rb_text="rev-both.txt"
-fc_text="fwd-complex.txt"
-rc_text="rev-complex.txt"
+ic_text="ip-complex.txt"
+fc_text="fp-complex.txt"
 
 for r1node in $r1nodes
 do
@@ -503,7 +506,8 @@ fi_count=$(wordcount "$fwdipevol")
 fp_count=$(wordcount "$fwdfpevol")
 fb_count=$(wordcount "$fwdbothevol")
 fc_count=$(wordcount "$fwdcomplexevol")
-echo "Forward:" 
+
+echo "2nd pass: Forward:" 
 echo "Disappeared: $dc_count"
 echo "Lone IP evol: $fi_count"
 echo "Lone FP evol: $fp_count"
@@ -518,7 +522,7 @@ ri_count=$(wordcount "$revipevol")
 rp_count=$(wordcount "$revfpevol")
 rb_count=$(wordcount "$revbothevol")
 rc_count=$(wordcount "$revcomplexevol")
-echo "Reverse:"
+echo "2nd pass: Reverse:"
 echo "Appeared: $ap_count"
 echo "Lone IP evol: $ri_count"
 echo "Lone FP evol: $rp_count"
@@ -528,23 +532,23 @@ echo "Total: $((ap_count+ri_count+rp_count+rb_count+rc_count))"
 echo "Check: $r2count"
 echo
 
-echo "fwdcomplex: $fwdcomplexevol"
-echo "revcomplex: $revcomplexevol"
+#echo "fwdcomplex: $fwdcomplexevol"
+#echo "revcomplex: $revcomplexevol"
 
+# complex stuff - group this by ip or fp and not fwd/rev in fies
 ctmpf="/tmp/complex.XXXX"
-rm -f $cp_text
 listevol $ctmpf $ipfwd "ip" $r1s $r2s "$fwdcomplexevol"
-cat $ctmpf >>$fc_text
+cat $ctmpf >>$ic_text
+listevol $ctmpf $iprev "ip" $r2s $r1s "$revcomplexevol"
+cat $ctmpf >>$ic_text
+cat $ic_text | sort -V | uniq >$ctmpf
+mv $ctmpf $ic_text
 listevol $ctmpf $fpfwd "fp" $r1s $r2s "$fwdcomplexevol"
+mv $ctmpf $fc_text
+listevol $ctmpf $fprev "fp" $r2s $r1s "$revcomplexevol"
 cat $ctmpf >>$fc_text
 cat $fc_text | sort -V | uniq >$ctmpf
 mv $ctmpf $fc_text
-listevol $ctmpf $iprev "ip" $r2s $r1s "$revcomplexevol"
-mv $ctmpf $rc_text
-listevol $ctmpf $fprev "fp" $r2s $r1s "$revcomplexevol"
-cat $ctmpf >>$rc_text
-cat $rc_text | sort -V | uniq >$ctmpf
-mv $ctmpf $rc_text
 
 
 # output remaining to files, before making graphs
@@ -585,8 +589,38 @@ mv $btmpf $rb_text
 #echo "Both evol $revbothevol"
 #echo "Complex $revcomplexevol"
 
+preamble $complexgraph
+subgraph $complexgraph "legend"
+echo 'IP-overlaps-are-$ipcol [color="'$ipcol'"]' >>$complexgraph
+echo 'FP-overlaps-are-$ipcol [color="'$fpcol'"]' >>$complexgraph
+endgraph $complexgraph 
+subgraph $complexgraph "r$r1s"
+for node in $fwdcomplexevol
+do
+	echo "r"$r1s"c"$node [color=$r1ncol style="filled"] >>$complexgraph
+done
+endgraph $complexgraph 
+subgraph $complexgraph "r$r2s"
+for node in $revcomplexevol
+do
+	echo "r"$r2s"c"$node [color=$r2ncol style="filled"] >>$complexgraph
+done
+endgraph $complexgraph 
+cat $ic_text | sed -e 's/$/ [color="'$ipcol'"]/' >>$complexgraph
+cat $fc_text | sed -e 's/$/ [color="'$fpcol'"]/' >>$complexgraph
+endgraph $complexgraph 
+
 
 exit
+
+#####################################
+### Old, initial scripting below here
+### just in case its useful sometime
+#####################################
+ipfwdcol="black"
+iprevcol="blue"
+fpfwdcol="red"
+fprevcol="gray"
 
 preamble $fullgraph 
 subgraph $fullgraph "r$r1s"
