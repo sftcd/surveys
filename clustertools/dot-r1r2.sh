@@ -115,7 +115,7 @@ function listevol()
 		elif [[ "$ipfp" == "fp" ]]
 		then
 			needle="\/$node overlaps with"
-			others=`grep "$needle" $inf | awk '{print $4}' | sed -e 's/.*\///'`
+			others=`grep "$needle" $inf | awk '{for (i=4;i<=NF;i++){print $i}}' | sed -e 's/.*\///'`
 		else
 			echo "EEK - odd input to listevol $3"
 			exit 2
