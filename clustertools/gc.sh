@@ -36,7 +36,7 @@ then
 	PORT=443
 fi
 case $PORT in
-	25|143|443|993)
+	25|110|143|443|587|993)
 		;;
 	*)
 		error="yep"
@@ -65,9 +65,13 @@ if [ "$PORT" == "443" ]
 then
 	echo | openssl s_client -connect $HOST:$PORT | openssl x509 -noout -text >$OUTF 
 fi
-if [ "$PORT" == "25" ]
+if [[ "$PORT" == "25" || "$PORT" == "587" ]]
 then
 	echo | openssl s_client -connect $HOST:$PORT -starttls smtp | openssl x509 -noout -text >$OUTF 
+fi
+if [ "$PORT" == "110" ]
+then
+	echo | openssl s_client -connect $HOST:$PORT -starttls pop3 | openssl x509 -noout -text >$OUTF 
 fi
 if [ "$PORT" == "143" ]
 then
