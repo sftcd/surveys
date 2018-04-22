@@ -26,8 +26,16 @@
 
 srcdir=$HOME/code/surveys
 
-clusters=`ls -w 0 cluster*.json`
-ofileroot="cbt"
+if [[ "$1" == "" ]]
+then
+	clusters=`ls -w 0 cluster*.json`
+	ofileroot="cbt"
+else
+	# just expecting one really, otherwise names get mucked up
+	clusters=$1
+	cnum=`echo $clusters | sed -e 's/cluster//g' | sed -e 's/.json//g'`
+	ofileroot="cbt-$cnum-p"
+fi
 
 for port in 25 110 143 443 587 993
 do
