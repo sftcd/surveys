@@ -22,6 +22,8 @@
 
 # set -x
 
+# Generate some latex used to report on the cluster 
+
 function convdate()
 {
 	# we expect that to be <somethingnondecimal>YYYYmmdd-HHMMSS[.out]

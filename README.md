@@ -157,6 +157,14 @@ that the ```sudo zmap...``` call in this script works.
 	JSON format - for each port scanned it includes a JSON structure that is the
 	output from ZGrab, e.g. for port 22, there is a 'p22' element.
 
+	If I want to see a particular record from ```records.fresh```, say 
+	the 123rd record, then this is what I do:
+
+		$ tail -f 123 records.fresh | head -1 | json_pp | less
+
+	Those are quite long, but the above has been very useful when I ran into some
+	then-new content or structre that broke something.
+
 	In case you're curious, yes you could just plonk a set of IP addresses in
 	```input.ips``` and proceed to scan those from there. You'll still need
 	to provide a country though, as the next stage will throw away addresses	
@@ -270,22 +278,24 @@ In the meantime, check the code, but here are some hints:
 - ClusterAnonOthers.py: This is to handle cases where we send a tarball to an AS asset-holder that
 	involves >1 ASN - we zap the names and IP addresses for other ASNs that
 	are mentioned. We do leave the fingerprints, and ASNs.
-- ClusterBadCiphersuites.py
-- clusterfake.json
-- ClusterGetCerts.py
-- ClusterPortBT.py
-- ClusterStats.py
-- dot-r1r2.sh
-- fpoverlaps.sh
-- fpsfromcluster.sh
-- fvs.sh
-- gc.sh
-- ipoverlaps.sh
-- ipsdiff.sh
-- make-tex.sh
-- rndclust.sh
-- size2rep.sh
-- wordle.sh
+- ClusterBadCiphersuites.py: Count up the keys that are (a) re-used and (b) use RSA key transport
+- clusterfake.json: I forget what this was for;-) 
+- ClusterGetCerts.py: Output the openssl text form of any certificates seen now in a cluster. A new connection is made to get these certs
+- ClusterPortBT.py: Count keys that are (a) re-used for given port and (b) are/aren't browser-trusted 
+	and (c) where the x.509 names (DNs,SANs) are the same/differ
+- ClusterStats.py: Count values for cluster that we report on in tablular form (see the article)
+- dot-r1r2.sh: Make some dot files comparing IP address and fingerprint overlaps
+	 between clusters of two runs from the same population.
+	 And whack out a summary at the end too.
+- fpoverlaps.sh: find fingerpring based overlapping keys between clusters in different runs
+- fpsfromcluster.sh: grep out the fingerprint hash values from a json file
+- fvs.sh: extract field values from cluster files
+- gc.sh: Use openssl to dump a server cert 
+- ipoverlaps.sh: find overlapping clusters from another run based on IP
+- make-tex.sh: Generate some latex used to report on the cluster 
+- rndclust.sh: Pick a random cluster
+- size2rep.sh: Report on clusters of size 2 
+- wordle.sh: extract some name related values from a cluster file
 
 ## Misc points
 
