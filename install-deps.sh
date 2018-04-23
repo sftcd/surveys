@@ -107,24 +107,28 @@ sudo -H pip install  wordcloud
 # better get wget
 sudo apt-get -y install wget
 
-mkdir -p $HOME/code/golang
-cd $HOME/code/golang
-GOTARBALL=go1.10.linux-amd64.tar.gz
-GOURL=https://dl.google.com/go/$GOTARBALL
-wget $GOURL
-tar xzvf $GOTARBALL
-sudo mv go /usr/lib/go-1.10
-sudo ln -sf /usr/lib/go-1.10 /usr/lib/go
-sudo ln -sf /usr/lib/go-1.10/bin/go /usr/bin/go
-
-# add GOPATH to .bashrc
-donealready=`grep GOPATH $HOME/.bashrc`
-if [[ "$donealready" == "" ]]
+if [ ! -d /usr/lib/go-1.10 ]
 then
-	echo "export GOPATH=$HOME/go" >>$HOME/.bashrc
-fi
+mkdir -p $HOME/code/golang
+	cd $HOME/code/golang
+	GOTARBALL=go1.10.linux-amd64.tar.gz
+	GOURL=https://dl.google.com/go/$GOTARBALL
+	wget $GOURL
+	tar xzvf $GOTARBALL
+	sudo mv go /usr/lib/go-1.10
+	sudo ln -sf /usr/lib/go-1.10 /usr/lib/go
+	sudo ln -sf /usr/lib/go-1.10/bin/go /usr/bin/go
 
-export GOPATH=$HOME/go
+	# add GOPATH to .bashrc
+	donealready=`grep GOPATH $HOME/.bashrc`
+	if [[ "$donealready" == "" ]]
+	then
+		echo "export GOPATH=$HOME/go" >>$HOME/.bashrc
+	fi
+
+	export GOPATH=$HOME/go
+
+fi
 
 # got get stuff
 go get github.com/zmap/zgrab
@@ -134,7 +138,7 @@ go build
 sudo ln -sf $HOME/go/src/github.com/zmap/zgrab/zgrab /usr/local/bin
 
 # get ciphersuite stuff
-cd $HOME/code/survey/clustertools
+cd $HOME/code/surveys/clustertools
 wget https://testssl.sh/mapping-rfc.txt
 
 # clean up

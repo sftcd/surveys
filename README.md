@@ -20,7 +20,7 @@ run or from MaxMind for some country code, e.g. "IE".
 - The local ```Makefile``` can be used for bits'n'pieces in various ways
 
 - Most of the main code is the top directory of the repo for now. That
-includes:
+includes the various python scripts :
 
 	IPsFromMM.py
 	GrabIPs.py
