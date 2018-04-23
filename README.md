@@ -97,8 +97,8 @@ in the run directory. With the same example you'd be doing this:
 
 1. The ZMap stage of the scan will cause the creation of files like these:
 
-		-rw-rw-r-- 1 user user  1156 Apr 23 16:02 mm-ips.LU.v6
-		-rw-rw-r-- 1 user user  8152 Apr 23 16:02 mm-ips.LU.v4
+		-rw-rw-r-- 1 user user  1156 Apr 23 16:02 mm-ips.IE.v6
+		-rw-rw-r-- 1 user user  8152 Apr 23 16:02 mm-ips.IE.v4
 		-rw-rw-r-- 1 user user  3537 Apr 23 16:02 Makefile
 		-rw-rw-r-- 1 user user  5140 Apr 23 16:12 zmap.ips
 		-rw-rw-r-- 1 user user 84107 Apr 23 16:12 20180423-161002.out
@@ -116,8 +116,8 @@ in the run directory. With the same example you'd be doing this:
 	can stop the scan and then move on to the next stage based on 
 	whatever IP addresses have already been gathered so far. 
 	Once you've gathered a couple of hundred IPv4 addresses you 
-	should find some clusters in the data. (Well, I'm guessing there,
-	but trying it out with 200 from "LU" as I type:-)
+	should find some clusters in the data. (Well, that was a guess
+	but worked ok for one country with 200 IPs:-)
 
 	To stop the scan you'll do something like:
 
@@ -255,6 +255,8 @@ As of 20180423 I still need to...
 - explain output files
 - explain rest of make targets
 - explain clustertools
+- explain HOWTO start with other prefixes/lists of IPs (probably nobody else needs the 20171130 lists
+  but there's code in ```skey-all.sh``` for 'em that needs explaining) 
 - add HOWTO for graphviz version that doesn't say: "Error: remove\_overlap: Graphviz not built with triangulation library"
 
 
