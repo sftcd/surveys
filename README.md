@@ -202,19 +202,25 @@ in the run directory. With the same example you'd be doing this:
 	The main output from that stage is the ```collisions.json``` file which is usually
 	quite big.
 
-1. The last stage of the scan is to generate graphviz graphs for the clusters which
+	This stage can also be done using the ```make clusters cname="FI"``` target. Be
+	sure to provide the correct country name as shown.
+
+1. The last stage of the scan is to generate graphviz graphs and individual cluster
+	file (e.g. ```cluster1.json```) for the clusters which
 	is usually fairly quick. That uses the ```ReportReuse.py``` script and the
 	log will contain things like:
 
 		Graphing records
 		....
 		collisions: MMM
-			total clusters: 9MMM
+			total clusters: MMM
 			graphs not rendered: []
 		Dorender= False
 		Done graphing records
 
-1. To generate the graph svg file then:
+	This stage can also be done using the ```make graphs``` target.
+
+1. To generate the graph svg files (which isn't done by default) then:
 
 		$ make images
 		timeout --preserve-status 120s 'sfdp' -Tsvg "-Gepsilon=1.5" graph5.dot >graph5.dot.svg
@@ -227,6 +233,10 @@ in the run directory. With the same example you'd be doing this:
 
 	Then you'll need a newer version of graphviz, sorry. 
 
+## clustertools scripts
+
+This is still TBD
+
 ## Misc points
 
 - When running ```make``` the default country is "IE" so to provide a country
@@ -234,15 +244,18 @@ in the run directory. With the same example you'd be doing this:
 
 		$ make clusters cname="FI"
 
+	The same thing works for other env. vars. used in the Makefile, read the
+	file to see what you can play with that way.
+
 
 ## TODOs:
 
 As of 20180423 I still need to...
 
-- figure out why cluster\*.json isn't indented (some install-dep missing that ```make graphs``` needs?)
 - explain output files
+- explain rest of make targets
+- explain clustertools
 - add HOWTO for graphviz version that doesn't say: "Error: remove\_overlap: Graphviz not built with triangulation library"
-- explain make targets
 
 
 
