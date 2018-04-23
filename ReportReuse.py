@@ -34,7 +34,7 @@ from pympler import asizeof
 from SurveyFuncs import *
 
 # install via  "$ sudo pip install -U jsonpickle"
-#import jsonpickle
+import jsonpickle
 
 # direct to graphviz ...
 import graphviz as gv
