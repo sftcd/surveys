@@ -261,18 +261,15 @@ asked of the data. I'd expect this might mature more over time.
 In the meantime, check the code, but here are some hints:
 
 - anyoldips.sh: check if any of a supplied list of ips are in some cluster
-
 - biggest22.sh: Find the clusters with the most re-used SSH key and the cluster that the biggest  "pure" SSH cluster
-
 - bt-ports.sh:  see what's browser trusted for TLS ports for all ciusters in CWD
-
 - check-no-ssh-cross-protocol.sh: We'd like to know that there are (still) no cases where an SSH host-key is also used for TLS. 
-
 - ciphersuites.sh: extract ciphersuite values from cluster files
-
-- clips.sh
-- clnames.sh
-- ClusterAnonOthers.py
+- clips.sh: list the IPs from a cluster 
+- clnames.sh: extract some name related values from a cluster file
+- ClusterAnonOthers.py: This is to handle cases where we send a tarball to an AS asset-holder that
+	involves >1 ASN - we zap the names and IP addresses for other ASNs that
+	are mentioned. We do leave the fingerprints, and ASNs.
 - ClusterBadCiphersuites.py
 - clusterfake.json
 - ClusterGetCerts.py
