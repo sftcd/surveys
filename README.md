@@ -157,7 +157,74 @@ in the run directory. With the same example you'd be doing this:
 	be, partly because we put in a default 100ms wait between scans to be nice.
 	This one is likely to take a day or so to run.
 
+	In case you're curious, yes you could just plonk a set of IP addresses in
+	```input.ips``` and proceed to scan those from there. You'll still need
+	to provide a country though, as the next stage will throw away addresses	
+	that appear to be in the wrong country, according to MaxMind. (I'm not
+	sure if this happens because of lack of mmdb freshness, routing or
+	hosting changes or what but it does happen.)
+
 1. The next stage is to analyse the contents of ```records.fresh``` and 
 	generate the clusters. That uses the ```SameKeys.py``` script and may
-	take an hour or so depending on the size of the scan.
+	take an hour or so depending on the size of the scan. That stage
+	also does some DNS lookups of names found in banners. (Yeah, it'd 
+	have been better to do those in the previous stage, but that's not
+	how my current code works sorry;-) 
+
+	While doing this the log file will contain things like:
+
+		Reading fingerprints and rdns, did: 5 most recent ip XXX.XXX.XXX.XXX average time/ip: 0.689786990484 last time: 0.953353881836
+		Reading fingerprints and rdns, did: 10 most recent ip XX.XXX.XXX.XXX average time/ip: 0.565797372298 last time: 0.796704053879
+		Reading fingerprints and rdns, did: 15 most recent ip XXX.XXX.X.XXX average time/ip: 0.52644918859 last time: 1.09521102905
+		Reading fingerprints and rdns, did: 20 most recent ip XX.XXX.XXX.XXX average time/ip: 0.542455241794 last time: 0.283885955811
+		Reading fingerprints and rdns, did: 25 most recent ip XXX.XX.XXX.XXX average time/ip: 0.493393659592 last time: 0.230369091034
+		...
+
+	Eventually, it'll end with something like:
+
+		Checking colisions, did: 100 found: 7970 remote collisions
+		Checking colisions, did: 200 found: ... 
+		...
+		Saving collisions, did NNNn:  found: MMM IP's with remote collisions
+			overall: MMM
+			good: MMM
+			bad: MMM
+			remote collisions: MMM
+			no collisions: MMM
+			most collisions: MMM for record: MMM
+			non-merged total clusters: MMM
+			merged total clusters: MMM
+			Scandate used is: 2018-04-23 16:09:31.183936+00:00
+		Done clustering records
+
+1. The last stage of the scan is to generate graphviz graphs for the clusters which
+	is usually fairly quick. That uses the ```ReportReuse.py``` script and the
+	log will contain things like:
+
+		Graphing records
+		....
+		collisions: MMM
+			total clusters: 9MMM
+			graphs not rendered: []
+		Dorender= False
+		Done graphing records
+
+1. To generate the graph svg file then:
+
+		$ make images
+		timeout --preserve-status 120s 'sfdp' -Tsvg "-Gepsilon=1.5" graph5.dot >graph5.dot.svg
+		timeout --preserve-status 120s 'sfdp' -Tsvg "-Gepsilon=1.5" graph1.dot >graph1.dot.svg
+		...
+	
+	If you get an error like this:
+
+		Error: remove_overlap: Graphviz not built with triangulation library
+
+	Then you'll need a newer version of graphviz, sorry. 
+
+
+TODO:
+
+- add HOWTO for graphviz version that doesn't say: "Error: remove_overlap: Graphviz not built with triangulation library"
+- figure out why cluster*.json isn't indented (some install-dep missing?)
 
