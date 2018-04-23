@@ -7,14 +7,15 @@ My first article based on this code is [here](https://eprint.iacr.org/2018/299).
 ## Overview
 
 The current code collects and collates server cryptographic keys (SSH and TLS)
-and sees which of those are the same. 
+from hosts in a specified country that listen on port 25 (so are mail servers)
+and then sees which of those are re-using keys for SSH or TLS ports.
 
 - ```install-deps.sh``` is a first cut at an installer for dependencies
 
-- Then we need to select a list of IPv4 addresses, eiter from a previous
-run or from MaxMind
+- Then you need to select a list of IPv4 addresses, eiter from a previous
+run or from MaxMind for some country code, e.g. "IE".
 
-- ```skey-all.sh``` is our script to orchestrate things
+- ```skey-all.sh``` is the script to orchestrate things
 
 - The local ```Makefile``` can be used for bits'n'pieces in various ways
 
@@ -26,16 +27,19 @@ includes:
 	FreshGrab.py
 	SameKeys.py
 	ReportReuse.py
+	SurveyFuncs.py
+
+	TwentyTwos.py
 	CheckTLSPorts.py
-	Fix443SAN.py
 	HostPortKeyCount.py
 	KeyTypes.py
-	SurveyFuncs.py
-	TwentyTwos.py
+	Fix443SAN.py
 
 
 - The ```misc``` directory has various bits and pieces knocked up along the way
-  in case they prove handy later.
+  in case they prove handy later. Those should be ignorable.
+
+- The ```clustertools``` directory has additional scripts to analyse clusters.
 
 ## Using it
 
