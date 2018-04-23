@@ -266,7 +266,8 @@ that the ```sudo zmap...``` call in this script works.
 
 Documenting these is still a work-in-progres. As are a bunch of the
 scripts  themselves - these tend to have been written in response to specific questions
-asked of the data. I'd expect they might mature more over time.
+asked of the data. I'd expect they might mature more over time. Some of these produce
+output files in the working directory - check the code or for recently created files.
 
 In the meantime, check the code, but here are some hints:
 
@@ -340,6 +341,13 @@ probably rename it sometime.) The ```clusters```, ```graphs``` and
 are also some ```clean``` targets - check those out with ```make -n````
 before using them and be caureful to have backups if you need to not
 lose data that takes a while to re-generate. 
+
+- The ```GrabIPs.py``` script extracts the addresses from one run to
+be used in another. (This hasn't been tested much recently so YMMV.)
+
+- The ```HostPortKeyCount.py``` script does a basic count of ports
+versus unique keys, the discrepency in which was the starting point for 
+this analysis.
 
 ## TODOs:
 
