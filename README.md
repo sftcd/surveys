@@ -73,6 +73,8 @@ that the ```sudo zmap...``` call in this script works.
 
 1. Go out for the evening... It *might* all just work:-)
 
+## Scanning Stages in more detail...
+
 1. The first stage of the scan uses the ```IPsFromMM.py``` script that
 	extracts prefixes for the country of interest from the MaxMind DB.
 
