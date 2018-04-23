@@ -1,10 +1,13 @@
-# surveys
+# Surveys
 
 Code for various crypto-survey related stuff. 
 
-My first article based on this code is [here](https://eprint.iacr.org/2018/299).
+My first article based on this code is about Clusters of Re-Used Keys. There's
+a version  [here](https://eprint.iacr.org/2018/299).
 The graphs for the runs in that article are [here](https://down.dsg.cs.tcd.ie/runs/).
+My favourite cluster is the image below.
 
+![FI-Cluster825](images/graph835fi.png)
 
 ## Overview
 
