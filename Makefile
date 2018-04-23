@@ -77,7 +77,7 @@ fullrun:
 	${srcdir}/skey-all.sh ${srcdir} ${datadir} ${cname}
 
 clusters:
-	$(srcdir)/SameKeys.py -i ${fname} -o ${colf}
+	$(srcdir)/SameKeys.py -c ${cname} -i ${fname} -o ${colf}
 
 graphs:
 	$(srcdir)/ReportReuse.py -f ${colf} -o ${gdir} -a

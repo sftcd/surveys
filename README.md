@@ -3,6 +3,8 @@
 Code for various crypto-survey related stuff. 
 
 My first article based on this code is [here](https://eprint.iacr.org/2018/299).
+The graphs for the runs in that article are [here](https://down.dsg.cs.tcd.ie/runs/).
+
 
 ## Overview
 
@@ -197,6 +199,9 @@ in the run directory. With the same example you'd be doing this:
 			Scandate used is: 2018-04-23 16:09:31.183936+00:00
 		Done clustering records
 
+	The main output from that stage is the ```collisions.json``` file which is usually
+	quite big.
+
 1. The last stage of the scan is to generate graphviz graphs for the clusters which
 	is usually fairly quick. That uses the ```ReportReuse.py``` script and the
 	log will contain things like:
@@ -229,7 +234,7 @@ As of 20180423 I still need to...
 
 - explain output files
 - add HOWTO for graphviz version that doesn't say: "Error: remove\_overlap: Graphviz not built with triangulation library"
-- figure out why cluster\*.json isn't indented (some install-dep missing?)
+- figure out why cluster\*.json isn't indented (some install-dep missing that ```make graphs``` needs?)
 - explain make targets, and how to get cname/country from CLI
 
 
