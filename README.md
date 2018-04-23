@@ -31,9 +31,12 @@ includes the main python scripts as described below.
 
 1. Pick a host from which to scan. Ensure you do this from a host that can make
    outbound port 25 connections - if it can't, you'll miss out on those! 
+   It's polite to make a web page and DNS TXT record that can be found from
+   your scanning host's IP address, in case someone wants to yell at you for
+   scanning.
 
 1. Pick a top level directory where you're going to run things, let's call that
-```$TOP```. Usually I use ```$HOME/data/smtp/runs/``` but it should work
+   ```$TOP```. Usually I use ```$HOME/data/smtp/runs/``` but it should work
 elsewhere. The main script will create per-run directories below that, in which
 the various scan and log files will be created.
 
@@ -45,7 +48,7 @@ refer to it as ```$REPO``` as necessary below.
 		$ install-deps.sh 
 		... lots of output ...
 
-1. Update the MaxMind database if it's been a while since you rand the install.
+1. Update the MaxMind database if it's been a while since you ran the install.
    The latest databases for that are kept in the ```$REPO/mmdb/``` directory.
 
 		$ mm_update.sh
@@ -80,5 +83,30 @@ in the run directory. With the same example you'd be doing this:
 
 	The "2h44m left" timing that ZMap produces is pretty accurate. The "recv: 175" on the last 
 	line means that ZMap has found 175 port 25 listeners. For the rest, see the ZMap man page.
+
+1. The ZMap stage of the scan will cause the creation of files like these:
+
+		-rw-rw-r-- 1 user user  1156 Apr 23 16:02 mm-ips.LU.v6
+		-rw-rw-r-- 1 user user  8152 Apr 23 16:02 mm-ips.LU.v4
+		-rw-rw-r-- 1 user user  3537 Apr 23 16:02 Makefile
+		-rw-rw-r-- 1 user user  5140 Apr 23 16:12 zmap.ips
+		-rw-rw-r-- 1 user user 84107 Apr 23 16:12 20180423-161002.out
+
+	The first two are IPv4 and IPv6 prefixes MaxMind figures are for the
+	country you want to scan. (The IPv6 prefixes aren't used as of now, sorry.) The
+	```Makefile``` allows you to do scan stages one by one, more on that below.
+	```zmap.ips``` is where the accumulated IPv4 addresses that'll be used in
+	later scan stages. The log file is as before. The last two will grow as
+ 	the scan proceeds.
+
+1. Eventually the scan will move on to the ZGrab stage. 
+	If you're very impatient and want to see if stuff works then you
+	can stop the scan and then move on to the next stage based on 
+	whatever IP addresses have already been gathered so far. To
+	stop the scan you'll do something like:
+
+		$ kill %1
+		[1]+  Terminated              nohup skey-all.sh -c IE -mm -r . > skey.out 2>&1  (wd: ~/data/foo)
+
 
 
