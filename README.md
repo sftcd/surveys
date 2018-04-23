@@ -76,12 +76,10 @@ that the ```sudo zmap...``` call in this script works.
 1. The first stage of the scan uses the ```IPsFromMM.py``` script that
 	extracts prefixes for the country of interest from the MaxMind DB.
 
-1. Once that's done the next stage uses the installed ```zmap```
-	command to get the IPs from those prefixes that are listening
-	on port 25.
-
-1. If you're impatient, you can watch progress in a log file that's
-in the run directory. With the same example you'd be doing this:
+1. Once that's done the next stage uses the installed ```zmap``` command to get
+   the IPs from those prefixes that are listening on port 25.  If you're
+	impatient, you can watch progress in a log file that's in the run directory.
+	With the same example you'd be doing this:
 
 		$ tail -f IE-20180423-161002/20180423-161002.out
 		 4:33 3% (2h44m left); send: 38600 148 p/s (140 p/s avg); recv: 169 2 p/s (0 p/s avg); drops: 0 p/s (0 p/s avg); hitrate: 0.44%
@@ -95,7 +93,7 @@ in the run directory. With the same example you'd be doing this:
 	The "2h44m left" timing that ZMap produces is pretty accurate. The "recv: 175" on the last 
 	line means that ZMap has found 175 port 25 listeners. For the rest, see the ZMap man page.
 
-1. The ZMap stage of the scan will cause the creation of files like these:
+	The ZMap stage of the scan will cause the creation of files like these:
 
 		-rw-rw-r-- 1 user user  1156 Apr 23 16:02 mm-ips.IE.v6
 		-rw-rw-r-- 1 user user  8152 Apr 23 16:02 mm-ips.IE.v4
