@@ -254,7 +254,41 @@ that the ```sudo zmap...``` call in this script works.
 
 ## clustertools scripts
 
-This is still TBD
+Documenting these is still a work-in-progres. As are a bunch of these
+scripts - these tend to be written in response to specific questions
+asked of the data. I'd expect this might mature more over time.
+
+In the meantime, check the code, but here are some hints:
+
+- anyoldips.sh: check if any of a supplied list of ips are in some cluster
+
+- biggest22.sh: Find the clusters with the most re-used SSH key and the cluster that the biggest  "pure" SSH cluster
+
+- bt-ports.sh:  see what's browser trusted for TLS ports for all ciusters in CWD
+
+- check-no-ssh-cross-protocol.sh: We'd like to know that there are (still) no cases where an SSH host-key is also used for TLS. 
+
+- ciphersuites.sh: extract ciphersuite values from cluster files
+
+- clips.sh
+- clnames.sh
+- ClusterAnonOthers.py
+- ClusterBadCiphersuites.py
+- clusterfake.json
+- ClusterGetCerts.py
+- ClusterPortBT.py
+- ClusterStats.py
+- dot-r1r2.sh
+- fpoverlaps.sh
+- fpsfromcluster.sh
+- fvs.sh
+- gc.sh
+- ipoverlaps.sh
+- ipsdiff.sh
+- make-tex.sh
+- rndclust.sh
+- size2rep.sh
+- wordle.sh
 
 ## Misc points
 
@@ -292,7 +326,11 @@ events.
 
 - The ```Makefile``` here is not intended for use with ```make``` in the
   ```$REPO``` directory but rather for use in a run directory. (We should
-probably rename it sometime.)
+probably rename it sometime.) The ```clusters```, ```graphs``` and
+```images``` targets have been described above and are useful. There
+are also some ```clean``` targets - check those out with ```make -n````
+before using them and be caureful to have backups if you need to not
+lose data that takes a while to re-generate. 
 
 ## TODOs:
 

@@ -22,7 +22,8 @@
 
 #set -x
 
-# Find the biggest "pure" SSH cluster(s)
+# Find the clusters with the most re-used SSH key and the cluster
+# that the biggest  "pure" SSH cluster
 
 clusters=cluster*.json
 if [[ "$1" != "" ]]
