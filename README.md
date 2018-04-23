@@ -258,13 +258,15 @@ that the ```sudo zmap...``` call in this script works.
 
 		Error: remove_overlap: Graphviz not built with triangulation library
 
-	Then you'll need a newer version of graphviz, sorry. 
+	Then you'll need a newer version of graphviz, sorry. The standard Ubuntu package seems to
+	be a bit far behind what we need for these graphs.  I had to follow [this](https://stackoverflow.com/questions/34228395/ubuntu-graphviz-sfdp-not-working)
+	recipe to get around that. Graphviz still crashes for some of the more complex graphs though. 
 
 ## clustertools scripts
 
-Documenting these is still a work-in-progres. As are a bunch of these
-scripts - these tend to be written in response to specific questions
-asked of the data. I'd expect this might mature more over time.
+Documenting these is still a work-in-progres. As are a bunch of the
+scripts  themselves - these tend to have been written in response to specific questions
+asked of the data. I'd expect they might mature more over time.
 
 In the meantime, check the code, but here are some hints:
 
@@ -343,7 +345,6 @@ lose data that takes a while to re-generate.
 
 As of 20180423 I still need to...
 
-- add HOWTO for graphviz version that doesn't say: "Error: remove\_overlap: Graphviz not built with triangulation library"
 - provide some sample data
 
 
