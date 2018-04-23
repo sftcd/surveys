@@ -223,8 +223,13 @@ in the run directory. With the same example you'd be doing this:
 	Then you'll need a newer version of graphviz, sorry. 
 
 
-TODO:
+## TODOs:
 
-- add HOWTO for graphviz version that doesn't say: "Error: remove_overlap: Graphviz not built with triangulation library"
-- figure out why cluster*.json isn't indented (some install-dep missing?)
+As of 20180423 I still need to...
+
+- explain output files
+- add HOWTO for graphviz version that doesn't say: "Error: remove\_overlap: Graphviz not built with triangulation library"
+- figure out why cluster\*.json isn't indented (some install-dep missing?)
+- explain make targets, and how to get cname/country from CLI
+
 
