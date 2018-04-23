@@ -227,14 +227,22 @@ in the run directory. With the same example you'd be doing this:
 
 	Then you'll need a newer version of graphviz, sorry. 
 
+## Misc points
+
+- When running ```make``` the default country is "IE" so to provide a country
+  name, e.g. to re-do ```collisions.json``` then do the following:
+
+		$ make clusters cname="FI"
+
 
 ## TODOs:
 
 As of 20180423 I still need to...
 
+- figure out why cluster\*.json isn't indented (some install-dep missing that ```make graphs``` needs?)
 - explain output files
 - add HOWTO for graphviz version that doesn't say: "Error: remove\_overlap: Graphviz not built with triangulation library"
-- figure out why cluster\*.json isn't indented (some install-dep missing that ```make graphs``` needs?)
-- explain make targets, and how to get cname/country from CLI
+- explain make targets
+
 
 

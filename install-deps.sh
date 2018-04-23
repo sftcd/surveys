@@ -77,6 +77,7 @@ sudo -H pip install --upgrade pip
 # but seems like some are built-in or dragged-in via dependencies, we
 # leave the list as-in anyway as it does no harm other than some 
 # warnings
+sudo -H pip install  testresources
 sudo -H pip install  argparse
 sudo -H pip install  datetime
 sudo -H pip install  python-dateutil
