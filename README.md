@@ -10,22 +10,16 @@ The graphs for the runs in that article are [here](https://down.dsg.cs.tcd.ie/ru
 
 The current code collects and collates server cryptographic keys (SSH and TLS)
 from hosts in a specified country that listen on port 25 (so are mail servers)
-and then sees which of those are re-using keys for SSH or TLS ports.
+and then sees which of those are re-using keys for SSH or TLS ports. The standard
+ports that are checked for server keys are: 22, 25, 110, 143, 443, 587 and 993.
 
 - ```install-deps.sh``` is a first cut at an installer for dependencies
-
 - Then you need to select a list of IPv4 addresses, eiter from a previous
 run or from MaxMind for some country code, e.g. "IE".
-
 - ```skey-all.sh``` is the script to orchestrate things
-
-- The local ```Makefile``` can be used for bits'n'pieces in various ways
-
 - Most of the main code is the top directory of the repo for now. That
 includes the main python scripts as described below.
-
 - The ```clustertools``` directory has additional scripts to analyse clusters.
-
 - The ```misc``` directory has various bits and pieces knocked up along the way
   in case they prove handy later. Those should be ignorable.
 
@@ -159,6 +153,10 @@ that the ```sudo zmap...``` call in this script works.
 	be, partly because we put in a default 100ms wait between scans to be nice.
 	This one is likely to take a day or so to run.
 
+	The ```records.fresh``` file is modelled on, and quite close to, the censys.io 
+	JSON format - for each port scanned it includes a JSON structure that is the
+	output from ZGrab, e.g. for port 22, there is a 'p22' element.
+
 	In case you're curious, yes you could just plonk a set of IP addresses in
 	```input.ips``` and proceed to scan those from there. You'll still need
 	to provide a country though, as the next stage will throw away addresses	
@@ -200,7 +198,23 @@ that the ```sudo zmap...``` call in this script works.
 		Done clustering records
 
 	The main output from that stage is the ```collisions.json``` file which is usually
-	quite big.
+	quite big and contains all the fingerprint objects for hosts that are in clusters.
+	(Some additional JSON files are generated as well that aren't particularly useful at
+	this point - those are ```fingerprints.json``` and ```all-key-fingerprints.json```
+	and may be removed in future - they were useful intermediate results at an early
+	stage of coding.) 
+
+	The fingerprint structure is a class defined in the general library file
+	```SurveyFuncs.py``` - basically it contains the basic identifying information
+	for a host (IP and AS), hashes of keys seen for a host, naming information
+	gathered from banners, certificates and reverse DNS;  port meta-data, and (when
+	complete) lists the other  hosts that are linked to this record and details of
+	how they are linked.
+
+	Records from records.fresh that are discarded for whatever reason
+	are written to ```dodgy.json``` - reasons may include that there are no cryptographic
+	protocols seen at all on the host, or the specific IP address is judged to be out-of-country.
+	The content here is an array or the JSON structures with all the details from ```records.fresh```.
 
 	This stage can also be done using the ```make clusters cname="FI"``` target. Be
 	sure to provide the correct country name as shown.
@@ -219,6 +233,11 @@ that the ```sudo zmap...``` call in this script works.
 		Done graphing records
 
 	This stage can also be done using the ```make graphs``` target.
+
+	The ```clusterNNN.json``` files contain all the fingerprint structures for that
+	cluster. The related ```graphNNN.dot``` flle contains the graphviz representation
+	of the cluster, by default with the IP address replaced by the index of the 
+	host in the overall run.
 
 1. To generate the graph svg files (which isn't done by default) then:
 
@@ -247,17 +266,40 @@ This is still TBD
 	The same thing works for other env. vars. used in the Makefile, read the
 	file to see what you can play with that way.
 
+- There is a bunch of specific scripting to handle the 2017 scans that were
+  exported from censys.io. That can be ignored but is needed for now in case we
+need to re-do some analysis. That did happen at one stage where we need to fix
+a problem with port 587 - see the ```Fix442ASN.py``` script for details.
+
+- The ```ah-tb.sh``` script is used to extract a set of clusters that match
+  some regexp associated with an asset-holder. That can be an address prexix or
+ASN.
+
+- The ```check-keys.sh``` script is used to re-check/validate clusters by using
+  different code to ensure that our main scanning code isn't generating bogus
+clusters. That makes use of ```TwentyTwos.py``` and ```CheckTLSPorts.py``` both
+of which are implemented differently from ZGrab and our other clustering code.
+Typically running this shows some changes in larger clusters due to hosts not
+being contactable, but it also shows some real key changes especially if run
+some time after the initial run.
+
+- The ```try-render-problematic.sh``` script attempts to handle cases where
+graphviz rendering fails - which happens with more complex graphs in a not
+quite predictable manner. This basically tries a bunch of graphviz options
+and different output formats which can sometimes result in successful 
+rendering of graphs that fail to be rendered in the normal course of
+events.
+
+- The ```Makefile``` here is not intended for use with ```make``` in the
+  ```$REPO``` directory but rather for use in a run directory. (We should
+probably rename it sometime.)
 
 ## TODOs:
 
 As of 20180423 I still need to...
 
-- explain output files
-- explain rest of make targets
-- explain clustertools
-- explain HOWTO start with other prefixes/lists of IPs (probably nobody else needs the 20171130 lists
-  but there's code in ```skey-all.sh``` for 'em that needs explaining) 
 - add HOWTO for graphviz version that doesn't say: "Error: remove\_overlap: Graphviz not built with triangulation library"
+- provide some sample data
 
 
 
