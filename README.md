@@ -18,6 +18,7 @@ The current code collects and collates server cryptographic keys (SSH and TLS)
 from hosts in a specified country that listen on port 25 (so are mail servers)
 and then sees which of those are re-using keys for SSH or TLS ports. The standard
 ports that are checked for server keys are: 22, 25, 110, 143, 443, 587 and 993.
+So far, I've only run this on various Ubuntu systems. 
 
 - ```install-deps.sh``` is a first cut at an installer for dependencies
 - Then you need to select a list of IPv4 addresses, eiter from a previous
