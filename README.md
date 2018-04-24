@@ -79,8 +79,8 @@ that the ```sudo zmap...``` call in this script works.
 	extracts prefixes for the country of interest from the MaxMind DB.
 
 1. Once that's done the next stage uses the installed ```zmap``` command to get
-   the IPs from those prefixes that are listening on port 25.  If you're
-	impatient, you can watch progress in a log file that's in the run directory.
+   the IPs from those prefixes that are listening on port 25.  If you
+	want, you can watch progress in a log file that's in the run directory.
 	With the same example you'd be doing this:
 
 		$ tail -f IE-20180423-161002/20180423-161002.out
@@ -144,6 +144,10 @@ that the ```sudo zmap...``` call in this script works.
 	Note we used ```-p .``` in the above as we're now in the IE-20180423-161002 directory,
 	and we don't need to say to use MaxMind as that's "done."
 
+	Note also if you want to skip ahead some scan stages, but use
+	```skwy-all.sh``` you'll likely need to create (via ```touch``` or similar),
+	the relevant TELLTALE_xx file.
+
 	That'll start using ZGrab to accumulate banner information for the
 	set of IPs in ```input.ips``` - when that's done there should be 
 	one line per IP in the ```records.fresh``` file (which has a *large*
@@ -169,7 +173,7 @@ that the ```sudo zmap...``` call in this script works.
 		$ tail -f 123 records.fresh | head -1 | json_pp | less
 
 	Those are quite long, but the above has been very useful when I ran into some
-	then-new content or structre that broke something.
+	then-new content or structure that broke something.
 
 	In case you're curious, yes you could just plonk a set of IP addresses in
 	```input.ips``` and proceed to scan those from there. You'll still need
@@ -347,6 +351,12 @@ probably rename it sometime.) The ```clusters```, ```graphs``` and
 are also some ```clean``` targets - check those out with ```make -n````
 before using them and be caureful to have backups if you need to not
 lose data that takes a while to re-generate. 
+
+- The ```make words``` target reads naming information from the 
+cluster files and creates a set of clusterNNN.words files with those,
+and then creates word cloud images from those words (called
+```clusterNNN-wordle.png```). Those word cloud images have been
+useful in figuring out asset-holder identities.
 
 - The ```GrabIPs.py``` script extracts the addresses from one run to
 be used in another. (This hasn't been tested much recently so YMMV.)
