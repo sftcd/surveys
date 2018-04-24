@@ -162,7 +162,10 @@ that the ```sudo zmap...``` call in this script works.
 
 	As you can see this is *much* slower than ZMap - partly because it has to
 	be, partly because we put in a default 100ms wait between scans to be nice.
-	This one is likely to take a day or so to run.
+	This one is likely to take a day or so to run. In the log lines above the
+	number shown as done is the count of IP addresses done (for all 7 ports we
+	scan). You can estimate how long more to go, using the average time and 
+	the number of IPs (which is the numeber of lines in ```zmap.ips```).
 
 	The ```records.fresh``` file is modelled on, and quite close to, the censys.io 
 	JSON format - for each port scanned it includes a JSON structure that is the
@@ -199,7 +202,8 @@ that the ```sudo zmap...``` call in this script works.
 		Reading fingerprints and rdns, did: 25 most recent ip XXX.XX.XXX.XXX average time/ip: 0.493393659592 last time: 0.230369091034
 		...
 
-	Eventually, it'll end with something like:
+	Eventually, (after a few hours, depending on your DNS setup, and the number of
+	hosts in the run), it'll end with something like:
 
 		Checking colisions, did: 100 found: 7970 remote collisions
 		Checking colisions, did: 200 found: ... 
@@ -235,8 +239,10 @@ that the ```sudo zmap...``` call in this script works.
 	protocols seen at all on the host, or the specific IP address is judged to be out-of-country.
 	The content here is an array or the JSON structures with all the details from ```records.fresh```.
 
-	This stage can also be done using the ```make clusters cname="FI"``` target. Be
-	sure to provide the correct country name as shown.
+	This stage can also be (re-)done using the ```make clusters cname="FI"``` target. Be
+	sure to provide the correct country name as shown. Of course, changes to DNS that
+	happened since the origianl run will be reflected in results if this is re-done
+	later. (Yes, I should defo move the DNS checks to ```Freshgrab.py```, I know;-)
 
 1. The last stage of the scan is to generate graphviz graphs and individual cluster
 	file (e.g. ```cluster1.json```) for the clusters which
