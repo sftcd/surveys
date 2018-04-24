@@ -274,7 +274,7 @@ that the ```sudo zmap...``` call in this script works.
 
 ## clustertools scripts
 
-Documenting these is still a work-in-progres. As are a bunch of the
+Documenting these is still a work-in-progress. As are a bunch of the
 scripts  themselves - these tend to have been written in response to specific questions
 asked of the data. I'd expect they might mature more over time. Some of these produce
 output files in the working directory - check the code or for recently created files.
