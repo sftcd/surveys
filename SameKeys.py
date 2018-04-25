@@ -328,8 +328,8 @@ f.close()
 gc.collect()
 
 # encoder options
-jsonpickle.set_encoder_options('simplejson', sort_keys=True, indent=2)
-#jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
+#jsonpickle.set_encoder_options('simplejson', sort_keys=True, indent=2)
+jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
 # this gets crapped on each time (for now)
 keyf=open('fingerprints.json', 'w')
 bstr=jsonpickle.encode(fingerprints)

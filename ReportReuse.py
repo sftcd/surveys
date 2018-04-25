@@ -184,7 +184,8 @@ maxglen=500000
 # open file
 fp=open(args.fname,"r")
 
-jsonpickle.set_encoder_options('simplejson', sort_keys=True, indent=2)
+#jsonpickle.set_encoder_options('simplejson', sort_keys=True, indent=2)
+jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
 f=getnextfprint(fp)
 while f:
     dynleg=set()
