@@ -140,7 +140,11 @@ sudo ln -sf $HOME/go/src/github.com/zmap/zgrab/zgrab /usr/local/bin
 
 # get ciphersuite stuff
 cd $HOME/code/surveys/clustertools
-wget https://testssl.sh/mapping-rfc.txt
+if [ ! -f mapping-rfc.txt ]
+then
+	echo "Getting TLS ciphersuite names"
+	wget https://testssl.sh/mapping-rfc.txt
+fi
 
 # clean up
 cd $starddir
