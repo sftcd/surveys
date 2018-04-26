@@ -43,19 +43,49 @@ function usage()
 	exit 99
 }
 
-declare -A cc_colours=( [IE]="green" \
-						[EE]="grey" \
-						[PT]="red" \
-						[FI]="blue" \
-						[LU]="pink" \
-						[UY]="lightblue" \
-						[NZ]="black" \
-					)
 
+# you gotta add a new country here for now
+declare -gA cc_colours=( [IE]="green" \
+			[EE]="grey" \
+			[PT]="red" \
+			[FI]="blue" \
+			[LU]="pink" \
+			[UY]="lightblue" \
+			[NZ]="black" \
+			)
+
+function randomcolour()
+{
+	str=`tr -dc 'A-F0-9' < /dev/urandom | dd bs=1 count=6 2>/dev/null`
+	echo "#$str"
+}
+
+function dumpcols()
+{
+	#declare -p cc_colours
+	for cc in "${!cc_colours[@]}"
+	do
+		echo "$cc, ${cc_colours[$cc]}"
+	done
+}
+
+lastcol=""
+
+# return the colour of a country - if we don't know the
+# country makd up a random colour
 function nodecolour()
 {
 	cc=${1:0:2}
-	echo ${cc_colours[$cc]}
+	if [[ "${cc_colours[$cc]}" == "" ]]
+	then
+		# make random colour
+		rcol=$(randomcolour)
+		#cc_colours[$cc]=$rcol
+		cc_colours+=([$cc]="$rcol")
+	fi
+	#echo $(dumpcols)
+	# read the result from this var - so's we can update it
+	lastcol=${cc_colours[$cc]}
 }
 
 # options may be followed by one colon to indicate they have a required argument
@@ -163,6 +193,11 @@ tmpdotd=`mktemp -d /tmp/cross.XXXX`
 width=1
 for ((i=0; i!=nnamearr; i++))
 do
+	l2=${namearr[i]}
+	s2=${l2:0:2}
+	#echo "short1=$s2"
+	nodecolour $s2
+	s2col=$lastcol
 	for ((j=i+1; j!=nnamearr; j++))
 	do
 		fname="${namearr[j]}-${namearr[i]}"
@@ -173,9 +208,8 @@ do
 			l1=${namearr[j]}
 			s1=${l1:0:2}
 			#echo "short1=$s1"
-			l2=${namearr[i]}
-			s2=${l2:0:2}
-			#echo "short1=$s2"
+			nodecolour $s1
+			s1col=$lastcol
 
 			stuff=`grep -v "no overlap" $fname | \
 						grep -v "Doing" | \
@@ -187,10 +221,8 @@ do
 				# write node
 				n1=`echo $item | sed -e 's/-.*//'`
 				n2=`echo $item | sed -e 's/.*-//'`
-				#echo "		$n1 [width=$width,fixedsize=true,color=$(nodecolour $n1), style=filled]"  >>$tmpf
-				#echo "		$n2 [width=$width,fixedsize=true,color=$(nodecolour $n2), style=filled]"  >>$tmpf
-				echo "		$n1 [color=$(nodecolour $n1), style=filled]"  >>$tmpf
-				echo "		$n2 [color=$(nodecolour $n2), style=filled]"  >>$tmpf
+				echo "		$n1 [color=$s1col, style=filled]"  >>$tmpf
+				echo "		$n2 [color=$s2col, style=filled]"  >>$tmpf
 				# write edge
 				edge=`echo $item | sed -e 's/-/ -- /'`
 				echo "		$edge" >>$tmpf
@@ -234,13 +266,19 @@ cd $tmpdotd
 ccomps -x -o foo $tmpdot
 # figure out which of the foos have most edges
 list=`grep -c " -- " foo* | awk -F':' '{print $2":"$1}' | sort -rV | awk -F':' '{print $2}'`
-pnglist=`grep -c " -- " foo* | awk -F':' '{print $2":"$1}' | sort -rV | awk -F':' '{print $2".svg"}'`
+#imglist=`grep -c " -- " foo* | awk -F':' '{print $2":"$1}' | sort -rV | awk -F':' '{print $2".svg"}'`
+imglist=""
 # graph each
 for file in $list
 do
-	sfdp -Tsvg $file >$file.svg
+	count=`grep -c " -- " $file`
+	if ((count>1))
+	then
+		sfdp -Tsvg $file >$file.svg
+		imglist="$imglist $file.svg"
+	fi
 done
-montage $pnglist cross-border.png
+montage $imglist cross-border.png
 # whack 'em back together
 cd -
 cp $tmpdotd/cross-border.png .
