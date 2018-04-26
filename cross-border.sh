@@ -190,6 +190,8 @@ nnamearr=${#namearr[@]}
 tmpf=`mktemp /tmp/cross.XXXX`
 tmpdot=`mktemp /tmp/cross.XXXX`
 tmpdotd=`mktemp -d /tmp/cross.XXXX`
+# latex temp
+latmp=`mktemp /tmp/cross.XXXX`
 width=1
 for ((i=0; i!=nnamearr; i++))
 do
@@ -216,6 +218,7 @@ do
 						awk -F'/' '{for (i=15;i<=NF;i++){print "'$s1'"$8"-""'$s2'"$i" " }}' | \
 						sed -e 's/ overlaps with //'`
 			#echo $stuff
+			count=0
 			for item in $stuff
 			do
 				# write node
@@ -226,7 +229,9 @@ do
 				# write edge
 				edge=`echo $item | sed -e 's/-/ -- /'`
 				echo "		$edge" >>$tmpf
+				count=$((count+1))
 			done
+			echo "$s1 $s2 $count" >>$latmp
 		else
 			echo "Skipping $fname - doesn't exist!"
 		fi
@@ -283,9 +288,10 @@ montage $imglist cross-border.png
 cd -
 cp $tmpdotd/cross-border.png .
 cp $tmpdot cross-border.dot
+cp $latmp cross-border.tex
 
 # clean up
-rm -f $tmpf $tmpdot
+rm -f $tmpf $tmpdot $latmp
 rm -rf $tmpdotd
 
 exit 0
