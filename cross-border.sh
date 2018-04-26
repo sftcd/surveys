@@ -158,6 +158,9 @@ fi
 namearr=($names)
 nnamearr=${#namearr[@]}
 tmpf=`mktemp /tmp/cross.XXXX`
+tmpdot=`mktemp /tmp/cross.XXXX`
+tmpdotd=`mktemp -d /tmp/cross.XXXX`
+width=1
 for ((i=0; i!=nnamearr; i++))
 do
 	for ((j=i+1; j!=nnamearr; j++))
@@ -184,6 +187,8 @@ do
 				# write node
 				n1=`echo $item | sed -e 's/-.*//'`
 				n2=`echo $item | sed -e 's/.*-//'`
+				#echo "		$n1 [width=$width,fixedsize=true,color=$(nodecolour $n1), style=filled]"  >>$tmpf
+				#echo "		$n2 [width=$width,fixedsize=true,color=$(nodecolour $n2), style=filled]"  >>$tmpf
 				echo "		$n1 [color=$(nodecolour $n1), style=filled]"  >>$tmpf
 				echo "		$n2 [color=$(nodecolour $n2), style=filled]"  >>$tmpf
 				# write edge
@@ -199,7 +204,7 @@ done
 # sort, uniq and add graph headers/footers
 
 # preamble
-cat <<EOF
+cat >$tmpdot <<EOF
 graph crossborder {
 	// rankdir="LR"; 
 	packMode="array_u";
@@ -210,21 +215,40 @@ EOF
 # nodes
 for cc in "${!cc_colours[@]}"
 do
-	echo "	subgraph $cc {"
-	echo "		rank=\"same\";"
-	cat $tmpf | grep "color" | grep $cc | sort -V | uniq 
-	echo "	}"
-	echo
+	echo "	subgraph $cc {" >>$tmpdot
+	echo "		rank=\"same\";" >>$tmpdot
+	cat $tmpf | grep "color" | grep $cc | sort -V | uniq  >>$tmpdot
+	echo "	}" >>$tmpdot
+	echo >>$tmpdot
 done
 
 # edges
-cat $tmpf | grep -v "color" | sort -V | uniq 
+cat $tmpf | grep -v "color" | sort -V | uniq  >>$tmpdot
 
 # finish
-echo "}"
+echo "}" >>$tmpdot
+
+cd $tmpdotd
+
+# split that graph into connected components
+ccomps -x -o foo $tmpdot
+# figure out which of the foos have most edges
+list=`grep -c " -- " foo* | awk -F':' '{print $2":"$1}' | sort -rV | awk -F':' '{print $2}'`
+pnglist=`grep -c " -- " foo* | awk -F':' '{print $2":"$1}' | sort -rV | awk -F':' '{print $2".svg"}'`
+# graph each
+for file in $list
+do
+	sfdp -Tsvg $file >$file.svg
+done
+montage $pnglist cross-border.png
+# whack 'em back together
+cd -
+cp $tmpdotd/cross-border.png .
+cp $tmpdot cross-border.dot
 
 # clean up
-rm -f $tmpf
+rm -f $tmpf $tmpdot
+rm -rf $tmpdotd
 
 exit 0
 
