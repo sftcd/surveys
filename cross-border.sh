@@ -43,6 +43,21 @@ function usage()
 	exit 99
 }
 
+declare -A cc_colours=( [IE]="green" \
+						[EE]="grey" \
+						[PT]="red" \
+						[FI]="blue" \
+						[LU]="pink" \
+						[UY]="lightblue" \
+						[NZ]="black" \
+					)
+
+function nodecolour()
+{
+	cc=${1:0:2}
+	echo ${cc_colours[$cc]}
+}
+
 # options may be followed by one colon to indicate they have a required argument
 if ! options=$(getopt -s bash -o gc:r:n:s:h -l graph,crossdir:,resdir:,new:,state:,help -- "$@")
 then
@@ -132,16 +147,17 @@ then
 		fi
 	done
 	allgood="yes"
+	# end add to state
+	if [ "$allgood" == "yes" ]
+	then
+		echo $newname >>$absstatefile
+	fi
 fi
 
-# end add to state
-if [ "$allgood" == "yes" ]
-then
-	echo $newname >>$absstatefile
-fi
 
 namearr=($names)
 nnamearr=${#namearr[@]}
+tmpf=`mktemp /tmp/cross.XXXX`
 for ((i=0; i!=nnamearr; i++))
 do
 	for ((j=i+1; j!=nnamearr; j++))
@@ -165,14 +181,50 @@ do
 			#echo $stuff
 			for item in $stuff
 			do
-				echo $item
 				# write node
+				n1=`echo $item | sed -e 's/-.*//'`
+				n2=`echo $item | sed -e 's/.*-//'`
+				echo "		$n1 [color=$(nodecolour $n1), style=filled]"  >>$tmpf
+				echo "		$n2 [color=$(nodecolour $n2), style=filled]"  >>$tmpf
 				# write edge
+				edge=`echo $item | sed -e 's/-/ -- /'`
+				echo "		$edge" >>$tmpf
 			done
 		else
 			echo "Skipping $fname - doesn't exist!"
 		fi
 	done
 done
+
+# sort, uniq and add graph headers/footers
+
+# preamble
+cat <<EOF
+graph crossborder {
+	// rankdir="LR"; 
+	packMode="array_u";
+	graph [compound=true;splines=true;overlap=false]
+
+EOF
+
+# nodes
+for cc in "${!cc_colours[@]}"
+do
+	echo "	subgraph $cc {"
+	echo "		rank=\"same\";"
+	cat $tmpf | grep "color" | grep $cc | sort -V | uniq 
+	echo "	}"
+	echo
+done
+
+# edges
+cat $tmpf | grep -v "color" | sort -V | uniq 
+
+# finish
+echo "}"
+
+# clean up
+rm -f $tmpf
+
 exit 0
 
