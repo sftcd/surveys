@@ -190,6 +190,8 @@ nnamearr=${#namearr[@]}
 tmpf=`mktemp /tmp/cross.XXXX`
 tmpdot=`mktemp /tmp/cross.XXXX`
 tmpdotd=`mktemp -d /tmp/cross.XXXX`
+# store the numbers
+declare -A cb_counts
 # latex temp
 latmp=`mktemp /tmp/cross.XXXX`
 width=1
@@ -231,7 +233,7 @@ do
 				echo "		$edge" >>$tmpf
 				count=$((count+1))
 			done
-			echo "$s1 $s2 $count" >>$latmp
+			cb_counts+=([$s1$s2]=$count)
 		else
 			echo "Skipping $fname - doesn't exist!"
 		fi
@@ -273,6 +275,7 @@ ccomps -x -o foo $tmpdot
 list=`grep -c " -- " foo* | awk -F':' '{print $2":"$1}' | sort -rV | awk -F':' '{print $2}'`
 #imglist=`grep -c " -- " foo* | awk -F':' '{print $2":"$1}' | sort -rV | awk -F':' '{print $2".svg"}'`
 imglist=""
+single=0
 # graph each
 for file in $list
 do
@@ -281,17 +284,99 @@ do
 	then
 		sfdp -Tsvg $file >$file.svg
 		imglist="$imglist $file.svg"
+	else 
+		single=$((single+1))
 	fi
 done
-montage $imglist cross-border.png
 # whack 'em back together
+montage $imglist cross-border.png
+
+# max a .tex file with the image and table
+
+cat >$latmp <<EOF
+\\documentclass{article}
+\\usepackage{graphicx,amsmath,amssymb,url,subfigure}
+\\begin{document}
+\\begin{figure}
+\\centering
+	\\includegraphics[width=1.0\\textwidth,keepaspectratio]{cross-border.png}
+	\\caption[clustediag]{Cross-border overlaps for clusters with more than one link. Nodes represent clusters. There are an additional $single cases where two clusters in different countries are linked only to one another. (
+EOF
+
+for cc in "${!cc_colours[@]}"
+do
+		echo -n "$cc=${cc_colours[$cc]};" >>$latmp
+done
+
+cat >>$latmp <<EOF
+)}
+	\\label{fig:crossborder}
+\\end{figure}
+
+EOF
+
+# and the table
+cat >>$latmp <<EOF
+\\begin{table}
+        \\caption{Counts of cross-border links.}
+EOF
+
+echo -n "\\begin{tabular} { | l | " >>$latmp
+for cc in "${!cc_colours[@]}"
+do
+		echo -n "c | " >>$latmp
+done
+cat >>$latmp <<EOF
+}
+    \\hline
+
+EOF
+
+echo "" >>$latmp
+echo -n "\\hline  - " >>$latmp
+for cc in "${!cc_colours[@]}"
+do
+	echo -n " & " >>$latmp
+	printf '%3s' "$cc" >>$latmp
+done
+echo "\\\\" >>$latmp
+for cc1 in "${!cc_colours[@]}"
+do
+	echo -n "\\hline " >>$latmp
+	printf '%3s' "$cc1 " >>$latmp
+	for cc2 in "${!cc_colours[@]}"
+	do
+		echo -n " & " >>$latmp
+		if [[ "${cb_counts[$cc1$cc2]}" != "" ]]
+		then
+			printf '%3s' "${cb_counts[$cc1$cc2]}" >> $latmp
+		elif [[ "${cb_counts[$cc2$cc1]}" != "" ]]
+		then
+			printf '%3s' "${cb_counts[$cc2$cc1]}" >> $latmp
+		else 
+			printf '%3s' "x" >>$latmp
+		fi
+	done
+	echo "\\\\" >>$latmp
+done
+
+cat >>$latmp <<EOF
+\\hline
+\\end{tabular}
+\\label{tab:crossbordercount}
+\\end{table}
+\\end{document}
+
+EOF
+
+# copy stuff we want from tmpfiles to CWD
 cd -
 cp $tmpdotd/cross-border.png .
 cp $tmpdot cross-border.dot
 cp $latmp cross-border.tex
 
 # clean up
-rm -f $tmpf $tmpdot $latmp
+rm -f $tmpf $tmpdot $latmp 
 rm -rf $tmpdotd
 
 exit 0
