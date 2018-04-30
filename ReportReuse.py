@@ -184,8 +184,16 @@ maxglen=500000
 # open file
 fp=open(args.fname,"r")
 
+# on one host (with python 2.7.12) it seems that I need to
+# first set the options for the json backend before doing
+# it for the simplejson backend. Without this, the json
+# is output with one line per encooded thing, which breaks
+# later tooling.
+# on another (with python 2.7.14) just the 2nd call is 
+# enough to get the indentation correct. 
+# bit odd but whatever works I guess;-)
+jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
 jsonpickle.set_encoder_options('simplejson', sort_keys=True, indent=2)
-#jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
 f=getnextfprint(fp)
 while f:
     dynleg=set()
