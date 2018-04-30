@@ -146,7 +146,7 @@ that the ```sudo zmap...``` call in this script works.
 	and we don't need to say to use MaxMind as that's "done."
 
 	Note also if you want to skip ahead some scan stages, but use
-	```skwy-all.sh``` you'll likely need to create (via ```touch``` or similar),
+	```skey-all.sh``` you'll likely need to create (via ```touch``` or similar),
 	the relevant TELLTALE_xx file.
 
 	That'll start using ZGrab to accumulate banner information for the
@@ -174,7 +174,7 @@ that the ```sudo zmap...``` call in this script works.
 	If I want to see a particular record from ```records.fresh```, say 
 	the 123rd record, then this is what I do:
 
-		$ tail -f 123 records.fresh | head -1 | json_pp | less
+		$ tail -123 records.fresh | head -1 | json_pp | less
 
 	Those are quite long, but the above has been very useful when I ran into some
 	then-new content or structure that broke something.
@@ -188,7 +188,7 @@ that the ```sudo zmap...``` call in this script works.
 
 1. The next stage is to analyse the contents of ```records.fresh``` and 
 	generate the clusters. That uses the ```SameKeys.py``` script and may
-	take an hour or so depending on the size of the scan. That stage
+	take a few hours or so depending on the size of the scan. That stage
 	also does some DNS lookups of names found in banners. (Yeah, it'd 
 	have been better to do those in the previous stage, but that's not
 	how my current code works sorry;-) 
@@ -227,12 +227,12 @@ that the ```sudo zmap...``` call in this script works.
 	and may be removed in future - they were useful intermediate results at an early
 	stage of coding.) 
 
-	The fingerprint structure is a class defined in the general library file
-	```SurveyFuncs.py``` - basically it contains the basic identifying information
+	The fingerprint structure uses a class (named` ```OneFP```) defined in the general library file
+	```SurveyFuncs.py``` - that class contains the basic identifying information
 	for a host (IP and AS), hashes of keys seen for a host, naming information
 	gathered from banners, certificates and reverse DNS;  port meta-data, and (when
-	complete) lists the other  hosts that are linked to this record and details of
-	how they are linked.
+	complete) lists the other  hosts that are linked to this record and impenetrable (sorry;-) 
+	details of how they are linked.
 
 	Records from records.fresh that are discarded for whatever reason
 	are written to ```dodgy.json``` - reasons may include that there are no cryptographic
@@ -277,7 +277,9 @@ that the ```sudo zmap...``` call in this script works.
 
 	Then you'll need a newer version of graphviz, sorry. The standard Ubuntu package seems to
 	be a bit far behind what we need for these graphs.  I had to follow [this](https://stackoverflow.com/questions/34228395/ubuntu-graphviz-sfdp-not-working)
-	recipe to get around that. Graphviz still crashes for some of the more complex graphs though. 
+	recipe to get around that. Graphviz still crashes for some of the most complex/big graphs though
+	so the set of images likely won't be complete. (For my most recent "IE" run, I end up 
+	missing 2 images for the 2 biggest clusters.) 
 
 ## clustertools scripts
 
@@ -368,6 +370,9 @@ useful in figuring out asset-holder identities.
 - The ```GrabIPs.py``` script extracts the addresses from one run to
 be used in another. (This hasn't been tested much recently so YMMV.)
 
+- The ```cross-border.sh``` script compares runs from different countries 
+to find fingeprint links and makes a graphic for that.
+
 - The ```HostPortKeyCount.py``` script does a basic count of ports
 versus unique keys, the discrepency in which was the starting point for 
 this analysis.
@@ -377,6 +382,7 @@ this analysis.
 As of 20180423 I still need to...
 
 - provide some sample data
+- document cross-border stuff better
 
 
 
