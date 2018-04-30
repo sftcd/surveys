@@ -231,7 +231,13 @@ def getnextfprint(fp):
             break
         for ms in magicfpstrs:
             if line.startswith(ms):
-                jthing=json.loads(line.strip())
+                #print ms
+                foo=line.strip()
+                if foo.endswith("},"):
+                    #print "stripping"
+                    foo=foo[:-1]
+                #print foo.strip()
+                jthing=json.loads(foo.strip())
                 onething=j2o(jthing)
                 del jthing
                 return onething

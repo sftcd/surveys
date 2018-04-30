@@ -118,6 +118,16 @@ fi
 
 zmapips=`wc -l records.fresh | awk '{print $1}'`
 #echo $zmapips
+dodgies=`wc -l dodgy.json | awk '{print $1}'`
+if [[ "$dodgies" == "1" ]]
+then
+	# explode it out
+	echo "exploding dodgy a bit..."
+	tdodg=`mktemp /tmp/dodgy.XXXX`
+	cat dodgy.json | json_pp >$tdodg
+	cp dodgy.json olddogdy.json
+	mv $tdodg dodgy.json
+fi
 ooc=`grep wrong_country dodgy.json | wc -l`
 #echo $ooc
 if [[ "$country" == "" && "$ooc" == "0" ]]
@@ -135,7 +145,7 @@ then
 fi
 incountry=$((zmapips-ooc))
 #echo $incountry
-dodgies=`grep '^  "' dodgy.json | wc -l`
+dodgies=`grep '^[ ]*"duration"' dodgy.json | wc -l`
 #echo $dodgies
 nocryptoseen=$((dodgies-ooc))
 #echo $nocryptoseen

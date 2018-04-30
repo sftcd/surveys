@@ -44,11 +44,7 @@ want to integrate additional runs, then...
 
 1. Cross-border checks - TODO: script that up - did I *really* do it manually before? Sigh :-(
 
-	1. Run ``fpoverlaps.sh``` for the new vs. all other (most-recent) runs
-	1. Generate the crossborder.dot file
-	1. Use ```dot``` to make a (very very wide) image
-	1. Use ImageMagick to split that into usefully sized chunks
-	1. Add the new run to the list of most-recent ones for next time
+	1. cross-border.sh stuff
 
 1. Checks/stats:
 
