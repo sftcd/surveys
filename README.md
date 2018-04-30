@@ -371,7 +371,8 @@ useful in figuring out asset-holder identities.
 be used in another. (This hasn't been tested much recently so YMMV.)
 
 - The ```cross-border.sh``` script compares runs from different countries 
-to find fingeprint links and makes a graphic for that.
+to find fingeprint links and makes a graphic for that. That's stateful,
+so pick a directory in which you re-run it as you add new runs.
 
 - The ```HostPortKeyCount.py``` script does a basic count of ports
 versus unique keys, the discrepency in which was the starting point for 
@@ -379,7 +380,7 @@ this analysis.
 
 ## TODOs:
 
-As of 20180423 I still need to...
+As of 20180430 I still need to...
 
 - provide some sample data
 - document cross-border stuff better
