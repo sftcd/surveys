@@ -52,6 +52,7 @@ declare -gA cc_colours=( [IE]="green" \
 			[LU]="pink" \
 			[UY]="lightblue" \
 			[NZ]="black" \
+			[NA]="yellow" \
 			)
 
 function randomcolour()
@@ -184,7 +185,6 @@ then
 	fi
 fi
 
-
 namearr=($names)
 nnamearr=${#namearr[@]}
 tmpf=`mktemp /tmp/cross.XXXX`
@@ -217,8 +217,9 @@ do
 
 			stuff=`grep -v "no overlap" $fname | \
 						grep -v "Doing" | \
-						awk -F'/' '{for (i=15;i<=NF;i++){print "'$s1'"$8"-""'$s2'"$i" " }}' | \
-						sed -e 's/ overlaps with //'`
+						awk -F'/' '{print $8" "$15}' | \
+						sed -e 's/ overlaps with //' | \
+						awk '{for (i=2;i<=NF;i++){print "'$s1'"$1"-'$s2'"$i }}' `
 			#echo $stuff
 			count=0
 			for item in $stuff
@@ -226,12 +227,24 @@ do
 				# write node
 				n1=`echo $item | sed -e 's/-.*//'`
 				n2=`echo $item | sed -e 's/.*-//'`
-				echo "		$n1 [color=$s1col, style=filled]"  >>$tmpf
-				echo "		$n2 [color=$s2col, style=filled]"  >>$tmpf
+				if [[ "$s1col"=="black" ]]
+				then
+					echo "		$n1 [color=$s1col, fontcolor=white, style=filled]"  >>$tmpf
+				else
+					echo "		$n1 [color=$s1col, style=filled]"  >>$tmpf
+				fi
+				if [[ "$s2col"=="black" ]]
+				then
+					echo "		$n2 [color=$s2col, fontcolor=white, style=filled]"  >>$tmpf
+				else
+					echo "		$n2 [color=$s2col, style=filled]"  >>$tmpf
+				fi
 				# write edge
 				edge=`echo $item | sed -e 's/-/ -- /'`
 				echo "		$edge" >>$tmpf
 				count=$((count+1))
+				# debug stuff
+				#echo "stuff=$stuff;n1=$n1;n2=$n2,edge=$edge;count=$count"
 			done
 			cb_counts+=([$s1$s2]=$count)
 		else
