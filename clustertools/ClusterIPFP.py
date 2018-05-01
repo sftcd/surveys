@@ -86,7 +86,6 @@ if args.fnames is None:
 checkcount=0
 
 for fname in args.fnames.split():
-    print "Starting " + fname + " for " + str(ports2do)
     print >>sys.stderr, "Reading " + fname
 
     # open file
@@ -96,7 +95,9 @@ for fname in args.fnames.split():
 
     f=getnextfprint(fp)
     #print f
+    print "Starting " + fname + "(size: " + str(f.csize) + ") for " + str(ports2do)
     while f:
+
 
         try:
             print "IP: " + f.ip + " fingerprints:" 
