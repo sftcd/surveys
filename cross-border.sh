@@ -53,6 +53,7 @@ declare -gA cc_colours=( [IE]="green" \
 			[UY]="lightblue" \
 			[NZ]="black" \
 			[NA]="yellow" \
+			[SG]="orange" \
 			)
 
 function randomcolour()
