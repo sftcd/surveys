@@ -227,11 +227,13 @@ def getnextfprint(fp):
     magicfpstrs= ['{"fprints":', \
                     '{"py/object": "SurveyFuncs.OneFP", "fprints":' ]
     line=fp.readline()
+    indented=False
     while line:
         #print "preline:", line
         if line=="{\n":
             break
         if line=="  {\n":
+            indented=True
             break
         if re.match("\s*{\s*",line) is not None:
             break
@@ -252,13 +254,13 @@ def getnextfprint(fp):
     while line:
         #print "postline:", line
         jstr += line
-        if line=="}\n": 
+        if not indented and line=="}\n": 
             break
         # note - indented version here is due to other tooling, not v. predictable 
         # and it has an extra space after the closing brace for some reason
-        if line=="  } \n" or line=="  }\n"  or  line=="  } \n": 
+        if indented and (line=="  } \n" or line=="  }\n"  or  line=="  } \n"): 
             break
-        if line=="},\n" or line=="  }, \n":
+        if (not indented and line=="},\n") or (indented and line=="  }, \n"):
             # same as above but take away the "," at the end
             #print "|"+jstr[-10:]+"|"
             jstr=jstr.strip()
