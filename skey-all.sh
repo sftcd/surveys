@@ -33,7 +33,7 @@ echo "Running $0 at $NOW"
 
 function usage()
 {
-	echo "$0 [-m] [-s <source-code-directory>] [-r <results-directory>] [-p <inter-dir>] [-c <country>] [-i <ips-src>] [-z <zmap-port>]"
+	echo "$0 [-m] [-s <source-code-directory>] [-r <results-directory>] [-p <inter-dir>] [-c <country>] [-i <ips-src>] [-z <zmap-port>] [-k <skips>]"
 	echo "	-m means do the maxmind thing"
 	echo "	source-code-directory defaults to \$HOME/code/surveys"
 	echo "	country must be IE or EE, default is IE"
@@ -41,7 +41,7 @@ function usage()
 	echo "	inter-directory is a directory with intermediate results we process further"
 	echo "	ips-src is a file with json lines like censys.io's (original censys.io input used if not supplied"
 	echo "  zmap-port (default 25) is the port we use to decide what to scan"
-	echo "	skips comma-sep list of stages to skip: grab,fresh,cluster,graph"
+	echo "	skips is a comma-sep list of stages to skip: mm,zmap,grab,fresh,cluster,graph"
 	exit 99
 }
 
@@ -54,6 +54,7 @@ domm='no'
 dpath=`grep mmdbpath $HOME/code/surveys/SurveyFuncs.py  | head -1 | awk -F\' '{print $2}' | sed -e 's/\/$//'`
 mmdbdir=$HOME/$dpath
 zmport="25"
+skips=""
 
 
 # this form of assignment allows you to override this by setting an env
@@ -66,7 +67,7 @@ then
 fi
 
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -s bash -o ms:r:c:i:p:z:h -l mm,srcdir:,resdir:,country:,ips:,process:,zmap:,help -- "$@")
+if ! options=$(getopt -s bash -o ms:r:c:i:p:z:k:h -l mm,srcdir:,resdir:,country:,ips:,process:,zmap:,skips:,help -- "$@")
 then
 	# something went wrong, getopt will put out an error message for us
 	exit 1
@@ -81,6 +82,7 @@ do
 		-s|--srcdir) srcdir="$2"; shift;;
 		-z|--zmap) zmport="$2"; shift;;
 		-r|--resdir) outdir="$2"; shift;;
+		-k|--skips) skips="$2"; shift;;
 		-i|--ips) ipssrc="$2"; shift;;
 		-p|--process) pdir="$2"; shift;;
 		-c|--country) country="$2"; shift;;
@@ -209,8 +211,45 @@ then
 	# if we have a graphed no need to graph
 	if [ -f graphs.done ]
 	then
-		SKIP_GRAPHS=yes
+		SKIP_GRAPH=yes
 	fi
+fi
+
+# check if an forced skips
+if [[ "$skips" != "" ]]
+then
+	echo "|$skips|"
+	OFS=$IFS
+	IFS=,
+	for skip in $skips
+	do
+		echo "Checking $skip"
+		if [[ "$skip" == "mm" ]]
+		then
+			SKIP_MM="yes"
+		fi
+		if [[ "$skip" == "grab" ]]
+		then
+			SKIP_GRAB="yes"
+		fi
+		if [[ "$skip" == "zmap" ]]
+		then
+			SKIP_ZMAP="yes"
+		fi
+		if [[ "$skip" == "fresh" ]]
+		then
+			SKIP_FRESH="yes"
+		fi
+		if [[ "$skip" == "cluster" ]]
+		then
+			SKIP_CLUSTER="yes"
+		fi
+		if [[ "$skip" == "graph" ]]
+		then
+			SKIP_GRAPH="yes"
+		fi
+	done
+	IFS=$OFS
 fi
 
 # now do each step in the process, where that step is wanted and needed
@@ -268,8 +307,6 @@ then
 	echo "Skipping grab" 
 	echo "Skipping grab" >>$logf
 else
-
-
 	orig_ie=$HOME/data/smtp/IE/ipv4.20171130.json
 	orig_file=$orig_ie
 	if [ "$country" == "EE" ]
@@ -285,6 +322,11 @@ else
 	if [[ "$domm" == "no" && "X$ipssrc" == "X" ]]
 	then
 		infile=$orig_file
+	elif [[ "$domm" == "no" && -f $TELLTALE_GRAB ]]
+	then
+		infile=$TELLTALE_GRAB
+		echo "Grabbing from existing $infile" 
+		echo "Grabbing from existing $infile" >>$logf
 	else
 		# if $ipssrc is an absolute path, then fine, otherwise it's relatvie to $startdir
 		if [[ "${ipsrc:0:1}" == / || "${ipsrc:0:2}" == ~[/a-z] ]]
@@ -294,18 +336,18 @@ else
 		else
 			infile=$startdir/$ipssrc
 		fi
-	fi
 
-	echo "Grabbing from $infile" 
-	echo "Grabbing from $infile" >>$logf
-	$srcdir/GrabIPs.py -i $infile -o $TELLTALE_GRAB >>$logf 2>&1
-	if [ "$?" != "0" ]
-	then
-		echo "Error ($?) from GrapIPs.py"
+		echo "Grabbing from $infile" 
+		echo "Grabbing from $infile" >>$logf
+		$srcdir/GrabIPs.py -i $infile -o $TELLTALE_GRAB >>$logf 2>&1
+		if [ "$?" != "0" ]
+		then
+			echo "Error ($?) from GrapIPs.py"
+		fi
+		NOW=$(whenisitagain)
+		echo "Done grabbing at $NOW" 
+		echo "Done grabbing at $NOW" >>$logf
 	fi
-	NOW=$(whenisitagain)
-	echo "Done grabbing at $NOW" 
-	echo "Done grabbing at $NOW" >>$logf
 
 fi
 
