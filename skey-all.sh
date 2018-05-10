@@ -33,13 +33,14 @@ echo "Running $0 at $NOW"
 
 function usage()
 {
-	echo "$0 [-m] [-s <source-code-directory>] [-r <results-directory>] [-p <inter-dir>] [-c <country>] [-i <ips-src>]"
+	echo "$0 [-m] [-s <source-code-directory>] [-r <results-directory>] [-p <inter-dir>] [-c <country>] [-i <ips-src>] [-z <zmap-port>]"
 	echo "	-m means do the maxmind thing"
 	echo "	source-code-directory defaults to \$HOME/code/surveys"
 	echo "	country must be IE or EE, default is IE"
 	echo "	results-directory defaults to \$HOME/data/smtp/runs"
 	echo "	inter-directory is a directory with intermediate results we process further"
 	echo "	ips-src is a file with json lines like censys.io's (original censys.io input used if not supplied"
+	echo "  zmap-port (default 25) is the port we use to decide what to scan"
 	echo "	skips comma-sep list of stages to skip: grab,fresh,cluster,graph"
 	exit 99
 }
@@ -52,6 +53,8 @@ pdir=''
 domm='no'
 dpath=`grep mmdbpath $HOME/code/surveys/SurveyFuncs.py  | head -1 | awk -F\' '{print $2}' | sed -e 's/\/$//'`
 mmdbdir=$HOME/$dpath
+zmport="25"
+
 
 # this form of assignment allows you to override this by setting an env
 # var of this name - usually I dislike this kind of opacity but in this
@@ -63,7 +66,7 @@ then
 fi
 
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -s bash -o ms:r:c:i:p:h -l mm,srcdir:,resdir:,country:,ips:,process:,help -- "$@")
+if ! options=$(getopt -s bash -o ms:r:c:i:p:z:h -l mm,srcdir:,resdir:,country:,ips:,process:,zmap:,help -- "$@")
 then
 	# something went wrong, getopt will put out an error message for us
 	exit 1
@@ -76,6 +79,7 @@ do
 		-h|--help) usage;;
 		-m|--mm) domm="yes" ;;
 		-s|--srcdir) srcdir="$2"; shift;;
+		-z|--zmap) zmport="$2"; shift;;
 		-r|--resdir) outdir="$2"; shift;;
 		-i|--ips) ipssrc="$2"; shift;;
 		-p|--process) pdir="$2"; shift;;
@@ -212,7 +216,7 @@ fi
 # now do each step in the process, where that step is wanted and needed
 # Steps:
 
-# -1: IPs from maxmind, 0: zmap for port 25
+# -1: IPs from maxmind, 0: zmap for port $zmport
 # if there's a "GRAB" telltale then don't do 
 if [ "$SKIP_MM" ]
 then
@@ -239,9 +243,17 @@ else
 	then
 		echo "starting zmap"
 		echo "starting zmap" >>$logf
-		sudo zmap $zmap_parms -p 25 --whitelist-file=$TELLTALE_MM >$TELLTALE_ZMAP 2>>$logf
+		sudo zmap $zmap_parms -p $zmport --whitelist-file=$TELLTALE_MM >$TELLTALE_ZMAP 2>>$logf
 		ln -s $TELLTALE_ZMAP $TELLTALE_GRAB
 		SKIP_GRAB="yes"
+		echo "zmap done"
+		echo "zmap done" >>$logf
+	elif [[ "$domm" == "no" && -f $TELLTALE_MM ]]
+	then
+		echo "starting zmap"
+		echo "starting zmap" >>$logf
+		sudo zmap $zmap_parms -p $zmport --whitelist-file=$TELLTALE_MM >$TELLTALE_ZMAP 2>>$logf
+		ln -s $TELLTALE_ZMAP $TELLTALE_GRAB
 		echo "zmap done"
 		echo "zmap done" >>$logf
 	else
