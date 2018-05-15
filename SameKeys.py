@@ -90,6 +90,10 @@ overallcount=0
 badcount=0
 goodcount=0
 
+# encoder options
+jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
+jsonpickle.set_encoder_options('simplejson', sort_keys=True, indent=2)
+
 # it can happen that we run out of memory after we've done all of the
 # dns stuff, in such a case, it's nice to be able to re-start from the
 # fingerprints.json file to save the time of re-doing all those dns
@@ -349,9 +353,6 @@ else:
     f.close()
     gc.collect()
     
-    # encoder options
-    jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
-    jsonpickle.set_encoder_options('simplejson', sort_keys=True, indent=2)
     # this gets crapped on each time (for now)
     keyf=open('fingerprints.json', 'w')
     bstr=jsonpickle.encode(fingerprints)
