@@ -104,8 +104,10 @@ parser.add_argument('-c','--country',
 parser.add_argument('-a','--anonymise',     
                     help='replace IP in graphs with index',
                     action='store_true')
+parser.add_argument('-r','--restart',     
+                    help='restart from a previous run (don\'t overwrite cluster files)',
+                    action='store_true')
 args=parser.parse_args()
-
 
 # default render graphs == off (due to diskspace)
 dorendergraph=False
@@ -130,6 +132,10 @@ if args.fname is None and args.legend:
     print args
     printlegend()
     sys.exit(0)
+
+fname="collisions.json"
+if args.fname is not None:
+    fname=args.fname
 
 if args.outdir:
     outdir=args.outdir
@@ -182,7 +188,7 @@ creps={}
 maxglen=500000
 
 # open file
-fp=open(args.fname,"r")
+fp=open(fname,"r")
 
 # on one host (with python 2.7.12) it seems that I need to
 # first set the options for the json backend before doing
@@ -199,8 +205,19 @@ while f:
     dynleg=set()
     cnum=f.clusternum
     edgesadded=0
+    # if in re-start mode, skip this one if the relevant clusterfile exists
+    # in the CWD
+    if args.restart and os.path.exists("cluster"+str(cnum)+".json"):
+        print "Skipping  cluster " + str(cnum) + " as restart mode set"
+        # read next fp
+        del f
+        f=getnextfprint(fp)
+        continue
     if cnum in clipsdone and clipsdone[cnum]==-1:
         print "Rendered cluster " + str(cnum) + " already"
+        # read next fp
+        del f
+        f=getnextfprint(fp)
         continue
     csize=f.csize
     nrcs=f.nrcs
@@ -311,13 +328,13 @@ while f:
                 print >>repf, "\n]\n"
                 repf.close()
                 del creps[cnum]
+                clipsdone[cnum] = -1
             except:
                 print >>sys.stderr, "Failed to write json file for cluster " + str(cnum)
 
             rv=rendergraph(cnum,gvgraph,dynleg,args.legend,outdir,dorendergraph)
             if rv:
                 #print "Rendered graph for cluster " + str(cnum)
-                clipsdone[cnum] = -1
                 del grr[cnum]
             else:
                 notrendered.append(cnum)
