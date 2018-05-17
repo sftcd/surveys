@@ -210,12 +210,14 @@ while f:
     if args.restart and os.path.exists("cluster"+str(cnum)+".json"):
         print "Skipping  cluster " + str(cnum) + " as restart mode set"
         # read next fp
+        checkcount += 1
         del f
         f=getnextfprint(fp)
         continue
     if cnum in clipsdone and clipsdone[cnum]==-1:
         print "Rendered cluster " + str(cnum) + " already"
         # read next fp
+        checkcount += 1
         del f
         f=getnextfprint(fp)
         continue
