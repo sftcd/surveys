@@ -80,7 +80,7 @@ clusters:
 	$(srcdir)/SameKeys.py -c ${cname} -i ${fname} -o ${colf}
 
 graphs:
-	$(srcdir)/ReportReuse.py -f ${colf} -o ${gdir} -a
+	$(srcdir)/ReportReuse.py -f ${colf} -o ${gdir} -a -r
 
 justcleaning:
 	@echo "Targets are:"
