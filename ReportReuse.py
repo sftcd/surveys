@@ -65,7 +65,7 @@ def rendergraph(cnum,gvgraph,dynleg,legendwanted,odir,dorender):
         glen=len(gvgraph.source)
         if not dorender or glen > maxglen:
             if dorender:
-                print "Not rendering graph for cluster "+ str(cnum) + " - too long: " + str(glen)
+                print >>sys.stderr, "Not rendering graph for cluster "+ str(cnum) + " - too long: " + str(glen)
             gvgraph.save(odir + "/graph"+str(cnum)+".dot")
             if not dorender:
                 return True
@@ -208,14 +208,14 @@ while f:
     # if in re-start mode, skip this one if the relevant clusterfile exists
     # in the CWD
     if args.restart and os.path.exists("cluster"+str(cnum)+".json"):
-        print "Skipping  cluster " + str(cnum) + " as restart mode set"
+        print >>sys.stderr, "Skipping  cluster " + str(cnum) + " as restart mode set"
         # read next fp
         checkcount += 1
         del f
         f=getnextfprint(fp)
         continue
     if cnum in clipsdone and clipsdone[cnum]==-1:
-        print "Rendered cluster " + str(cnum) + " already"
+        print >>sys.stderr, "Rendered cluster " + str(cnum) + " already"
         # read next fp
         checkcount += 1
         del f
@@ -254,7 +254,7 @@ while f:
             f.asndec=asninfo['asndec']
             if asninfo['cc'] != country:
                 # TODO: what to actually if the country-code is (now) wrong?
-                print "Bad country for ip",f.ip,"ASN-CC:",asninfo['cc'],"Asked for CC:",country
+                print >>sys.stderr, "Bad country for ip",f.ip,"ASN-CC:",asninfo['cc'],"Asked for CC:",country
 
         asncol=asn2colour(f.asndec)
         mainind=str(len(ipdone))
@@ -318,7 +318,7 @@ while f:
     if cnum in clipsdone:
         clipsdone[cnum] += 1
         if clipsdone[cnum]%100==0:
-            print "\tsizeof graph for cluster " + str(cnum) +  \
+            print >>sys.stderr, "\tsizeof graph for cluster " + str(cnum) +  \
                 "  with " + str(clipsdone[cnum]) + " of " + str(csize) +  \
                 " done is: " + str(asizeof.asizeof(gvgraph)) +  \
                 " legend:"  + str(asizeof.asizeof(dynleg)) +   \
