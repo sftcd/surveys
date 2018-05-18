@@ -202,9 +202,7 @@ jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
 jsonpickle.set_encoder_options('simplejson', sort_keys=True, indent=2)
 f=getnextfprint(fp)
 while f:
-    dynleg=set()
     cnum=f.clusternum
-    edgesadded=0
     # if in re-start mode, skip this one if the relevant clusterfile exists
     # in the CWD
     if args.restart and os.path.exists("cluster"+str(cnum)+".json"):
@@ -221,6 +219,8 @@ while f:
         del f
         f=getnextfprint(fp)
         continue
+    dynleg=set()
+    edgesadded=0
     csize=f.csize
     nrcs=f.nrcs
     if cnum>=0 and nrcs>0:
@@ -235,7 +235,8 @@ while f:
             grr[cnum]=gvgraph
             if args.legend:
                 dynlegs[cnum]=dynleg
-            #print "sizeof graph for cluster " + str(cnum) + " is: " + str(asizeof.asizeof(gvgraph))
+            #print >>sys.stderr, "\tnew graph for cluster " + str(cnum) + " size is: " + str(asizeof.asizeof(gvgraph))
+            print >>sys.stderr, "\tnew graph for cluster " + str(cnum) 
         else:
             gvgraph=grr[cnum]
             if args.legend:
