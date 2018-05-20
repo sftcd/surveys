@@ -277,6 +277,112 @@ def getnextfprint(fp):
     else:
         return line
 
+# giant buffer for file
+giantbuffer=''
+offset=0
+
+def file_in_mem(fname):
+    if len(giantbuffer)==0: 
+        #print "Not loaded"
+        return False
+    else:
+        #print "Loaded"
+        return True
+
+def load_file_to_mem(fname):
+    global giantbuffer
+    print >>sys.stderr, "Reading " + fname + " into RAM"
+    fp=open(fname)
+    giantbuffer=fp.read()
+    fp.close()
+    print >>sys.stderr, "Done reading " + fname + " into RAM"
+    print len(giantbuffer)
+
+def readline_mem():
+    global offset
+    start_offset=offset
+    if offset >= len(giantbuffer):
+        print >>sys.stderr, "Offset "+str(offset)+" >= "+str(len(giantbuffer))+"!"
+        return ""
+    while giantbuffer[offset]!='\n':
+        offset += 1
+    #print "|"+giantbuffer[start_offset:offset]+"|"
+    offset+=1
+    return giantbuffer[start_offset:offset]
+
+
+def getnextfprint_mem(fname):
+    # as above, but first read entire file into memory and 
+    # handle it there
+    # read the next fingerprint from the file pointer
+    # fprint is a json structure, pretty-printed, so we'll
+    # read to the first line that's just an "{" until
+    # the next line that's just a "}"
+    # or...
+    # sometimes we might get one fp structure per line
+    # surrounded with a '[' at the top and a ']' at
+    # the end, in that case fps are separated with a 
+    # line containing a single comma, i.e. ",\n"
+    # the first thing on fp lines in such cases is
+    # '{"fprints":' so we'll take such a line as holding
+    # an entire json fp
+
+    if not file_in_mem(fname):
+        load_file_to_mem(fname)
+
+    magicfpstrs= ['{"fprints":', \
+                    '{"py/object": "SurveyFuncs.OneFP", "fprints":' ]
+    line=readline_mem()
+    indented=False
+    while line:
+        #print "preline:", line
+        if line=="{\n":
+            break
+        if line=="  {\n":
+            indented=True
+            break
+        if re.match("\s*{\s*",line) is not None:
+            break
+        for ms in magicfpstrs:
+            if line.startswith(ms):
+                #print ms
+                foo=line.strip()
+                if foo.endswith("},"):
+                    #print "stripping"
+                    foo=foo[:-1]
+                #print foo.strip()
+                jthing=json.loads(foo.strip())
+                onething=j2o(jthing)
+                del jthing
+                return onething
+        line=readline_mem()
+    jstr=""
+    while line:
+        #print "postline:", line
+        jstr += line
+        if not indented and line=="}\n": 
+            break
+        # note - indented version here is due to other tooling, not v. predictable 
+        # and it has an extra space after the closing brace for some reason
+        if indented and (line=="  } \n" or line=="  }\n"  or  line=="  } \n"): 
+            break
+        if (not indented and line=="},\n") or (indented and line=="  }, \n"):
+            # same as above but take away the "," at the end
+            #print "|"+jstr[-10:]+"|"
+            jstr=jstr.strip()
+            jstr=jstr.strip(',')
+            #print "|"+jstr[-10:]+"|"
+            break
+        line=readline_mem()
+    if line:
+        #print jstr
+        jthing=json.loads(jstr)
+        onething=j2o(jthing)
+        del jthing
+        return onething
+    else:
+        return line
+
 def mask2labels(mask, labels):
     intmask=int(mask,16)
     portcount=len(portstrings)

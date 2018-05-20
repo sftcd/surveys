@@ -28,6 +28,9 @@ import tempfile
 import gc
 import copy
 import argparse
+import time, datetime
+from dateutil import parser as dparser  # for parsing time from comand line and certs
+import pytz # for adding back TZ info to allow comparisons
 
 from pympler import asizeof
 
@@ -187,8 +190,13 @@ creps={}
 # max size of dot file we try to render
 maxglen=500000
 
+# playing with this to see if we get better perf
+#domem=True
+domem=False
+
 # open file
-fp=open(fname,"r")
+if domem==False:
+    fp=open(fname,"r")
 
 # on one host (with python 2.7.12) it seems that I need to
 # first set the options for the json backend before doing
@@ -200,7 +208,15 @@ fp=open(fname,"r")
 # bit odd but whatever works I guess;-)
 jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
 jsonpickle.set_encoder_options('simplejson', sort_keys=True, indent=2)
-f=getnextfprint(fp)
+
+def nfp():
+    if domem:
+        return getnextfprint_mem(fname)
+    else:
+        return getnextfprint(fp)
+
+#f=getnextfprint(fp)
+f=nfp()
 while f:
     cnum=f.clusternum
     # if in re-start mode, skip this one if the relevant clusterfile exists
@@ -210,14 +226,16 @@ while f:
         # read next fp
         checkcount += 1
         del f
-        f=getnextfprint(fp)
+        #f=getnextfprint(fp)
+        f=nfp()
         continue
     if cnum in clipsdone and clipsdone[cnum]==-1:
         print >>sys.stderr, "Rendered cluster " + str(cnum) + " already"
         # read next fp
         checkcount += 1
         del f
-        f=getnextfprint(fp)
+        #f=getnextfprint(fp)
+        f=nfp()
         continue
     dynleg=set()
     edgesadded=0
@@ -236,7 +254,7 @@ while f:
             if args.legend:
                 dynlegs[cnum]=dynleg
             #print >>sys.stderr, "\tnew graph for cluster " + str(cnum) + " size is: " + str(asizeof.asizeof(gvgraph))
-            print >>sys.stderr, "\tnew graph for cluster " + str(cnum) 
+            print >>sys.stderr, "New graph for cluster " + str(cnum) 
         else:
             gvgraph=grr[cnum]
             if args.legend:
@@ -332,6 +350,7 @@ while f:
                 repf.close()
                 del creps[cnum]
                 clipsdone[cnum] = -1
+                print >>sys.stderr, "Wrote cluster"+str(cnum)+".json"
             except:
                 print >>sys.stderr, "Failed to write json file for cluster " + str(cnum)
 
@@ -350,19 +369,23 @@ while f:
         del dynleg
 
     # print something now and then to keep operator amused
+    now=datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
     checkcount += 1
     if checkcount % 100 == 0:
         print >> sys.stderr, "Creating graphs, fingerprint: " + str(checkcount) + " most recent cluster " + str(cnum) + \
-                    " IPs: " + str(len(ipdone)) + " edges: " + str(len(edgedone)) + " #clusters: " + str(len(actualcnums))
+                    " IPs: " + str(len(ipdone)) + " edges: " + str(len(edgedone)) + " #clusters: " + str(len(actualcnums)) + \
+                    " at: " + str(now)
     if checkcount % 1000 == 0:
         gc.collect()
 
     # read next fp
     del f
-    f=getnextfprint(fp)
+    #f=getnextfprint(fp)
+    f=nfp()
 
 # close file
-fp.close()
+if domem==False:
+    fp.close()
 
 del grr
 
