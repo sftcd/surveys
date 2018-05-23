@@ -30,3 +30,10 @@ timestamp.
   cross-border clusters linked to that cluster, if any. That's based
   on the directory naming convention described above.
 
+- [superclusters.sh](superclusters.sh) This one (a work-in-progress)
+  generates graphs for each supercluster (set of linked cross-border
+  clusters), with either IP addresses as nodes, or anonymised indices.
+  These clusters are named based on the first named cluster in each,
+  e.g. names are like SCXXNNN where the first cluster mentioned in
+  the graphviz file for the supercluster if the NNN'th cluster in 
+  the run for country XX. 

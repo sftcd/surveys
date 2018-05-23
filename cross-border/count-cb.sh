@@ -55,7 +55,7 @@ do
 	shift
 done
 
-echo "Countring any cross-border links to cluster $cluster in $country..."
+echo "Counting addreesses in cross-border links to cluster $cluster in $country..."
 
 # naming convention in $CBG is e.g. IE462 as the node name
 needle="$country$cluster"
