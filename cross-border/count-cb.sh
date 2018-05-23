@@ -64,6 +64,9 @@ needle_count=`grep -c -w $needle $CBG`
 
 total_ips=0
 total_clusters=0
+total_countries=0
+
+declare -A countrycount
 
 if ((needle_count==0))
 then
@@ -87,7 +90,14 @@ else
 				total_clusters=$((total_clusters+1))
 				total_ips=$((total_ips+csize))
 		fi
+		if [[ "${countrycount[$cc]}" == "" ]]
+		then
+			countrycount+=([$cc]="0")
+			total_countries=$((total_countries+1))
+		else
+			countrycount[$cc]=$((countrycount[$cc]+1))
+		fi
 	done
-	echo "Found $total_ips in $total_clusters"
+	echo "Found $total_ips in $total_clusters clusters in $total_countries countries"
 fi
 
