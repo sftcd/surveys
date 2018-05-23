@@ -25,9 +25,9 @@
 # grep out the fingerprint hash values from a json file
 
 #sed -n '/fprints/,/}/p;' $1 | sed -e 's/, $//' | awk '{print $2}' | sort | grep -v "{" | grep -v "^$" | uniq -c | sort -n  | sed -e's/"//'
-allfps=`sed -n '/fprints/,/}/p;' $1 | sed -e 's/, $//' | awk '{print $2}' | sort | grep -v "{" | grep -v "^$" | sed -e's/"//g'`
+allfps=`sed -n '/fprints/,/}/p;' $1 | sed -e 's/, $//' | sed -e 's/,$//' | awk '{print $2}' | sort | grep -v "{" | grep -v "^$" | sed -e's/"//g'`
 countfps=`echo $allfps | wc | awk '{print $2}'`
 
-sed -n '/fprints/,/}/p;' $1 | sed -e 's/, $//' | awk '{print $2}' | sort | grep -v "{" | grep -v "^$" | sed -e's/"//g' | sort | uniq -c | sort -n
+sed -n '/fprints/,/}/p;' $1 | sed -e 's/, $//' | sed -e 's/,$//' | awk '{print $2}' | sort | grep -v "{" | grep -v "^$" | sed -e's/"//g' | sort | uniq -c | sort -n
 
 echo "  " $countfps  "total"

@@ -30,14 +30,26 @@
 # top of the house
 TOP="$HOME/data/smtp/runs"
 
+# srcdir 
+SRC="$HOME/code/surveys"
+
 # the overall cross-border graph is in...
 CBG="$TOP/cross-border/cross-border.dot"
+
+# latex file
+LF="superclusters.tex"
+
+# notes directory
+ND="$TOP/cross-border/notes"
 
 # anonymise or not (not => IP addresses as node names in graphs)
 anon=true
 
+# default output directory
+outdir="thesupers"
+
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -s bash -o hac: -l country:,anon,help -- "$@")
+if ! options=$(getopt -s bash -o hac:o: -l country:,anon,outdir:help -- "$@")
 then
 	# something went wrong, getopt will put out an error message for us
 	exit 1
@@ -49,6 +61,7 @@ do
 	case "$1" in
 		-h|--help) usage;;
 		-a|--anon) anon=false; shift;;
+		-o|--outdir) outdir=$2; shift;;
 		-c|--country) country="$2"; shift;;
 		(--) shift; break;;
 		(-*) echo "$0: error - unrecognized option $1" 1>&2; exit 1;;
@@ -81,8 +94,33 @@ cd $tmpdir
 ccomps -x -o super $CBG
 complist=`ls super*`
 
+total=`ls super* | wc -l`
+count=0
+
+
 # We need a name for those, 1st named cluster is what we'll use.
 namelist=""
+
+
+cat <<EOF >>$LF
+\\documentclass{article}
+\\usepackage{graphicx,amsmath,amssymb,url,subfigure}
+\\usepackage{fancyhdr}
+\\pagestyle{fancy}
+\\fancyhead{} % clear all header fields
+\\renewcommand{\\headrulewidth}{0pt} % no line in header area
+\\fancyfoot{} % clear all footer fields
+\\fancyfoot[LE,RO]{\\thepage}           % page number in "outer" position of footer line
+\\fancyfoot[RE,LO]{NOT FOR RELASE CONTAINS IDENTIFYING INFORMATION} % other info in "inner" position of footer line
+\\begin{document}
+
+EOF
+
+if [ -f $ND/intro.tex ]
+then
+	cat $ND/intro.tex >>$LF
+fi
+
 
 for comp in $complist
 do
@@ -94,9 +132,13 @@ do
 		echo "Oops - no edges in $comp - skipping"
 		continue
 	fi
+	count=$((count+1))
+	echo "Doing $firsty which is $count of $total"
 	namelist="$namelist $firsty"
 	# extract set of cc/cnum's from $comp
-	cnames=`grep " -- " $comp | awk '{print $1 " " $3 }' | sed -e 's/;//'`
+	allcnames=`grep " -- " $comp | awk '{print $1 " " $3 }' | sed -e 's/;//'`
+	cnames=`echo $allcnames | sed -e 's/ /\n/g' | sort | uniq`
+	fnamelist=""
 	for cname in $cnames
 	do
 		cc=${cname:0:2}
@@ -119,12 +161,86 @@ do
 			echo "Oops - can't find cluster file for $comp - skipping"
 			continue
 		fi
-		echo "Cluster file for $comp/$firsty/$cname is $fname"
+		#echo "Cluster file for $comp/$firsty/$cname is $fname"
+		fnamelist="$fnamelist $fname"
 	done
+	#echo "$comp/$firsty involves $fnamelist"
+	# $SRC/cross-border/MultiGraph.py -n $firsty -i "$fnamelist" -o "$firsty-detail.dot"
+	# rename connected component file to something useful
+	echo "Report on $firsty super-cluster" >$firsty-dets.txt
+	echo "Clusters: $cnames" | tr '\n' ' ' >>$firsty-dets.txt 
+	echo ""  >>$firsty-dets.txt 
+	echo "Fingerprint counts: " >>$firsty-dets.txt
+	$SRC/clustertools/fpsfromcluster.sh "$fnamelist" >>$firsty-dets.txt
+	echo ""  >>$firsty-dets.txt 
+	mv $comp $firsty-ov.dot
+	sfdp -Tsvg $firsty-ov.dot >$firsty.svg
+	# latex on my laptop doesn't like svg
+	sfdp -Tpng $firsty-ov.dot >$firsty.png
+	cat <<EOF >>$LF
+
+		\\section{$firsty}
+
+		\\begin{figure}
+		\\centering
+			\\includegraphics[width=5cm,keepaspectratio]{$firsty.png}
+			\\caption[clustediag]{Cross-border supercluster $firsty} 
+			\label{fig:$firsty}
+		\\end{figure}
+
+		Figure \\ref{fig:$firsty} shows the graph for this supercluster.
+EOF
+
+	if [ -f $ND/$firsty.tex ]
+	then
+		cat $ND/$firsty.tex >>$LF
+	fi
+
+	cat <<EOF >>$LF
+		Here's some detail of fingerprints:
+
+		\\begin{verbatim}
+
+EOF
+
+	cat $firsty-dets.txt >>$LF
+
+	cat <<EOF >>$LF
+
+		\\end{verbatim}
+
+EOF
+
 done
 
-echo $namelist
+cat <<EOF >>$LF
+\\end{document}
+EOF
 
+# make a pdf
+pdflatex $LF
+pdflatex $LF
+
+# is outdir an absolute path? if so, $absdir will be "/" or "~"
+absdir="${outdir:0:1}" 
+
+fulloutdir=$currdir/$outdir
+
+if [[ "$absdir" == "/" || "$absdir" == "~" ]]
+then
+	fulloutdir=$outdir
+fi
+
+if [ ! -d $fulloutdir ]
+then
+	mkdir $fulloutdir
+fi
+if [ ! -d $fulloutdir ]
+then
+	echo "Oops - can't create/find $fulloutdir - exiting (files may be in $tmpdir)"
+	exit 2
+fi
+mv $tmpdir/* $fulloutdir
 
 # clean up (or say where temp stuff is)
 rm -rf $tmpdir
@@ -132,51 +248,4 @@ rm -rf $tmpdir
 
 # go back to where we came from
 cd $currdir
-
-# legacy script below from count-sb.sh - keep it 'cause we'll want some of it
-exit 0
-
-# naming convention in $CBG is e.g. IE462 as the node name
-needle="$country$cluster"
-
-needle_count=`grep -c -w $needle $CBG`
-
-total_ips=0
-total_clusters=0
-total_countries=0
-
-declare -A countrycount
-
-if ((needle_count==0))
-then
-	echo "No sign of $needle in $CBG"
-else
-	((needle_count-=1))
-	echo "Looks like there are $needle_count links to $needle in $CBG"
-	links=`grep -w $needle $CBG | grep -v "color" | sed -e 's/--//' | sed -e "s/$needle//"`
-	for cluster in $needle $links
-	do
-		# figure out file name for that cluster
-		cc=${cluster:0:2}
-		cnum=${cluster:2}
-		# see how many IP addresses involved
-		#echo "Checking $cnum in $cc"
-		fname_re="$TOP/$cc-2018*/cluster$cnum.json"
-		csize=`grep '^  "csize":' $fname_re | head -1 | awk '{print $2}' | sed -e 's/,//'`
-		echo "       $cc $cnum $csize"
-		if ((csize>0))
-		then
-				total_clusters=$((total_clusters+1))
-				total_ips=$((total_ips+csize))
-		fi
-		if [[ "${countrycount[$cc]}" == "" ]]
-		then
-			countrycount+=([$cc]="0")
-			total_countries=$((total_countries+1))
-		else
-			countrycount[$cc]=$((countrycount[$cc]+1))
-		fi
-	done
-	echo "Found $total_ips in $total_clusters clusters in $total_countries countries"
-fi
 

@@ -35,5 +35,5 @@ timestamp.
   clusters), with either IP addresses as nodes, or anonymised indices.
   These clusters are named based on the first named cluster in each,
   e.g. names are like SCXXNNN where the first cluster mentioned in
-  the graphviz file for the supercluster if the NNN'th cluster in 
+  the graphviz file for the supercluster is the NNN'th cluster in 
   the run for country XX. 
