@@ -303,8 +303,15 @@ do
 		single=$((single+1))
 	fi
 done
-# whack 'em back together
-montage $imglist cross-border.png
+
+# in early stages (e.g. 1st two countries) we might not have anything
+# to put in the montage
+
+if [[ "$imglist" != "" ]]
+then
+	# whack 'em back together
+	montage $imglist cross-border.png
+fi
 
 # max a .tex file with the image and table
 
@@ -386,7 +393,10 @@ EOF
 
 # copy stuff we want from tmpfiles to CWD
 cd -
-cp $tmpdotd/cross-border.png .
+if [ -f $tmpdotd/cross-border.png ]
+then
+	cp $tmpdotd/cross-border.png .
+fi
 cp $tmpdot cross-border.dot
 cp $latmp cross-border.tex
 
