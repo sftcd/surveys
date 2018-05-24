@@ -205,8 +205,8 @@ EOF
 		cc=${runbase:0:2}
 		cnum=`basename $fname .json | sed -e 's/cluster//'`
 		# derive image file 
-		svgfile=`echo $fname | sed -e 's/\/cluster/\/graph/' | sed -e 's/\.json/\.svg/'`
-		pngfile=`echo $fname | sed -e 's/\/cluster/\/graph/' | sed -e 's/\.json/\.png/'`
+		svgfile=`echo $fname | sed -e 's/\/cluster/\/graph/' | sed -e 's/\.json/\.dot.svg/'`
+		pngfile=`echo $fname | sed -e 's/\/cluster/\/graph.dot/' | sed -e 's/\.json/\.dot.png/'`
 		wordlefile=`echo $fname | sed -e 's/\.json/-wordle\.png/'`
 		cimg="false"
 		if [ -f $pngfile ]
@@ -221,7 +221,7 @@ EOF
 				convert $svgfile $cc$cnum.png
 				cimg="true"
 			else
-				echo "No image for cluster $cnum in run $cc." >>$LF
+				echo "No image for cluster $cnum in run $cc as part of $firsty." >>$LF
 			fi
 		fi
 		if [[ "$cimg" == "true" ]]
@@ -232,11 +232,11 @@ EOF
 		\\begin{figure}
 		\\centering
 			\\includegraphics[width=5cm,keepaspectratio]{$cc$cnum.png}
-			\\caption[clustediag]{Cluster $cc$cnum} 
+			\\caption[clustediag]{Cluster $cc$cnum, part of $firsty} 
 			\label{fig:$cc$cnum}
 		\\end{figure}
 
-		Figure \\ref{fig:$cc$cnum} shows the graph for cluster $cnum in run $cc.
+		Figure \\ref{fig:$cc$cnum} shows the graph for cluster $cnum in run $cc, a part of $firsty.
 EOF
 		fi
 
@@ -250,7 +250,7 @@ EOF
 		\\begin{figure}
 		\\centering
 			\\includegraphics[width=5cm,keepaspectratio]{$cc$cnum-wordle.png}
-			\\caption[clustediag]{Cluster $cc$cnum words} 
+			\\caption[clustediag]{Cluster $cc$cnum words, part of $firsty} 
 			\label{fig:$cc$cnum-words}
 		\\end{figure}
 
