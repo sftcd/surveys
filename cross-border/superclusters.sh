@@ -170,8 +170,9 @@ do
 	echo "Report on $firsty super-cluster" >$firsty-dets.txt
 	echo "Clusters: $cnames" | tr '\n' ' ' >>$firsty-dets.txt 
 	echo ""  >>$firsty-dets.txt 
-	echo "Fingerprint counts: " >>$firsty-dets.txt
-	$SRC/clustertools/fpsfromcluster.sh "$fnamelist" >>$firsty-dets.txt
+	echo "Fingerprint counts (most common 20): " >>$firsty-dets.txt
+	# last few/most common fingerprints
+	$SRC/clustertools/fpsfromcluster.sh "$fnamelist" | tail -21 >>$firsty-dets.txt
 	echo ""  >>$firsty-dets.txt 
 	mv $comp $firsty-ov.dot
 	sfdp -Tsvg $firsty-ov.dot >$firsty.svg
@@ -267,14 +268,7 @@ EOF
 
 EOF
 
-	for fname in $fnamelist
-	do
-		if [ -f $fname ]
-		then
-			echo "$fname" >>$LF
-			$SRC/clustertools/ClusterStats.py -i $fname >>$LF
-		fi
-	done
+	$SRC/clustertools/ClusterStats.py -i "$fnamelist" -l -t $firsty >>$LF
 
 	cat $firsty-dets.txt >>$LF
 

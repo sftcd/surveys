@@ -42,9 +42,10 @@ want to integrate additional runs, then...
 
 	1. Take a peek...
 
-1. Cross-border checks - TODO: script that up - did I *really* do it manually before? Sigh :-(
+1. Cross-border checks:
 
-	1. cross-border.sh stuff
+	1. cross-border.sh  -n <newdir>
+	1. supercluster.sh
 
 1. Checks/stats:
 
