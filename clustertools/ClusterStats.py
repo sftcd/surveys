@@ -269,70 +269,70 @@ if args.latex:
     for k in cstats:
         theline += ' c | '
     theline += ' c | }' # last one for totals 
-    print theline + "\n\hline"
+    print theline + "\n\\hline"
 
     theline = "Name " 
     for k in cstats:
         theline += " & " + k
-    print theline + " & Total  \hline"
-    print '\hline'
+    print theline + " & Total  \\\\ \hline"
+    print '\\hline'
 
     theline = "Size " 
     for k in cstats:
         theline += " & " + str(cstats[k]['csize'])
-    print theline + " & " + str(totals['csize']) + " \hline"
+    print theline + " & " + str(totals['csize']) + " \\\\ \hline"
 
     theline = "ASes " 
     for k in cstats:
         theline += " & " + str(cstats[k]['asns'])
-    print theline + " & " + str(totals['asns']) + " \hline"
+    print theline + " & " + str(totals['asns']) + " \\\\ \hline"
 
     theline = "Port count " 
     for k in cstats:
         theline += " & " + str(cstats[k]['portcount'])
-    print theline + " & " + str(totals['portcount']) + " \hline"
+    print theline + " & " + str(totals['portcount']) + " \\\\ \hline"
 
     theline = "SSH ports " 
     for k in cstats:
         theline += " & " + str(cstats[k]['sshports'])
-    print theline + " & " + str(totals['sshports']) + " \hline"
+    print theline + " & " + str(totals['sshports']) + " \\\\ \hline"
 
     theline = "SSH keys " 
     for k in cstats:
         theline += " & " + str(cstats[k]['sshkeys'])
-    print theline + " & " + str(totals['sshkeys']) + " \hline"
+    print theline + " & " + str(totals['sshkeys']) + " \\\\ \hline"
 
     theline = "TLS ports " 
     for k in cstats:
         theline += " & " + str(cstats[k]['tlsports'])
-    print theline + " & " + str(totals['tlsports']) + " \hline"
+    print theline + " & " + str(totals['tlsports']) + " \\\\ \hline"
 
     theline = "TLS Keys " 
     for k in cstats:
         theline += " & " + str(cstats[k]['tlskeys'])
-    print theline + " & " + str(totals['tlskeys']) + " \hline"
+    print theline + " & " + str(totals['tlskeys']) + " \\\\ \hline"
 
     theline = "B-T certs " 
     for k in cstats:
         theline += " & " + str(cstats[k]['btcerts'])
-    print theline + " & " + str(totals['btcerts']) + " \hline"
+    print theline + " & " + str(totals['btcerts']) + " \\\\ \hline"
 
     theline = "W/C certs " 
     for k in cstats:
         theline += " & " + str(cstats[k]['wccerts'])
-    print theline + " & " + str(totals['wccerts']) + " \hline"
+    print theline + " & " + str(totals['wccerts']) + " \\\\ \hline"
 
     theline = "Most re-used key " 
     for k in cstats:
         theline += " & " + str(cstats[k]['mostcommonkey'])
-    print theline + " &  \hline"
+    print theline + " &  \\\\ \hline"
 
-    print '\hline'
+    print '\\hline'
     print '\end{tabular}'
     print '\label{tab:'+args.tablab+'}'
     print '\end{table}'
 
-    print 'Table \ref{tab:'+args.tablab+'} summaries the clusters in ' + args.tablab + '.' 
+    print 'Table \\ref{tab:'+args.tablab+'} summaries the clusters in ' + args.tablab + '.' 
 
 if not args.latex:
     print "Overall:" + str(checkcount) 

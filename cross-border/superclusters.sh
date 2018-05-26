@@ -261,14 +261,14 @@ EOF
 
 	done
 
+	$SRC/clustertools/ClusterStats.py -i "$fnamelist" -l -t $firsty >>$LF
+
 	cat <<EOF >>$LF
 		Here's some more detail of fingerprints:
 
 		\\begin{verbatim}
 
 EOF
-
-	$SRC/clustertools/ClusterStats.py -i "$fnamelist" -l -t $firsty >>$LF
 
 	cat $firsty-dets.txt >>$LF
 
