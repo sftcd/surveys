@@ -187,6 +187,10 @@ then
 	fi
 fi
 
+# read state
+existing=`cat $absstatefile`
+names="$existing"
+
 namearr=($names)
 nnamearr=${#namearr[@]}
 tmpf=`mktemp /tmp/cross.XXXX`
