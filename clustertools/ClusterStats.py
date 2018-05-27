@@ -277,7 +277,7 @@ if args.latex:
     print theline + " & Total  \\\\ \hline"
     print '\\hline'
 
-    theline = "Size " 
+    theline = "IP addrs " 
     for k in cstats:
         theline += " & " + str(cstats[k]['csize'])
     print theline + " & " + str(totals['csize']) + " \\\\ \hline"
@@ -322,7 +322,7 @@ if args.latex:
         theline += " & " + str(cstats[k]['wccerts'])
     print theline + " & " + str(totals['wccerts']) + " \\\\ \hline"
 
-    theline = "Most re-used key " 
+    theline = "Most key re-uses " 
     for k in cstats:
         theline += " & " + str(cstats[k]['mostcommonkey'])
     print theline + " &  \\\\ \hline"

@@ -104,7 +104,7 @@ namelist=""
 
 cat <<EOF >>$LF
 \\documentclass{article}
-\\usepackage{graphicx,amsmath,amssymb,url,subfigure}
+\\usepackage{graphicx,amsmath,amssymb,url,subfigure,mdframed}
 \\usepackage{fancyhdr}
 \\pagestyle{fancy}
 \\fancyhead{} % clear all header fields
@@ -112,6 +112,7 @@ cat <<EOF >>$LF
 \\fancyfoot{} % clear all footer fields
 \\fancyfoot[LE,RO]{\\thepage}           % page number in "outer" position of footer line
 \\fancyfoot[RE,LO]{NOT FOR RELASE CONTAINS IDENTIFYING INFORMATION} % other info in "inner" position of footer line
+
 \\begin{document}
 
 EOF
@@ -263,18 +264,28 @@ EOF
 
 	$SRC/clustertools/ClusterStats.py -i "$fnamelist" -l -t $firsty >>$LF
 
+
 	cat <<EOF >>$LF
-		Here's some more detail of fingerprints:
 
-		\\begin{verbatim}
-
+	\\begin{figure}
+	\\begin{mdframed}
+	\\begingroup
+	\\fontsize{8pt}{10pt}\\selectfont
+	\\begin{verbatim}
 EOF
 
 	cat $firsty-dets.txt >>$LF
 
 	cat <<EOF >>$LF
 
-		\\end{verbatim}
+	\\end{verbatim}
+	\\endgroup
+	\\end{mdframed}
+	\\caption{The 20 most common fingerprints involved in the $firsty supercluster.}
+	\\label{fig:$firsty-dets}
+	\\end{figure}
+
+	Figure \\ref{fig:$firsty-dets} shows the 20 most common fingerprints involved in the $firsty supercluster.
 
 EOF
 
