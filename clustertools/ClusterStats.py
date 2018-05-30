@@ -261,7 +261,8 @@ if args.latex:
     # dump out in latex happy form
     # print cstats
 
-    print '\\begin{table}'
+    print '\\begin{table*}'
+    print '\\centering'
     print '\caption{Summary of ' + args.tablab + ' clusters.}'
 
     theline = '\\begin{tabular} { | l | '
@@ -329,7 +330,7 @@ if args.latex:
     print '\\hline'
     print '\end{tabular}'
     print '\label{tab:'+args.tablab+'}'
-    print '\end{table}'
+    print '\end{table*}'
 
     print 'Table \\ref{tab:'+args.tablab+'} summaries the clusters in ' + args.tablab + '.' 
 

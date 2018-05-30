@@ -42,6 +42,9 @@ LF="superclusters.tex"
 # notes directory
 ND="$TOP/cross-border/notes"
 
+# IEEE latex class file (or whatever one you want)
+CLASSFILE="$SRC/cross-border/IEEEtran.cls"
+
 # anonymise or not (not => IP addresses as node names in graphs)
 anon=true
 
@@ -101,10 +104,12 @@ count=0
 # We need a name for those, 1st named cluster is what we'll use.
 namelist=""
 
+cp $CLASSFILE $tmpdir
 
 cat <<EOF >>$LF
-\\documentclass{article}
+\\documentclass[10pt,final,journal,twoside,pdftex]{IEEEtran}
 \\usepackage{graphicx,amsmath,amssymb,url,subfigure,mdframed}
+\\usepackage[section]{placeins} %Float Barriers
 \\usepackage{fancyhdr}
 \\pagestyle{fancy}
 \\fancyhead{} % clear all header fields
@@ -267,7 +272,7 @@ EOF
 
 	cat <<EOF >>$LF
 
-	\\begin{figure}
+	\\begin{figure*}
 	\\begin{mdframed}
 	\\begingroup
 	\\fontsize{8pt}{10pt}\\selectfont
@@ -283,7 +288,7 @@ EOF
 	\\end{mdframed}
 	\\caption{The 20 most common fingerprints involved in the $firsty supercluster.}
 	\\label{fig:$firsty-dets}
-	\\end{figure}
+	\\end{figure*}
 
 	Figure \\ref{fig:$firsty-dets} shows the 20 most common fingerprints involved in the $firsty supercluster.
 
