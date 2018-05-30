@@ -101,17 +101,6 @@ fnames = args.fnames
 if not args.latex:
     print >>sys.stderr, "Reading " + fnames
 
-asns=set()
-sshkeys=set()
-tlskeys=set()
-fpsseen={}
-
-portcount=0
-sshports=0
-tlsports=0
-btcerts=0
-wccerts=0
-
 cstats={}
 
 def runname(fname):
@@ -127,6 +116,16 @@ def runname(fname):
 # mainline code
 
 for fname in fnames.split(' '):
+
+    asns=set()
+    sshkeys=set()
+    tlskeys=set()
+    fpsseen={}
+    portcount=0
+    sshports=0
+    tlsports=0
+    btcerts=0
+    wccerts=0
 
     if not os.path.isfile(fname):
         continue
