@@ -198,9 +198,12 @@ do
 		Figure \\ref{fig:$firsty} shows the graph for this supercluster.
 EOF
 
+	$SRC/clustertools/ClusterStats.py -i "$fnamelist" -l -t $firsty >>$LF
+
 	if [ -f $ND/$firsty.tex ]
 	then
-		cat $ND/$firsty.tex >>$LF
+		#cat $ND/$firsty.tex >>$LF
+		echo "\\input $ND/$firsty" >>$LF
 	fi
 
 	# include cluster specific images where possible
@@ -267,7 +270,6 @@ EOF
 
 	done
 
-	$SRC/clustertools/ClusterStats.py -i "$fnamelist" -l -t $firsty >>$LF
 
 
 	cat <<EOF >>$LF
