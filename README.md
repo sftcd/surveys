@@ -63,7 +63,9 @@ refer to it as ```$REPO``` as necessary below.
 where to put the output (```-r .``` in this case). Once this is working ok, then
 you'll want to run it via nohup, as it takes a long time.
 And since ZMap requires root permissions you should have setup things so 
-that the ```sudo zmap...``` call in this script works.  
+that the ```sudo zmap...``` call in this script works.  (It'll also be
+easier to run things in the background if sudo is set to not require
+password entry.)
 
 		$ cd $TOP
 		$ nohup skey-all.sh -c IE -mm -r . >skey.out 2>&1 &
