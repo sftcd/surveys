@@ -124,7 +124,8 @@ EOF
 
 if [ -f $ND/intro.tex ]
 then
-	cat $ND/intro.tex >>$LF
+	# cat $ND/intro.tex >>$LF
+	echo "\\input $ND/intro" >>$LF
 fi
 
 
@@ -186,8 +187,8 @@ do
 	sfdp -Tpng $firsty-ov.dot >$firsty.png
 	cat <<EOF >>$LF
 
-		\\section{$firsty}
-
+		\\section{$firsty} 
+		\\label{sec:$firsty}
 		\\begin{figure}
 		\\centering
 			\\includegraphics[width=5cm,keepaspectratio]{$firsty.png}

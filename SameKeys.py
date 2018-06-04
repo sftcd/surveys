@@ -56,7 +56,7 @@ argparser.add_argument('-s','--scandate',
                     help='time at which to evaluate certificate validity')
 argparser.add_argument('-c','--country',     
                     dest='country',
-                    help='country in which we\'re interested')
+                    help='country in which we\'re interested, use XX if you don\'t care, default is IE')
 argparser.add_argument('-f','--fps',     
                     dest='fpfile',
                     help='pre-existing fingerprints file')
@@ -133,7 +133,7 @@ else:
                 asndec=int(j_content['autonomous_system']['asn'])
                 thisone.asn=asn
                 thisone.asndec=asndec
-                if j_content['location']['country_code'] != country:
+                if country != 'XX' and j_content['location']['country_code'] != country:
                     badrec=True
                     print >>sys.stderr, "Bad country for ip",thisone.ip,"location:",j_content['location']['country_code'],"Asked for CC:",country
                     j_content['wrong_country']=j_content['location']['country_code'] 
@@ -147,7 +147,7 @@ else:
                 #print "fixing up asn info",asninfo
                 thisone.asn=asninfo['asn']
                 thisone.asndec=asninfo['asndec']
-                if asninfo['cc'] != country:
+                if country != 'XX' and asninfo['cc'] != country:
                     # just record as baddy if the country-code is (now) wrong?
                     # mark it so we can revisit later too
                     print >>sys.stderr, "Bad country for ip",thisone.ip,"asn:",asninfo['cc'],"Asked for CC:",country
