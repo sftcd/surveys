@@ -187,8 +187,7 @@ do
 	sfdp -Tpng $firsty-ov.dot >$firsty.png
 	cat <<EOF >>$LF
 
-		\\section{$firsty} 
-		\\label{sec:$firsty}
+		\\section{$firsty}\\label{sec:$firsty}
 		\\begin{figure}
 		\\centering
 			\\includegraphics[width=5cm,keepaspectratio]{$firsty.png}
