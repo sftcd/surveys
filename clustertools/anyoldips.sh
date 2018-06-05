@@ -153,7 +153,7 @@ for cl in $clusters
 	do
 	for ip in $needle
 	do
-		match=`grep -l '^  "ip": "'$ip $cl`
+		match=`grep -l '^  "ip": "'$ip'"' $cl`
 		if [[ "$match" != "" ]]
 		then
 				echo "$ip matches $cl"

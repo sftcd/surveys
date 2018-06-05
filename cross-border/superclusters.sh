@@ -180,6 +180,8 @@ do
 	# last few/most common fingerprints
 	$SRC/clustertools/fpsfromcluster.sh "$fnamelist" | tail -21 >>$firsty-dets.txt
 	echo ""  >>$firsty-dets.txt 
+	echo "The linking FPs are:" >>$firsty-dets.txt 
+	$SRC/clustertools/linkingfps.sh -i "$fnamelist"  >>$firsty-dets.txt
 	mv $comp $firsty-ov.dot
 	sfdp -Tsvg $firsty-ov.dot >$firsty.svg
 	# latex on my laptop doesn't like svg
