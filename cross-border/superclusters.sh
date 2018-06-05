@@ -172,7 +172,6 @@ do
 		fnamelist="$fnamelist $fname"
 	done
 	#echo "$comp/$firsty involves $fnamelist"
-	# $SRC/cross-border/MultiGraph.py -n $firsty -i "$fnamelist" -o "$firsty-detail.dot"
 	# rename connected component file to something useful
 	echo "Report on $firsty super-cluster" >$firsty-dets.txt
 	echo "Clusters: $cnames" | tr '\n' ' ' >>$firsty-dets.txt 

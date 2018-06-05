@@ -100,6 +100,8 @@ checkcount=0
 fnames = args.fnames
 if not args.latex:
     print >>sys.stderr, "Reading " + fnames
+else:
+    print >>sys.stderr, "Reading " + fnames
 
 cstats={}
 
