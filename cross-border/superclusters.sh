@@ -190,9 +190,10 @@ do
 	fpslist=`$SRC/clustertools/linkingfps.sh -i "$fnamelist"`
 	echo $fpslist >>$firsty-dets.txt
 	echo "Certs for those FPs" >>$firsty-dets.txt
-	fps=`echo $fpslist | awk '{print $1}'` 
+	fps=`echo "$fpslist" | awk '{print $1}'` 
 	for fp in $fps 
 	do
+		# this'll also do SSH (I think!)
 		$SRC/clustertools/fp2certs.sh -i "$fnamelist" -f $fp >>$firsty-dets.txt
 	done
 	mv $comp $firsty-ov.dot

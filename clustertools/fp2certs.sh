@@ -79,11 +79,26 @@ do
 		echo "$file doesn't exist - skipping"
 		continue
 	fi
+	# if not fully connected some clusters might not have the FP
+	# so just continue on in that case
+	isthere=`grep -l $fp $file`
+	if (( $? != 0 ))
+	then
+		# no match
+		continue
+	fi
 	twoliner=`egrep '(^  "ip":|'$fp')' $file | tail -2`
 	pport=`echo $twoliner | awk '{print $1}'`
 	port=`echo ${pport:2:3} | sed -e 's/"//'`
 	ipaddr=`echo $twoliner | awk '{print $4}' | sed -e 's/"//g' | sed -e 's/,//g'`
 	#echo $ipaddr $port
+	if [[ "$port" == "22" ]]
+	then
+		echo "SSH FP seen"
+		ssh-keyscan $ipaddr
+		# and go to next cluster
+		continue
+	fi
 	timeout 10s $srcdir/clustertools/gc.sh $ipaddr $port >/dev/null 2>&1
 	if (( $? != 0 ))
 	then
