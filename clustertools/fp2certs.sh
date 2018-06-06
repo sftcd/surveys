@@ -124,12 +124,16 @@ dupcerts=`finddup -d $tmpd  | awk '{ for(i=2; i<NF; i++) printf "%s",$i OFS; if(
 rm -f $dupcerts
 
 # cat any left over
-for file in $tmpd/*
-do
-	echo "Cert for $file"
-	cat $file
-	echo 
-done
+anysingletons=`ls $tmpd`
+if [[ "$anysingletons" != "" ]]
+then
+	for file in $tmpd/*
+	do
+		echo "Cert for $file"
+		cat $file
+		echo 
+	done
+fi
 
 #clean up
 rm -rf $tmpd
