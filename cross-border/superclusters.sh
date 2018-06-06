@@ -109,6 +109,12 @@ cp $CLASSFILE $tmpdir
 cat <<EOF >>$LF
 \\documentclass[10pt,final,journal,twoside,pdftex]{IEEEtran}
 \\usepackage{graphicx,amsmath,amssymb,url,subfigure,mdframed}
+\\usepackage{listings}
+\lstset{
+basicstyle=\\small\\ttfamily,
+columns=flexible,
+breaklines=true
+}
 \\usepackage[section]{placeins} %Float Barriers
 \\usepackage{fancyhdr}
 \\pagestyle{fancy}
@@ -282,25 +288,16 @@ EOF
 
 	cat <<EOF >>$LF
 
-	\\begin{figure*}
-	\\begin{mdframed}
-	\\begingroup
-	\\fontsize{8pt}{10pt}\\selectfont
-	\\begin{verbatim}
+    \\onecolumn
+    \\begin{lstlisting}[basicstyle=\footnotesize]
+	
 EOF
 
 	cat $firsty-dets.txt >>$LF
 
 	cat <<EOF >>$LF
 
-	\\end{verbatim}
-	\\endgroup
-	\\end{mdframed}
-	\\caption{The 20 most common fingerprints involved in the $firsty supercluster.}
-	\\label{fig:$firsty-dets}
-	\\end{figure*}
-
-	Figure \\ref{fig:$firsty-dets} shows the 20 most common fingerprints involved in the $firsty supercluster.
+	\\end{lstlisting}
 
 EOF
 
