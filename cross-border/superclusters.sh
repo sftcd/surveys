@@ -181,7 +181,14 @@ do
 	$SRC/clustertools/fpsfromcluster.sh "$fnamelist" | tail -21 >>$firsty-dets.txt
 	echo ""  >>$firsty-dets.txt 
 	echo "The linking FPs are:" >>$firsty-dets.txt 
-	$SRC/clustertools/linkingfps.sh -i "$fnamelist"  >>$firsty-dets.txt
+	fpslist=`$SRC/clustertools/linkingfps.sh -i "$fnamelist"`
+	echo $fpslist >>$firsty-dets.txt
+	echo "Certs for those FPs" >>$firsty-dets.txt
+	fps=`echo $fpslist | awk '{print $1}'` 
+	for fp in $fps 
+	do
+		$SRC/clustertools/fp2certs.sh -i "$fnamelist" -f $fp >>$firsty-dets.txt
+	done
 	mv $comp $firsty-ov.dot
 	sfdp -Tsvg $firsty-ov.dot >$firsty.svg
 	# latex on my laptop doesn't like svg
@@ -319,6 +326,10 @@ fi
 
 if [ ! -d $fulloutdir ]
 then
+	mkdir $fulloutdir
+else
+	# keep one backup
+	mv $fulloutdir $fulloutdir.old
 	mkdir $fulloutdir
 fi
 if [ ! -d $fulloutdir ]

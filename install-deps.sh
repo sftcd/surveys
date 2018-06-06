@@ -71,6 +71,9 @@ sudo apt-get -y install zmap
 # install pip
 sudo apt-get -y install python-pip graphviz
 
+# install finddup - needed for fp2cert.sh
+sudo apt install perforate
+
 sudo -H pip install --upgrade pip
  
 # install python modules needed, these are currently imported modules

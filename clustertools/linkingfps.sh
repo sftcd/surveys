@@ -126,7 +126,6 @@ do
 done
 rm -f $tmpf
 
-echo "Need a two-match test case!"
 for fp in "${!fpclusters[@]}"
 do
 	echo "$fp is in ${fpclusters[$fp]}"
