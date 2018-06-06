@@ -328,6 +328,10 @@ then
 	mkdir $fulloutdir
 else
 	# keep one backup
+	if [ -d $fulloutdir.old ]
+	then
+		rm -rf $fulloutdir.old
+	fi
 	mv $fulloutdir $fulloutdir.old
 	mkdir $fulloutdir
 fi
