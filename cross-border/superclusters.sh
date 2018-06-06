@@ -298,6 +298,7 @@ EOF
 	cat <<EOF >>$LF
 
 	\\end{lstlisting}
+    \\twocolumn
 
 EOF
 
