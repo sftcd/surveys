@@ -32,6 +32,9 @@ from SurveyFuncs import *
 
 # command line arg handling 
 parser=argparse.ArgumentParser(description='Do a confirmation scan of ssh key hashes')
+parser.add_argument('-d','--dryrun',     
+                    help='just do a dry-run, listing IPs that would be checked',
+                    action='store_true')
 parser.add_argument('-i','--input',     
                     dest='infile',
                     help='file containing list of collisions')
@@ -40,7 +43,7 @@ parser.add_argument('-o','--output_file',
                     help='file in which to put json results (one per line)')
 parser.add_argument('-s','--sleep',     
                     dest='sleepsecs',
-                    help='number of seconds to sleep between ssh-keyscan (fractions allowed')
+                    help='number of seconds to sleep between ssh-keyscan (fractions allowed)')
 args=parser.parse_args()
 
 def usage():
@@ -145,6 +148,9 @@ while f:
     else:
         ttcount+=1
         print >>out_f,  "Checking " + ip + " recorded as: " + f.fprints['p22']
+        if args.dryrun:
+            f=getnextfprint(fp)
+            continue
         hkey=gethostkey(ip)
         if hkey:
             print  >>out_f, "keys at " + ip + " now are:"+str(hkey)
