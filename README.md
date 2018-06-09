@@ -5,6 +5,8 @@ Code for various crypto-survey related stuff.
 My first article based on this code is about Clusters of Re-Used Keys. There's
 a version  [here](https://eprint.iacr.org/2018/299).
 The graphs for the runs in that article are [here](https://down.dsg.cs.tcd.ie/runs/).
+There's a presentation about this [here](https://down.dsg.cs.tcd.ie/misc/hark.pdf).
+
 My favourite cluster is the image below - nodes are hosts and links show cases
 where keys are re-used on both nodes/hosts (edge colour indicates the
 combination of protocols concerned). And yes, that one has 80 hosts in one
