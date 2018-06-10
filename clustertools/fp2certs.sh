@@ -87,7 +87,7 @@ do
 		# no match
 		continue
 	fi
-	twoliner=`egrep '(^  "ip":|'$fp')' $file | tail -2`
+	twoliner=`egrep '(^  "ip":|'$fp')' $file | grep -A1 '^    "p' | tail -2`
 	pport=`echo $twoliner | awk '{print $1}'`
 	port=`echo ${pport:2:3} | sed -e 's/"//'`
 	ipaddr=`echo $twoliner | awk '{print $4}' | sed -e 's/"//g' | sed -e 's/,//g'`
