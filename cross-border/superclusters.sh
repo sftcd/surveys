@@ -109,7 +109,7 @@ cp $CLASSFILE $tmpdir
 cat <<EOF >>$LF
 \\documentclass[10pt,final,journal,twoside,pdftex]{IEEEtran}
 \\usepackage{graphicx,amsmath,amssymb,url,subfigure,mdframed}
-\\usepackage{listings}
+\\usepackage{hyperref,listings}
 \lstset{
 basicstyle=\\small\\ttfamily,
 columns=flexible,

@@ -62,7 +62,9 @@ function i2dq()
 	dq3=$(((ival/(256*256))%256))
 	dq2=$(((ival/256)%256))
 	dq1=$((ival%256))
-	echo \"$dq4.$dq3.$dq2.$dq1\"
+	# without the '"ip": ' prefix here, we suck in IPs found for SANs in certs
+	# probably better to not do that (though interesting such overlaps exist!?)
+	echo "\"ip\": \"$dq4.$dq3.$dq2.$dq1\""
 }
 
 function range2list()
@@ -120,6 +122,10 @@ rundir=$2
 if [ ! -f $rangefile ]
 then
 	echo "Can't read $rangefile - exiting "
+	echo "The RIPE DB may help here. Try using wget with s/XXX.XXX.XXX.XXX/your-ip/ as follows:"
+	echo "    wget 'https://rest.db.ripe.net/search.json?query-string=XXX.XXX.XXX.XXX&flags=no-filtering&source=RIPE' "
+	echo "Or maybe using a hoster name (if it exists in the RIPE DB) is better"
+	echo "Bear in mind there's an AUP, so don't flood that."
 	exit 1
 fi
 

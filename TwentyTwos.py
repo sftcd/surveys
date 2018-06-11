@@ -47,7 +47,7 @@ parser.add_argument('-s','--sleep',
 args=parser.parse_args()
 
 def usage():
-    print >>sys.stderr, "usage: " + sys.argv[0] + " -i <infile> [-o <putfile>] [-s <sleepsecs>]"
+    print >>sys.stderr, "usage: " + sys.argv[0] + " -i <infile> [-d] [-o <putfile>] [-s <sleepsecs>]"
     sys.exit(1)
 
 if args.infile is None:
@@ -198,7 +198,7 @@ print >>out_f, "TwentyTwo,infile,ipcount,22count,matches,mismatches"
 print >>out_f, "TwentyTwo,"+args.infile+","+str(ipcount)+","+str(ttcount)+","+str(matches)+","+str(mismatches)
 #print >>out_f, ipsdone
 
-print >>out_f, "Ran ",sys.argv[0:]," started at ",time.asctime(time.localtime(time.time()))
+print >>out_f, "Ran ",sys.argv[0:]," finished at ",time.asctime(time.localtime(time.time()))
 
 #jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
 #print jsonpickle.encode(ipmatrix)
