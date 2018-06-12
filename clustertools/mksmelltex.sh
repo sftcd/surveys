@@ -16,7 +16,9 @@ do
 	pm[$index]=`tail -3 $file | head -1 | awk '{print $3}'`
 	ns[$index]=`tail -2 $file | head -1 | awk '{print $3}'`
 	tot[$index]=`tail -1 $file | awk '{print $3}'`
-	pct[$index]=$((st[index]*100/tot[index]))
+	nmpct[$index]=$((st[index]*100/tot[index]))
+	mhpct[$index]=$((pm[index]*100/tot[index]))
+	nipct[$index]=$((ns[index]*100/tot[index]))
 	index=$((index+1))
 done
 
@@ -32,7 +34,7 @@ tottot=0
 
 for ((i==0;i!=index;i++))
 do
-	echo "\\hline ${runs[$i]} & ${mixed[$i]} & ${ases[$i]} & ${sshes[$i]} & ${st[$i]} (${pct[$i]}\\%) & ${pm[$i]} & ${ns[$i]} & ${tot[$i]} \\\\" 
+	echo "\\hline ${runs[$i]} & ${mixed[$i]} & ${ases[$i]} & ${sshes[$i]} & ${st[$i]} (${nmpct[$i]}\\%) & ${pm[$i]} (${mhpct[$i]}\\%) & ${ns[$i]} (${nipct[$i]}\\%) & ${tot[$i]} \\\\" 
 	mitot=$((mitot+mixed[i]))
 	astot=$((astot+ases[i]))
 	sshtot=$((sshtot+sshes[i]))
@@ -43,7 +45,9 @@ do
 done	
 
 opct=$((sttot*100/tottot))
+ppct=$((pmtot*100/tottot))
+npct=$((nstot*100/tottot))
 
 	echo "\\hline"
-	echo "\\hline Totals & $mitot & $astot & $sshtot & $sttot ($opct\\%) & $pmtot & $nstot & $tottot \\\\"
+	echo "\\hline Totals & $mitot & $astot & $sshtot & $sttot ($opct\\%) & $pmtot ($ppct\\%) & $nstot ($npct\\%) & $tottot \\\\"
 

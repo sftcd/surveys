@@ -51,13 +51,13 @@ do
 	fcount=$((fcount+1))
 done
 
-# count 'em up
+# count 'em up, note 1st 3 don't add up to 4th
 mixedcount=`grep -c "Mixed smelly" $tmpf`
 ascount=`grep -c "AS smelly" $tmpf`
 sshcount=`grep -c "SSH smelly" $tmpf`
-smellycount=$((mixedcount+ascount+sshcount))
+smellycount=`grep -c "General smelly" $tmpf`
 mhcount=`grep -c "Possible Multi" $tmpf`
-possiblyclean=$((fcount-smellycount))
+noinfo=$((fcount-(smellycount+mhcount)))
 
 rm -f $tmpf
 
@@ -67,7 +67,7 @@ echo "AS: $ascount"
 echo "SSH: $sshcount"
 echo "Smelly Total: $smellycount"
 echo "Possible MH: $mhcount"
-echo "No info: $possiblyclean"
+echo "No info: $noinfo"
 echo "Total clusters: $fcount"
 
 

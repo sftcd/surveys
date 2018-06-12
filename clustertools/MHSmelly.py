@@ -123,10 +123,11 @@ if len(asns) != 1:
     smelly=True
 
 if ipcount and len(hosts) >1 :
-    print  >>out_f, args.infile + " (" + str(ipcount) + ") is SSH smelly with " +str(len(asns)) + " ASes "
+    print  >>out_f, args.infile + " (" + str(ipcount) + ") is SSH smelly with " +str(len(hosts)) + " FPs "
     smelly=True
 
 if smelly:
+    print >>out_f,  args.infile + " (" + str(ipcount) + ") General smelly flag "
     for fp in hosts:
         print >>out_f,  args.infile + " (" + str(ipcount) + ") SSH " + fp + " is seen " + str(hosts[fp]) + " times "
     for asn in asns:
