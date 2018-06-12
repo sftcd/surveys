@@ -115,14 +115,15 @@ while f:
 smelly=False
 
 if ipwithnossh>0 and len(hosts) > 0 :
-    print  >>out_f, args.infile + " (" + str(ipcount) + ") is smelly as we see " + str(ipwithnossh) + " IPs with no SSH and " + str(ipcount-ipwithnossh) + " with"
+    print  >>out_f, args.infile + " (" + str(ipcount) + ") is Mixed smelly as we see " + str(ipwithnossh) + " IPs with no SSH and " + str(ipcount-ipwithnossh) + " with"
     smelly=True
 
 if len(asns) != 1:
     print  >>out_f, args.infile + " (" + str(ipcount) + ") is AS smelly with " +str(len(asns)) + " ASes "
     smelly=True
 
-if len(hosts) != ipcount and len(hosts) >1 :
+if ipcount and len(hosts) >1 :
+    print  >>out_f, args.infile + " (" + str(ipcount) + ") is SSH smelly with " +str(len(asns)) + " ASes "
     smelly=True
 
 if smelly:
@@ -130,6 +131,15 @@ if smelly:
         print >>out_f,  args.infile + " (" + str(ipcount) + ") SSH " + fp + " is seen " + str(hosts[fp]) + " times "
     for asn in asns:
         print >>out_f,  args.infile + " (" + str(ipcount) + ") ASN " + str(asn) + " is seen " + str(asns[asn]) + " times "
+
+if not smelly and len(hosts)==1 and len(asns)==1 and ipwithnossh==0 :
+    thefp=''
+    for fp in hosts:
+        thefp=fp
+    theasn=0
+    for asn in asns:
+        theasn=asns[asn]
+    print >>out_f,  args.infile + " (" + str(ipcount) + ") Possible Multi-Homed-Host with FP " + thefp + " in ASN " + str(theasn)
 
 #print >>out_f, "Ran ",sys.argv[0:]," finished at ",time.asctime(time.localtime(time.time()))
 
