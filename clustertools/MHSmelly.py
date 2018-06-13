@@ -139,7 +139,7 @@ if not smelly and len(hosts)==1 and len(asns)==1 and ipwithnossh==0 :
         thefp=fp
     theasn=0
     for asn in asns:
-        theasn=asns[asn]
+        theasn=asn
     print >>out_f,  args.infile + " (" + str(ipcount) + ") Possible Multi-Homed-Host with FP " + thefp + " in ASN " + str(theasn)
 
 #print >>out_f, "Ran ",sys.argv[0:]," finished at ",time.asctime(time.localtime(time.time()))
