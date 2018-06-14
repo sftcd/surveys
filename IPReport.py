@@ -29,6 +29,7 @@ import gc, re
 import copy
 import argparse
 import time, datetime
+import dns.resolver #import the module
 from dateutil import parser as dparser  # for parsing time from comand line and certs
 import pytz # for adding back TZ info to allow comparisons
 
@@ -52,13 +53,16 @@ outdir="graphs"
 # graph rendering func
 
 # command line arg handling 
-parser=argparse.ArgumentParser(description='Report about an IP from the collisions found by SameKeys.py')
+parser=argparse.ArgumentParser(description='Report about a name or set of IPs from the collisions found by SameKeys.py')
 parser.add_argument('-i','--ipsfile',     
                     dest='ipname',
                     help='file containing IP addresses of interest (not too many please:-)')
 parser.add_argument('-d','--dir',     
                     dest='parentdir',
                     help='directory below which we find cluster files')
+parser.add_argument('-n','--name',     
+                    dest='onename',
+                    help='single DNS name to check for')
 parser.add_argument('-a','--anonymise',     
                     help='replace IPs with other indices',
                     action='store_true')
@@ -70,13 +74,13 @@ if args.anonymise:
     doanon=True
 
 # if this then just print legend
-if args.ipname is None:
-    print args
+if args.ipname is None and args.onename is None:
+    print "You need to supply a DNS name or file of IP addresses - exiting"
     sys.exit(0)
 
 # checks - can we read outdir...
 try:
-    if not os.path.exists(args.ipname):
+    if args.ipname is not None and not os.path.exists(args.ipname):
         print >> sys.stderr, "Can't read IP file " + args.ipname + " - exiting:" 
         sys.exit(1)
     if not os.path.exists(args.parentdir):
@@ -94,14 +98,35 @@ except:
 
 ipstrings=[]
 
-# read in the IP's
-with open(args.ipname) as f:
-    for line in f:
-        for word in line.split():
-            if word != '"ip":':
-                # format is "XXX.XXX.XXX.XXX" with the quotes,
-                # which we wanna lose...
-                ipstrings.append(word[1:-1])
+if args.ipname is not None:
+    # read in the IP's
+    with open(args.ipname) as f:
+        for line in f:
+            for word in line.split():
+                if word != '"ip":':
+                    # format is "XXX.XXX.XXX.XXX" with the quotes,
+                    # which we wanna lose...
+                    ipstrings.append(word[1:-1])
+elif args.onename is not None:
+    # do DNS lookup
+    myResolver = dns.resolver.Resolver() #create a new instance named 'myResolver'
+    answer = myResolver.query(args.onename, "A") 
+    for rdata in answer: 
+        if str(rdata) not in ipstrings:
+            ipstrings.append(str(rdata))
+    answer = myResolver.query(args.onename, "NS") 
+    for rdata in answer: 
+        oanswer = myResolver.query(str(rdata),"A") 
+        for ordata in oanswer:
+            if str(ordata) not in ipstrings:
+                ipstrings.append(str(ordata))
+else: 
+    print "You need to supply a DNS name or file of IP addresses - exiting"
+    sys.exit(0)
+
+if len(ipstrings) == 0:
+    print "Found no IP addresses to check for - exiting"
+    sys.exit(4)
 
 # loop counter for debug
 checkcount=0
@@ -139,10 +164,10 @@ for subdir, dirs, files in os.walk(args.parentdir):
                 nrcs=f.nrcs
                 if f.ip in ipstrings:
                     # a match!
-                    # record fprints
+                    # record fprints and name for further searchng
                     fps[f.ip]=f.fprints
                     names[f.ip]=f.analysis["nameset"]
-    
+                    # maybe pretty print this FP to a latex file
                 # print something now and then to keep operator amused
                 now=datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
                 checkcount += 1
@@ -160,9 +185,9 @@ for subdir, dirs, files in os.walk(args.parentdir):
             continue
 
 print "FPS:"
-print fps
+print jsonpickle.encode(fps)
 print "Names:"
-print names
+print jsonpickle.encode(names)
     
 print >> sys.stderr, "Done, fingerprints: " + str(checkcount) + " most recent cluster " + str(cnum) + \
         " at: " + str(now)
