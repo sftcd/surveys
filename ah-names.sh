@@ -31,7 +31,15 @@
 # use and then search about for that
 
 # in contrast to ah-ranges, we search across all most-recent
-# scans for this A/name
+# scans for this A/name, and subsequently chase down the 
+# fingerprints in other countries if any are found.
+
+# We probably wanna expand the search from the names provided
+# and their IPv4 addresses, to also include other related things,
+# such as name servers, we'll need to see how that goes, but
+# since our base scans only cover port25 listeners, it likely
+# won't go so far. A with-permission search though (which 
+# we're not doing now) might be likely to find more
 
 # Note that manual examination is needed before makging a
 # tarball and sending - the prefixes might select too
@@ -145,9 +153,16 @@ then
 	exit 3
 fi
 
+# address file
 atmpf=`mktemp /tmp/ahnamesXXXX`
 
-rrs="a aaaa mx txt spf"
+# reporting stuff
+rltmpf=`mktemp /tmp/ahrnamesXXXX`
+
+# which RRs to access
+rrs="a aaaa mx txt spf ns ds"
+
+nses=""
 
 for name in $namelist
 do
@@ -178,8 +193,23 @@ do
 			# hacky hack - make one IP look like a range:-)
 			echo "$rec-$rec" >>$atmpf
 		fi
+		if [[ "$rr" == "ns" ]]
+		then
+			# keep for later
+			nses="$nses $rec"
+		fi
 	done
-	echo "$reportline"
+	echo "$reportline" >>$rltmpf
+done
+
+echo "nses $nses"
+for ns in $nses
+do
+	arec=`dig +short $ns`
+	if [[ "$arec" != "" ]]
+	then
+		echo "$arec-$arec" >>$atmpf
+	fi
 done
 
 if [ "$2" != "" ]
@@ -245,7 +275,8 @@ do
 		exit 1
 	else
 		mv $tmpf $outdir/allipaddrs.txt
-		mv $atmpf $outdir/dnsinfo.txt
+		mv $atmpf $outdir/rangefile.txt
+		mv $rltmpf $outdir/dnsreport.txt
 	fi
 
 	brundir=`basename $rundir`
@@ -272,6 +303,10 @@ do
 	done
 
 done
+
+# now go find the IPs for which we searched, and see which of their FPs
+# are cross-border
+$srcdir/IPReport.py -i $atmpf -d $outdir
 
 echo "Done - Results are in $outdir"
 
