@@ -113,7 +113,7 @@ fi
 
 # check if country is known
 cknown=`grep $country $mmdbdir/countrycodes.txt`
-if [[ "$country" != "$cknown" ]]
+if [[ "$country" != "$cknown" && "$country" != "XX" ]]
 then
 	echo "Country $country isn't known"
 	exit 87

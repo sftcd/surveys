@@ -521,6 +521,8 @@ def mm_info(ip):
 
 def mm_ipcc(ip,cc):
     # is cc really a country code? can come from command line, so check...
+    if cc=="XX":
+        return True
     if cc not in countrycodes:
         return False
     countryresponse=countryreader.country(ip)
@@ -655,7 +657,9 @@ def fqdn_bogon(dn):
 # from the fqdn check above
 def name_bogon(dn):
     try:
-        # if it ends-with ".internal" it's bogus
+        # if it ends-with "localhost" it's bogus
+        if dn.endswith("localhost"):
+            return True
         if dn.endswith(".internal"):
             return True
         # if it ends-with ".example.com" it's bogus

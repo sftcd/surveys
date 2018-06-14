@@ -109,17 +109,20 @@ if args.ipname is not None:
                     ipstrings.append(word[1:-1])
 elif args.onename is not None:
     # do DNS lookup
-    myResolver = dns.resolver.Resolver() #create a new instance named 'myResolver'
-    answer = myResolver.query(args.onename, "A") 
-    for rdata in answer: 
-        if str(rdata) not in ipstrings:
-            ipstrings.append(str(rdata))
-    answer = myResolver.query(args.onename, "NS") 
-    for rdata in answer: 
-        oanswer = myResolver.query(str(rdata),"A") 
-        for ordata in oanswer:
-            if str(ordata) not in ipstrings:
-                ipstrings.append(str(ordata))
+    try:
+        myResolver = dns.resolver.Resolver() #create a new instance named 'myResolver'
+        answer = myResolver.query(args.onename, "A") 
+        for rdata in answer: 
+            if str(rdata) not in ipstrings:
+                ipstrings.append(str(rdata))
+        answer = myResolver.query(args.onename, "NS") 
+        for rdata in answer: 
+            oanswer = myResolver.query(str(rdata),"A") 
+            for ordata in oanswer:
+                if str(ordata) not in ipstrings:
+                    ipstrings.append(str(ordata))
+    except Exception as e: 
+        print >>sys.stderr, "DNS exception ("+str(e)+") for name " + args.onename
 else: 
     print "You need to supply a DNS name or file of IP addresses - exiting"
     sys.exit(0)
@@ -135,6 +138,12 @@ checkcount=0
 fps={}
 names={}
 
+# remember cluster files we've seen already
+cnames=[]
+
+# extra matches
+morematches={}
+morecnames=[]
 
 # on one host (with python 2.7.12) it seems that I need to
 # first set the options for the json backend before doing
@@ -147,16 +156,26 @@ names={}
 jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
 jsonpickle.set_encoder_options('simplejson', sort_keys=True, indent=2)
 
-pattern=re.compile("cluster[0-9]+.json")
+# cluster file name pattern
+cpattern=re.compile("cluster[0-9]+.json$")
+# run directory name pattern
+dpattern=re.compile("[A-Z][A-Z]-201[89][0-9]+-[0-9]+")
 
 for subdir, dirs, files in os.walk(args.parentdir):
+    basesubdir=os.path.basename(subdir)
+    if not dpattern.match(basesubdir):
+        print >>sys.stderr, "Skipping " + subdir
+        continue
     for fname in files:
-        if not pattern.match(fname):
+        if not cpattern.match(fname):
+            print >>sys.stderr, "Skipping " + subdir + "/ " + fname
             continue
-        print >>sys.stderr, "Opening " + subdir+"/"+fname 
-        fp=open(subdir+"/"+fname,"r")
+        fullname=subdir+"/"+fname
+        print >>sys.stderr, "Opening " + fullname
+        fp=open(fullname,"r")
         try:
             f=getnextfprint(fp)
+            match=False
             while f:
                 #process it
                 cnum=f.clusternum
@@ -164,9 +183,11 @@ for subdir, dirs, files in os.walk(args.parentdir):
                 nrcs=f.nrcs
                 if f.ip in ipstrings:
                     # a match!
+                    match=True
                     # record fprints and name for further searchng
                     fps[f.ip]=f.fprints
                     names[f.ip]=f.analysis["nameset"]
+                    cnames.append(fullname)
                     # maybe pretty print this FP to a latex file
                 # print something now and then to keep operator amused
                 now=datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
@@ -181,14 +202,102 @@ for subdir, dirs, files in os.walk(args.parentdir):
                 del f
                 f=getnextfprint(fp)
         except Exception as e: 
-            print "Decoding exception ("+str(e)+") reading file" + fname
+            print >>sys.stderr, "Decoding exception ("+str(e)+") reading file" + fname
             continue
 
 print "FPS:"
 print jsonpickle.encode(fps)
 print "Names:"
 print jsonpickle.encode(names)
+print "Cluster names:"
+print jsonpickle.encode(cnames)
+
+checkcount=0
+# now go back through all clusters to see if those FPs and/or names recur...
+for subdir, dirs, files in os.walk(args.parentdir):
+    basesubdir=os.path.basename(subdir)
+    if not dpattern.match(basesubdir):
+        print >>sys.stderr, "Skipping " + subdir
+        continue
+    for fname in files:
+        if not cpattern.match(fname):
+            print >>sys.stderr, "Skipping " + subdir + "/ " + fname
+            continue
+        fullname=subdir+"/"+fname
+        print >>sys.stderr, "Opening " + fullname
+        #if fullname in cnames:
+            # see it already and we're bored with it:-)
+            #continue
+        fp=open(fullname,"r")
+        try:
+            f=getnextfprint(fp)
+            while f:
+                #process it
+                cnum=f.clusternum
+                csize=f.csize
+                nrcs=f.nrcs
+            
+                # see if any fps or names occur here...
+                match=False
+                
+                # any matching fprint
+                for ip in fps:
+                    for port1 in fps[ip]:
+                        for port2 in f.fprints:
+                            if f.fprints[port2]==fps[ip][port1]:
+                                match=True
+                                print >>sys.stderr, "FP match: " + f.fprints[port2] + "==" + fps[ip][port1]
+
+                # any matching name
+                if not match:
+                    for ip in names:
+                        for field1 in names[ip]:
+                            if field1 != "allbad" and field1 != "besty":
+                                for field2 in f.analysis["nameset"]:
+                                    if field2 != "allbad" and field2 != "besty":
+                                        try:
+                                            if f.analysis["nameset"][field2]==names[ip][field1]:
+                                                # TODO: add a bogon blacklist maybe, e.g. for "localhost"
+                                                # TODO: add wildcard matching?
+                                                if not name_bogon(names[ip][field]):
+                                                    match=True
+                                                    print >>sys.stderr, "Name match: " + f.analysis["nameset"][field2] + "==" + names[ip][field1]
+                                        except e:
+                                            print >> sys.stderr, "Decoding exception 2nd time ("+str(e)+") reading file " + fullname + \
+                                                        "Field1=" + field1 + " field2=" + field2 + "ip="+ip
+
+                # if so, keep those for outputting later
+                if match:
+                    morematches[f.ip]=f
+                    morecnames.append(fullname)
+
+                # print something now and then to keep operator amused
+                now=datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+                checkcount += 1
+                if checkcount % 100 == 0:
+                    print >> sys.stderr, "Reporting2, fingerprints: " + str(checkcount) + " most recent cluster " + str(cnum) + \
+                        " at: " + str(now)
+                if checkcount % 1000 == 0:
+                    gc.collect()
     
+                # read next fp
+                del f
+                f=getnextfprint(fp)
+        except Exception as e: 
+            print >> sys.stderr, "Decoding exception 2nd time ("+str(e)+") reading file " + fname
+            continue
+
+print "More matches:"
+print jsonpickle.encode(morematches)
+print "More cluster names:"
+print jsonpickle.encode(morecnames)
+
+print "IPs"
+for ip in fps:
+    print  ip
+for ip in morematches:
+    print ip
+
 print >> sys.stderr, "Done, fingerprints: " + str(checkcount) + " most recent cluster " + str(cnum) + \
         " at: " + str(now)
 
