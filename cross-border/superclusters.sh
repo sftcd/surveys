@@ -123,6 +123,9 @@ breaklines=true
 \\fancyfoot{} % clear all footer fields
 \\fancyfoot[LE,RO]{\\thepage}           % page number in "outer" position of footer line
 \\fancyfoot[RE,LO]{NOT FOR RELASE CONTAINS IDENTIFYING INFORMATION} % other info in "inner" position of footer line
+\\newcommand{\\eat}[1]{}
+
+
 
 \\begin{document}
 
