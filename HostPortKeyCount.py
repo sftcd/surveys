@@ -23,7 +23,7 @@
 # Count the host/port combos and the number of actual keys found, from
 # all hosts that do some crypto
 
-# TODO: fix this to work with fingerprints.json as well as all-jey-fingerprints.json
+# TODO: fix this to work with fingerprints.json as well as all-key-fingerprints.json
 # but the latter is good enough!
 
 import sys
