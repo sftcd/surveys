@@ -37,8 +37,9 @@ akfile="all-key-fingerprints.json"
 declare -A overall_arr
 declare -A empties_arr
 declare -A nonempties_arr
+declare -A dodgy_arr
 
-for rundir in $TOP/??-201[789]*
+for rundir in $TOP/??-201[89]*
 do
 	runname=`basename $rundir`
 	for port in $portstrings
@@ -49,7 +50,7 @@ do
 	done
 done
 
-for rundir in $TOP/??-201[789]*
+for rundir in $TOP/??-201[89]*
 do
 	runname=`basename $rundir`
 	echo "Checking for $rundir/$akfile"
@@ -65,6 +66,14 @@ do
 			nonempties_arr["$runname,$port"]=$nonempties
 			#echo "$runname: has $overall IPs with $nonempties doing crypto on $port and $empties without"
 		done 
+		dcount=`grep -c '^    "ip":' $rundir/dodgy.json`
+		if [[ "$dcount" == "0" ]]
+		then
+			# the NZ run has another format for some reason
+			dcount=`grep   '^         "ip" :' $rundir/dodgy.json  | grep -v , | sort | uniq | wc -l`
+
+		fi
+		dodgy_arr[$runname]=$dcount
 	fi
 done
 
@@ -74,9 +83,9 @@ cat <<EOF
 	\\begin{table*}
     	\\centering
         \\caption{Counts of ports with crypto}
-        \\begin{tabular} { | l | r | r | r | r | r | r | r | r |}
+        \\begin{tabular} { | l | r | r | r | r | r | r | r | r | r | r | r |}
         \\hline
-        \\hline Run & 22 & 25 & 110 & 143 & 443 & 587 & 993 & Total\\\\
+        \\hline Run & 22 & 25 & 110 & 143 & 443 & 587 & 993 & TLS total & Crypto-IP & No-crypto-IP & Total-IPs \\\\
         \\hline
 
 EOF
@@ -84,6 +93,9 @@ EOF
 # totals
 declare -A totals
 
+grandportstotal=0
+grandsomecryptototal=0
+grandnocryptototal=0
 grandtotal=0
 
 for port in $portstrings
@@ -92,10 +104,11 @@ do
 done
 
 # print it out
-for rundir in $TOP/??-201[789]*
+for rundir in $TOP/??-201[89]*
 do
 	runname=`basename $rundir`
 	echo -n "\\hline $runname "
+	portstotal=0
 	for port in $portstrings
 	do
 		#echo -n "$runname,$port," 
@@ -106,12 +119,21 @@ do
 		#echo -n ${nonempties_arr["$runname,$port"]}
 		#echo
 		totals[$port]=$((${totals[$port]}+${nonempties_arr["$runname,$port"]}))
+		if [[ "$port" != "p22" ]]
+		then
+			# count TLS services totals
+			portstotal=$((portstotal+${nonempties_arr["$runname,$port"]}))
+		fi
 		# latex table line
 		echo -n " & ${nonempties_arr["$runname,$port"]}"
 	done
 	# same for all so p25 will do
-	echo -n " & ${overall_arr["$runname,p25"]}"
-	grandtotal=$((grandtotal+${overall_arr["$runname,p25"]}))
+	iptotal=$((${overall_arr["$runname,p25"]} + ${dodgy_arr[$runname]} ))
+	echo -n " & $portstotal & ${overall_arr["$runname,p25"]} & ${dodgy_arr[$runname]} & $iptotal"
+	grandportstotal=$((grandportstotal+portstotal))
+	grandsomecryptototal=$((grandsomecryptototal+${overall_arr["$runname,p25"]}))
+	grandnocryptototal=$((grandnocryptototal+${dodgy_arr[$runname]}))
+	grandtotal=$((grandtotal+$iptotal))
 	echo "\\\\"
 done
 
@@ -121,7 +143,7 @@ for port in $portstrings
 do
 	echo -n " & ${totals[$port]}"
 done
-echo -n " & $grandtotal"
+echo -n " & $grandportstotal & $grandsomecryptototal & $grandnocryptototal & $grandtotal"
 echo "\\\\"
 echo "\\hline"
 

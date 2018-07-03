@@ -29,7 +29,7 @@ TOP="$HOME/data/smtp/runs"
 tot_mapped=0
 tot_p25s=0
 
-for rundir in $TOP/??-201[789]*
+for rundir in $TOP/??-201[89]*
 do
 	for log in $rundir/201*.out
 	do

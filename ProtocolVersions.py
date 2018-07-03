@@ -77,7 +77,7 @@ dirname=os.getcwd()
 #print dirname
 fullrunname=dirname.split('/')[-1]
 runname=fullrunname.split('-')[0] + '-' + fullrunname.split('-')[1] 
-#print runname
+print >>sys.stderr, "Doing " + runname
 
 # default values
 infile="records.fresh"
@@ -220,22 +220,32 @@ print >>sys.stderr, "Overall TLS Counters:\n" + bstr
 
 # produce some latex table entry lines, for tls
 eotl=' \\\\ \\hline'
-lineout=runname + ' & port ' 
+print runname + eotl
+lineout= 'port ' 
 for ver in sorted(tlsversions):
     lineout+= ' & ' + ver
-print lineout + eotl
+print lineout + ' & Total ' + eotl
+coltotal=0
 for pstr in portstrings:
     if pstr=='p22':
         continue
-    lineout=runname + ' & ' + pstr
+    lineout= pstr
+    linetotal=0
     for ver in sorted(tlsversions):
         if ver not in counters['o'][pstr]:
             lineout+= ' & 0 '
         else:
             lineout+= ' & ' + str(counters['o'][pstr][ver])
-    print lineout + eotl
-lineout=runname + ' & Total ' 
+            linetotal+= counters['o'][pstr][ver]
+
+    print lineout + ' & ' + str(linetotal) + eotl
+    coltotal+=linetotal
+lineout='Total ' 
+linetotal=0
 for ver in sorted(tlsversions):
-    lineout+= ' & ' + str(ocounters[ver])
-print lineout + eotl
+    lineout+= ' & ' + str(ocounters[ver]) 
+    linetotal += ocounters[ver]
+if linetotal != coltotal:
+    print >>sys.stderr, "Totals mismatch!!!, cols (" + str(coltotal) + ") != last line (" + str(linetotal) + ")"
+print lineout + ' & ' + str(linetotal) + eotl
 
