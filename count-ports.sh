@@ -66,12 +66,17 @@ do
 			nonempties_arr["$runname,$port"]=$nonempties
 			#echo "$runname: has $overall IPs with $nonempties doing crypto on $port and $empties without"
 		done 
-		dcount=`grep -c '^    "ip":' $rundir/dodgy.json`
+		dcount=`grep   '"ip"' $rundir/dodgy.json  | grep , | sed -e 's/ //g' | sort | uniq | wc -l`
+		#dcount=`grep -c '^    "ip":' $rundir/dodgy.json`
 		if [[ "$dcount" == "0" ]]
 		then
 			# the NZ run has another format for some reason
-			dcount=`grep   '^         "ip" :' $rundir/dodgy.json  | grep -v , | sort | uniq | wc -l`
-
+			dcount=`grep -c '^      "ip" :' $rundir/dodgy.json`
+			if [[ "$dcount" == "0" ]]
+			then
+				# another try...
+				dcount=`grep   '"ip"' $rundir/dodgy.json  | grep , | sed -e 's/ //g' | sort | uniq | wc -l`
+			fi
 		fi
 		dodgy_arr[$runname]=$dcount
 	fi
