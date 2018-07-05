@@ -27,7 +27,12 @@
 TOP="$HOME/data/smtp/runs"
 
 portstrings="p22 p25 p110 p143 p443 p587 p993"
-akfile="all-key-fingerprints.json"
+akfile="fingerprints.json"
+# some older scans (NZ in particular) have 1-line fingerprints.json
+# files that won't work here (we'll get counts of 0), so to fix that
+# do: cat fingerprints.json | json_pp >fingerprints_pp.json
+# and then this script will read the latter file and count correctly
+akfile_pp="fingerprints-pp.json"
 
 # ok this is hacky (well, it is me:-), but we'd like a 2D array for 
 # counts, so we'll declare an assoc array with the index being the
@@ -41,7 +46,7 @@ declare -A dodgy_arr
 
 for rundir in $TOP/??-201[89]*
 do
-	runname=`basename $rundir`
+	runname=`basename $rundir | awk -F'-' '{print $1"-"$2}'`
 	for port in $portstrings
 	do
 		overall_arr["$runname,$port"]=0
@@ -53,13 +58,18 @@ done
 for rundir in $TOP/??-201[89]*
 do
 	runname=`basename $rundir`
-	echo "Checking for $rundir/$akfile"
-	if [ -f $rundir/$akfile ]
+	echo "Checking $rundir"
+	f2c=$akfile
+	if [ -f $rundir/$akfile_pp ]
+	then
+		f2c=$akfile_pp
+	fi
+	if [ -f $rundir/$f2c ]
 	then
 		for port in $portstrings
 		do
-			overall=`grep -c '"'$port'": {' $rundir/$akfile`
-			empties=`grep -c '"'$port'": {}' $rundir/$akfile`
+			overall=`grep -c '"'$port'"[ ]*: {' $rundir/$f2c`
+			empties=`grep -c '"'$port'":[ ]* {}' $rundir/$f2c`
 			nonempties=$((overall-empties))
 			overall_arr["$runname,$port"]=$overall
 			empties_arr["$runname,$port"]=$empties
