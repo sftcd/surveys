@@ -112,15 +112,23 @@ if args.dodgy is not None:
 # do: grep '^    "ip":' dodgyfile
 dodgycount=0
 nonclusterips=[]
+ooccount=0
+oocips=[]
+thatip=''
 df = open(dodgyfile,"r")
 for line in df:
-     if re.search('^    "ip"', line):
-        nonclusterips.append(line.split()[1][1:-2])
+    if re.search('^    "ip"', line):
+        thatip=line.split()[1][1:-2]
+        nonclusterips.append(thatip)
         dodgycount+=1
         if dodgycount % 100 == 0:
             print >>sys.stderr, "Reading dodgies, did: " + str(dodgycount)
+    if re.search('"wrong_country"',line):
+        ooccount+=1
+        oocips.append(thatip)
 print >>sys.stderr, "Done reading dodgies, did: " + str(dodgycount)
 print >>sys.stderr, "Number of non-cluster IPs: " + str(len(nonclusterips))
+print >>sys.stderr, "Number of ooc IPs: " + str(len(oocips))
 
 # encoder options
 jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
@@ -130,8 +138,25 @@ jsonpickle.set_encoder_options('simplejson', sort_keys=True, indent=2)
 peripaverage=0
 overallcount=0
 
-sshversions=[]
-tlsversions=[]
+# initialise to versions we know about - others that we don't
+# will be added as we find 'em - that may screw up the latex 
+# output but that'll be visible and can be fixed as we see 'em
+sshversions=["1.99", "2.0"]
+tlsversions=["SSLv3","TLSv1.0","TLSv1.1","TLSv1.2"]
+
+# init counters
+for ctype in counters:
+    for pstr in portstrings:
+        if pstr=="p22":
+            for ver in sshversions:
+                counters[ctype][pstr][ver]=0
+        else:
+            for ver in tlsversions:
+                counters[ctype][pstr][ver]=0
+
+# count our fp exceptions
+sshfpes=0
+tlsfpes=0
 
 with open(infile,'r') as f:
     for line in f:
@@ -141,6 +166,11 @@ with open(infile,'r') as f:
             somekey=False
             thisip=j_content['ip'].strip()
             incluster=True
+
+            # ignore if not in-country
+            if thisip in oocips:
+                continue
+
             if thisip in nonclusterips:
                 incluster=False
 
@@ -152,11 +182,15 @@ with open(infile,'r') as f:
                         # but don't get an FP, which skews the numbers. That can happen
                         # e.g. if something doesn't decode or whatever
                         # attempting to get this should cause an exception if it's not there
-                        fp=j_content['p22']['data']['xssh']['key_exchange']['server_host_key']['fingerprint_sha256'] 
-                        counterupdate(incluster,'p22',sshver)
-                        somekey=True
-                        if sshver not in sshversions:
-                            sshversions.append(sshver)
+                        try:
+                            fp=j_content['p22']['data']['xssh']['key_exchange']['server_host_key']['fingerprint_sha256'] 
+                            counterupdate(incluster,'p22',sshver)
+                            somekey=True
+                            if sshver not in sshversions:
+                                sshversions.append(sshver)
+                        except Exception as e: 
+                            sshfpes+=1
+                            print >> sys.stderr, "p22 ver/FP exception #" + str(sshfpes) + " " + str(e) + " ip:" + thisip
                     except Exception as e: 
                         #print >> sys.stderr, "p22 exception " + str(e) + " ip:" + thisone.ip
                         pass
@@ -168,12 +202,16 @@ with open(infile,'r') as f:
                         # but don't get an FP, which skews the numbers. That can happen
                         # e.g. if something doesn't decode or whatever
                         # attempting to get this should cause an exception if it's not there
-                        cert=tls['server_certificates']['certificate']
-                        fp=cert['parsed']['subject_key_info']['fingerprint_sha256'] 
-                        counterupdate(incluster,pstr,ver)
-                        if ver not in tlsversions:
-                            tlsversions.append(ver)
-                        somekey=True
+                        try: 
+                            cert=tls['server_certificates']['certificate']
+                            fp=cert['parsed']['subject_key_info']['fingerprint_sha256'] 
+                            counterupdate(incluster,pstr,ver)
+                            if ver not in tlsversions:
+                                tlsversions.append(ver)
+                            somekey=True
+                        except Exception as e: 
+                            tlsfpes+=1
+                            print >> sys.stderr, pstr + "ver/FP exception #" + str(tlsfpes) + " " + str(e) + " ip:" + thisip
                     except Exception as e: 
                         #print >> sys.stderr, pstr + "exception for:" + thisip + ":" + str(e)
                         pass
@@ -185,12 +223,16 @@ with open(infile,'r') as f:
                         # but don't get an FP, which skews the numbers. That can happen
                         # e.g. if something doesn't decode or whatever
                         # attempting to get this should cause an exception if it's not there
-                        cert=tls['server_certificates']['certificate']
-                        fp=cert['parsed']['subject_key_info']['fingerprint_sha256'] 
-                        counterupdate(incluster,pstr,ver)
-                        if ver not in tlsversions:
-                            tlsversions.append(ver)
-                        somekey=True
+                        try:
+                            cert=tls['server_certificates']['certificate']
+                            fp=cert['parsed']['subject_key_info']['fingerprint_sha256'] 
+                            counterupdate(incluster,pstr,ver)
+                            if ver not in tlsversions:
+                                tlsversions.append(ver)
+                            somekey=True
+                        except Exception as e: 
+                            tlsfpes+=1
+                            print >> sys.stderr, pstr + "ver/FP exception #" + str(tlsfpes) + " " + str(e) + " ip:" + thisip
                     except Exception as e: 
                         #print >> sys.stderr, pstr + "exception for:" + thisip + ":" + str(e)
                         pass
