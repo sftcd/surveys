@@ -57,7 +57,7 @@ done
 
 for rundir in $TOP/??-201[89]*
 do
-	runname=`basename $rundir`
+	runname=`basename $rundir | awk -F'-' '{print $1"-"$2}'`
 	echo "Checking $rundir"
 	f2c=$akfile
 	if [ -f $rundir/$akfile_pp ]
@@ -69,7 +69,7 @@ do
 		for port in $portstrings
 		do
 			overall=`grep -c '"'$port'"[ ]*: {' $rundir/$f2c`
-			empties=`grep -c '"'$port'":[ ]* {}' $rundir/$f2c`
+			empties=`grep -c '"'$port'"[ ]*:[ ]* {}' $rundir/$f2c`
 			nonempties=$((overall-empties))
 			overall_arr["$runname,$port"]=$overall
 			empties_arr["$runname,$port"]=$empties
@@ -121,7 +121,7 @@ done
 # print it out
 for rundir in $TOP/??-201[89]*
 do
-	runname=`basename $rundir`
+	runname=`basename $rundir | awk -F'-' '{print $1"-"$2}'`
 	echo -n "\\hline $runname "
 	portstotal=0
 	for port in $portstrings

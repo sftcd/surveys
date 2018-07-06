@@ -144,11 +144,15 @@ with open(infile,'r') as f:
             if thisip in nonclusterips:
                 incluster=False
 
-            #p22
             for pstr in portstrings:
                 if pstr=='p22':
                     try:
                         sshver=j_content['p22']['data']['xssh']['server_id']['version']
+                        # make sure we got an FP for that - sometimes we get protocol versions
+                        # but don't get an FP, which skews the numbers. That can happen
+                        # e.g. if something doesn't decode or whatever
+                        # attempting to get this should cause an exception if it's not there
+                        fp=j_content['p22']['data']['xssh']['key_exchange']['server_host_key']['fingerprint_sha256'] 
                         counterupdate(incluster,'p22',sshver)
                         somekey=True
                         if sshver not in sshversions:
@@ -160,6 +164,12 @@ with open(infile,'r') as f:
                     try:
                         tls=j_content['p443']['data']['http']['response']['request']['tls_handshake']
                         ver=tls['server_hello']['version']['name']
+                        # make sure we got an FP for that - sometimes we get protocol versions
+                        # but don't get an FP, which skews the numbers. That can happen
+                        # e.g. if something doesn't decode or whatever
+                        # attempting to get this should cause an exception if it's not there
+                        cert=tls['server_certificates']['certificate']
+                        fp=cert['parsed']['subject_key_info']['fingerprint_sha256'] 
                         counterupdate(incluster,pstr,ver)
                         if ver not in tlsversions:
                             tlsversions.append(ver)
@@ -171,6 +181,12 @@ with open(infile,'r') as f:
                     try:
                         tls=j_content[pstr]['data']['tls']
                         ver=tls['server_hello']['version']['name']
+                        # make sure we got an FP for that - sometimes we get protocol versions
+                        # but don't get an FP, which skews the numbers. That can happen
+                        # e.g. if something doesn't decode or whatever
+                        # attempting to get this should cause an exception if it's not there
+                        cert=tls['server_certificates']['certificate']
+                        fp=cert['parsed']['subject_key_info']['fingerprint_sha256'] 
                         counterupdate(incluster,pstr,ver)
                         if ver not in tlsversions:
                             tlsversions.append(ver)

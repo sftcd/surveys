@@ -30,6 +30,10 @@ import time, datetime
 from dateutil import parser as dparser  # for parsing time from comand line and certs
 import pytz # for adding back TZ info to allow comparisons
 
+codedir=os.path.dirname(os.path.realpath(__file__))
+pdir=os.path.dirname(codedir)
+
+sys.path.insert(0,pdir)
 # our own stuff
 from SurveyFuncs import *  
 
