@@ -56,12 +56,12 @@ for pstr in portstrings:
     counters['nc'][pstr]={}
 
 # counter updater
-def counterupdate(incluster,pstr,ver):
+def counterupdate(inout,pstr,ver):
     if ver in counters['o'][pstr]:
         counters['o'][pstr][ver]=counters['o'][pstr][ver]+1
     else:
         counters['o'][pstr][ver]=1
-    if incluster:
+    if inout:
         if ver in counters['c'][pstr]:
             counters['c'][pstr][ver]=counters['c'][pstr][ver]+1
         else:
@@ -85,6 +85,7 @@ outfile="versions.tex"
 
 # if this file exists, read it to determine if IP is (not) in some cluster
 dodgyfile="dodgy.json"
+collfile="collisions.json"
 
 # command line arg handling 
 argparser=argparse.ArgumentParser(description='Count protocol versions in a run')
@@ -97,6 +98,9 @@ argparser.add_argument('-o','--output_file',
 argparser.add_argument('-d','--dodgy_file',     
                     dest='dodgy',
                     help='file in which we find non-clustered IPs')
+argparser.add_argument('-c','--collisions',     
+                    dest='collisions',
+                    help='file in which we find clustered IPs')
 args=argparser.parse_args()
 
 if args.infile is not None:
@@ -108,10 +112,13 @@ if args.outfile is not None:
 if args.dodgy is not None:
     dodgyfile=args.dodgy
 
+if args.collisions is not None:
+    collfile=args.collisions
+
 # we won't fully decode this, just grep out the IP addresses
 # do: grep '^    "ip":' dodgyfile
 dodgycount=0
-nonclusterips=[]
+clusterips=[]
 ooccount=0
 oocips=[]
 thatip=''
@@ -119,7 +126,6 @@ df = open(dodgyfile,"r")
 for line in df:
     if re.search('^    "ip"', line):
         thatip=line.split()[1][1:-2]
-        nonclusterips.append(thatip)
         dodgycount+=1
         if dodgycount % 100 == 0:
             print >>sys.stderr, "Reading dodgies, did: " + str(dodgycount)
@@ -127,8 +133,19 @@ for line in df:
         ooccount+=1
         oocips.append(thatip)
 print >>sys.stderr, "Done reading dodgies, did: " + str(dodgycount)
-print >>sys.stderr, "Number of non-cluster IPs: " + str(len(nonclusterips))
 print >>sys.stderr, "Number of ooc IPs: " + str(len(oocips))
+
+cf = open(collfile,"r")
+fp=getnextfprint(cf)
+clcount=0
+while fp:
+    clusterips.append(fp.ip)
+    clcount+=1
+    if clcount % 100 == 0:
+        print >>sys.stderr, "Reading cluster IPs, did: " + str(clcount)
+    fp=getnextfprint(cf)
+cf.close()
+print >>sys.stderr, "Number of non-cluster IPs: " + str(len(clusterips))
 
 # encoder options
 jsonpickle.set_encoder_options('json', sort_keys=True, indent=2)
@@ -137,6 +154,7 @@ jsonpickle.set_encoder_options('simplejson', sort_keys=True, indent=2)
 # keep track of how long this is taking per ip
 peripaverage=0
 overallcount=0
+somekeycount=0
 
 # initialise to versions we know about - others that we don't
 # will be added as we find 'em - that may screw up the latex 
@@ -165,14 +183,16 @@ with open(infile,'r') as f:
             j_content = json.loads(line)
             somekey=False
             thisip=j_content['ip'].strip()
-            incluster=True
 
             # ignore if not in-country
             if thisip in oocips:
+                print >>sys.stderr, "IP : " + thisip + " is out of country"
                 continue
 
-            if thisip in nonclusterips:
-                incluster=False
+            incluster=False
+            if thisip in clusterips:
+                incluster=True
+            #print >>sys.stderr, "IP : " + thisip + " incluster: " + str(incluster) 
 
             for pstr in portstrings:
                 if pstr=='p22':
@@ -184,13 +204,14 @@ with open(infile,'r') as f:
                         # attempting to get this should cause an exception if it's not there
                         try:
                             fp=j_content['p22']['data']['xssh']['key_exchange']['server_host_key']['fingerprint_sha256'] 
+                            #print >>sys.stderr, "IP2 : " + thisip + " incluster: " + str(incluster) 
                             counterupdate(incluster,'p22',sshver)
                             somekey=True
                             if sshver not in sshversions:
                                 sshversions.append(sshver)
                         except Exception as e: 
                             sshfpes+=1
-                            print >> sys.stderr, "p22 ver/FP exception #" + str(sshfpes) + " " + str(e) + " ip:" + thisip
+                            #print >> sys.stderr, "p22 ver/FP exception #" + str(sshfpes) + " " + str(e) + " ip:" + thisip
                     except Exception as e: 
                         #print >> sys.stderr, "p22 exception " + str(e) + " ip:" + thisone.ip
                         pass
@@ -205,13 +226,14 @@ with open(infile,'r') as f:
                         try: 
                             cert=tls['server_certificates']['certificate']
                             fp=cert['parsed']['subject_key_info']['fingerprint_sha256'] 
+                            #print >>sys.stderr, "IP3 : " + thisip + " incluster: " + str(incluster) 
                             counterupdate(incluster,pstr,ver)
+                            somekey=True
                             if ver not in tlsversions:
                                 tlsversions.append(ver)
-                            somekey=True
                         except Exception as e: 
                             tlsfpes+=1
-                            print >> sys.stderr, pstr + "ver/FP exception #" + str(tlsfpes) + " " + str(e) + " ip:" + thisip
+                            #print >> sys.stderr, pstr + "ver/FP exception #" + str(tlsfpes) + " " + str(e) + " ip:" + thisip
                     except Exception as e: 
                         #print >> sys.stderr, pstr + "exception for:" + thisip + ":" + str(e)
                         pass
@@ -226,17 +248,21 @@ with open(infile,'r') as f:
                         try:
                             cert=tls['server_certificates']['certificate']
                             fp=cert['parsed']['subject_key_info']['fingerprint_sha256'] 
+                            #print >>sys.stderr, "IP4 : " + thisip + " incluster: " + str(incluster) 
                             counterupdate(incluster,pstr,ver)
                             if ver not in tlsversions:
                                 tlsversions.append(ver)
                             somekey=True
                         except Exception as e: 
                             tlsfpes+=1
-                            print >> sys.stderr, pstr + "ver/FP exception #" + str(tlsfpes) + " " + str(e) + " ip:" + thisip
+                            #print >> sys.stderr, pstr + "ver/FP exception #" + str(tlsfpes) + " " + str(e) + " ip:" + thisip
                     except Exception as e: 
                         #print >> sys.stderr, pstr + "exception for:" + thisip + ":" + str(e)
                         pass
 
+            if somekey:
+                somekeycount+=1
+            #print >>sys.stderr, "IP4 : " + thisip + " incluster: " + str(incluster)  + " somekey: " + str(somekey)
             overallcount += 1
     
             # update average
@@ -245,6 +271,9 @@ with open(infile,'r') as f:
             peripaverage=((overallcount*peripaverage)+thistime)/(overallcount+1)
             if overallcount % 100 == 0:
                 print >> sys.stderr, "Reading versions, did: " + str(overallcount) + \
+                        " number with keys " + str(somekeycount) + \
+                        " ssh FP exceptions: " + str(sshfpes) + \
+                        " tls FP exceptions: " + str(tlsfpes) + \
                         " most recent ip " + thisip + \
                         " average time/ip: " + str(peripaverage) \
                         + " last time: " + str(thistime)
@@ -253,6 +282,9 @@ with open(infile,'r') as f:
     f.close()
     gc.collect()
     print >> sys.stderr, "Done reading versions, did: " + str(overallcount) + \
+                        " number with keys " + str(somekeycount) + \
+                        " ssh FP exceptions: " + str(sshfpes) + \
+                        " tls FP exceptions: " + str(tlsfpes) + \
                         " most recent ip " + thisip + \
                         " average time/ip: " + str(peripaverage) \
                         + " last time: " + str(thistime)
