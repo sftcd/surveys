@@ -31,16 +31,51 @@ DIRS="$TOPD/*-2018*"
 
 function usage()
 {
-	echo "$0 <string>"
+	echo "$0 -n <string>  [ -o <outfile> ]"
 	echo "    Search the records.fresh files for a string and return per-run counts and total"
+	echo "    -n specifies the needle to look for in the haystack"
+	echo "    -o specifies the output file in which to put the records matching the needle"
+	echo "With no output file provided, per-run counts of matches are provided"
 	exit 99
 }
 
-needle=$1
+needle=""
+outfile=""
+
+# options may be followed by one colon to indicate they have a required argument
+if ! options=$(getopt -s bash -o n:o:h -l needle:,out:,help -- "$@")
+then
+	# something went wrong, getopt will put out an error message for us
+	exit 1
+fi
+eval set -- "$options"
+while [ $# -gt 0 ]
+do
+	case "$1" in
+		-h|--help) usage;;
+		-n|--needle) needle=$2; shift;;
+		-o|--out) outfile=$2; shift;;
+		(--) shift; break;;
+		(-*) echo "$0: error - unrecognized option $1" 1>&2; exit 1;;
+		(*)  break;;
+	esac
+	shift
+done
+
 if [[ "$needle" == "" ]]
 then
-	echo "No input provided - exiting"
+	echo "No needle to look for provided - exiting"
 	usage
+fi
+
+if [[ "$outfile" != "" ]]
+then
+	# want output, but check if we'd overwrite something 
+	if [ -f $outfile ]
+	then
+		echo "Renaming existing $outfile to $outfile.old"
+		mv $outfile $outfile.old
+	fi
 fi
 
 total=0
@@ -51,6 +86,11 @@ for dir in $DIRS
 do
 	rcount=`grep -c $needle $dir/records.fresh`
 	echo "$dir has $rcount"
+	if [[ "$outfile" !=  "" ]]
+	then
+		# extract those records to $outfile
+		grep $needle $dir/records.fresh >>$outfile
+	fi
 	((total=total+rcount))
 done
 
