@@ -84,12 +84,12 @@ echo "Looking for $needle below $TOPD"
 
 for dir in $DIRS
 do
-	rcount=`grep -c $needle $dir/records.fresh`
+	rcount=`grep -c "$needle" $dir/records.fresh`
 	echo "$dir has $rcount"
 	if [[ "$outfile" !=  "" ]]
 	then
 		# extract those records to $outfile
-		grep $needle $dir/records.fresh >>$outfile
+		grep "$needle" $dir/records.fresh >>$outfile
 	fi
 	((total=total+rcount))
 done
