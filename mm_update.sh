@@ -80,10 +80,17 @@ done
 # get the CSV for countries (also for IPv6!) so we can start our own zmap 
 # if we want
 now=`date +%Y%m%d`
-wget http://geolite.maxmind.com/download/geoip/database/GeoIPCountryCSV.zip
-unzip GeoIPCountryCSV.zip 
-cp GeoIPCountryWhois.csv $DESTDIR/GeoIPCountryWhois-$now.csv
-ln -sf $DESTDIR/GeoIPCountryWhois-$now.csv $DESTDIR/GeoIPCountryWhois.csv
+#wget http://geolite.maxmind.com/download/geoip/database/GeoIPCountryCSV.zip
+#unzip GeoIPCountryCSV.zip 
+wget https://geolite.maxmind.com/download/geoip/database/GeoLite2-Country-CSV.zip
+unzip GeoLite2-Country-CSV.zip
+# This file seems to no longer be shipped, not sure if it's needed though
+# and I guess that means we need to re-test all the geoip stuff (sigh)
+if [ -f GeoIPCountryWhois.csv ]
+then
+    cp GeoIPCountryWhois.csv $DESTDIR/GeoIPCountryWhois-$now.csv
+    ln -sf $DESTDIR/GeoIPCountryWhois-$now.csv $DESTDIR/GeoIPCountryWhois.csv
+fi
 
 wget http://geolite.maxmind.com/download/geoip/database/GeoIPv6.csv.gz
 gunzip GeoIPv6.csv.gz
