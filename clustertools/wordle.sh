@@ -33,6 +33,20 @@ function usage()
 	exit 99
 }
 
+# check if wordcloud_cli.py or wordcloud_cli is on path
+WBIN="wordcloud_cli.py"
+type $WBIN >/dev/null 2>&1
+if [ $? != 0 ] 
+then
+    WBIN="wordcloud_cli" 
+    type $WBIN >/dev/null 2>&1
+    if [ $? != 0 ] 
+    then
+        echo "$0 - can't find $WBIN - exiting"
+        exit 1
+    fi
+fi 
+
 srcdir=$HOME/code/surveys
 infiles=$1
 if [[ "$infiles" == "" ]]
@@ -60,7 +74,7 @@ do
 	$srcdir/clustertools/fvs.sh -f rdns -i $file >>$bname.words
 	$srcdir/clustertools/fvs.sh -f asn -i $file >>$bname.words
 
-	wordcloud_cli.py --text $bname.words --no_collocations >$bname-wordle.png
+	$WBIN --text $bname.words --no_collocations >$bname-wordle.png
 
 	((count++))
 	if (((count%freq)==0))
