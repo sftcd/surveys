@@ -36,7 +36,7 @@ then
 	PORT=443
 fi
 case $PORT in
-	25|110|143|443|587|993)
+	25|110|143|443|587|853|993)
 		;;
 	*)
 		error="yep"
@@ -78,6 +78,10 @@ then
 	echo | openssl s_client -connect $HOST:$PORT -starttls imap | openssl x509 -noout -text >$OUTF 
 fi
 if [ "$PORT" == "993" ]
+then
+	echo | openssl s_client -connect $HOST:$PORT | openssl x509 -noout -text >$OUTF 
+fi
+if [ "$PORT" == "853" ]
 then
 	echo | openssl s_client -connect $HOST:$PORT | openssl x509 -noout -text >$OUTF 
 fi
