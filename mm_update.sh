@@ -1,41 +1,8 @@
 #!/bin/bash
+DESTDIR=$HOME/code/surveys/mmdb
 
-# Copyright (C) 2018 Stephen Farrell, stephen.farrell@cs.tcd.ie
-# 
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-# 
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-# 
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-
-# grab and explode updated versions of maxmind's free DBs
-
-# set -x
-
-# for testing
-#skipwget=false
-#if [ "$1" == "SkipWget" ]
-#then
-	#skipwget=true
-#fi
-
-# just configure that directory in one place
-dpath=`grep mmdbpath $HOME/code/surveys/SurveyFuncs.py  | head -1 | awk -F\' '{print $2}' | sed -e 's/\/$//'`
-DESTDIR=$HOME/$dpath
-# for testing
-#DESTDIR=$PWD/db
+#dpath=`grep mmdbpath $HOME/code/surveys/SurveyFuncs.py  | head -1 | awk -F\' '{print $2}' | sed -e 's/\/$//'`
+#DESTDIR=$HOME/$dpath
 
 if [ ! -d $DESTDIR ]
 then
@@ -47,21 +14,15 @@ then
 	exit 11
 fi
 
-TMPD=`mktemp -d /tmp/mmdbXXXX`
+cd $DESTDIR
 
-pushd $TMPD
-
+key="AnRjFrGF9x75YmrD"
 for db in City Country ASN
 do
-	tarball="GeoLite2-$db.tar.gz"
-	url="http://geolite.maxmind.com/download/geoip/database/$tarball"
+	url="https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-$db&license_key=$key&suffix=tar.gz"
 	echo "Getting $url"
-	#if (( $skipwget ))
-	#then
-		wget -q $url
-	#else
-		#echo "Skipping wget $url as requsted"
-	#fi
+	wget -q $url
+	tarball="geoip_download?edition_id=GeoLite2-$db&license_key=$key&suffix=tar.gz"
 	if [ "$?" != "0" ]
 	then
 		echo "Failed to download $url"
@@ -76,35 +37,22 @@ do
 	fi
 done
 
-
-# get the CSV for countries (also for IPv6!) so we can start our own zmap 
-# if we want
+#get csv file to make GeoIPcountry csv file
 now=`date +%Y%m%d`
-#wget http://geolite.maxmind.com/download/geoip/database/GeoIPCountryCSV.zip
-#unzip GeoIPCountryCSV.zip 
-wget https://geolite.maxmind.com/download/geoip/database/GeoLite2-Country-CSV.zip
-unzip GeoLite2-Country-CSV.zip
-# This file seems to no longer be shipped, not sure if it's needed though
-# and I guess that means we need to re-test all the geoip stuff (sigh)
+csv_url="https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&license_key=$key&suffix=zip"
+zip="geoip_download?edition_id=GeoLite2-Country-CSV&license_key=$key&suffix=zip"
+wget $csv_url
+unzip $zip
+
 if [ -f GeoIPCountryWhois.csv ]
 then
     cp GeoIPCountryWhois.csv $DESTDIR/GeoIPCountryWhois-$now.csv
     ln -sf $DESTDIR/GeoIPCountryWhois-$now.csv $DESTDIR/GeoIPCountryWhois.csv
 fi
 
-wget http://geolite.maxmind.com/download/geoip/database/GeoIPv6.csv.gz
-gunzip GeoIPv6.csv.gz
-cp GeoIPv6.csv $DESTDIR/GeoIPv6-$now.csv
-ln -sf $DESTDIR/GeoIPv6-$now.csv $DESTDIR/GeoIPv6.csv 
 
-# create a list of country codes from that (who knows, it might change
-# over time:-)
-cat GeoIPv6.csv | awk -F, '{print $5}' | sort | uniq | sed -e 's/ "//' | sed -e 's/"//g' >$DESTDIR/countrycodes-$now.txt
-ln -sf $DESTDIR/countrycodes-$now.txt $DESTDIR/countrycodes.txt
 
-popd
-# clean up
-rm -rf $TMPD
+
+
 echo "Done"
-
 
