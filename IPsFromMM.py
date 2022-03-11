@@ -87,13 +87,9 @@ if dov4:
         readCSV = csv.reader(csvfile, delimiter=',')
         writer = csv.writer(of)
         for row in readCSV:
-            if row[4]==country:
-                startip=row[0]
-                endip=row[1]
-                for cidr in netaddr.iprange_to_cidrs(startip,endip):
-                    print(of, cidr)
-                    data = [cidr]
-                    writer.writerow(data)
+            if row[2]==country:
+              data = [cidr]
+              writer.writerow(data)
                 mc+=1
             lc+=1
             if (lc%1000)==0:
