@@ -38,6 +38,19 @@ sudo apt-get -y install zmap
 
 ./mm_update.sh
 
+sudo -H pip install  testresources
+sudo -H pip install  argparse
+sudo -H pip install  datetime
+sudo -H pip install  python-dateutil
+sudo -H pip install  geoip2
+sudo -H pip install  graphviz
+sudo -H pip install  jsonpickle
+sudo -H pip install  pympler
+sudo -H pip install  pytz
+sudo -H pip install  netaddr
+sudo -H pip install  cryptography
+sudo -H pip install  wordcloud
+
 if [ ! -d /usr/lib/go-1.10 ]
 then
 mkdir -p $HOME/code/go
@@ -58,6 +71,8 @@ mkdir -p $HOME/code/go
 	fi
 	export GOPATH=$HOME/go
 fi
+
+
 
 
 # got get stuff
