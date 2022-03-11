@@ -19,7 +19,7 @@ fi
 if [ ! -d $HOME/code/surveys ]
 then
 	cd $HOME/code
-	git clone -b rahul-01 https://github.com/sftcd/surveys
+	git clone -b rahul-01 https://github.com/sethr07/surveys.git
 else
 	# may as well do an update
 	cd $HOME/code/surveys
