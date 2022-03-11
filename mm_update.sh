@@ -1,5 +1,6 @@
 #!/bin/bash
 DESTDIR=$HOME/code/surveys/mmdb
+CURRDIR=$HOME/code/surveys
 
 #dpath=`grep mmdbpath $HOME/code/surveys/SurveyFuncs.py  | head -1 | awk -F\' '{print $2}' | sed -e 's/\/$//'`
 #DESTDIR=$HOME/$dpath
@@ -43,16 +44,9 @@ csv_url="https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Cou
 zip="geoip_download?edition_id=GeoLite2-Country-CSV&license_key=$key&suffix=zip"
 wget $csv_url
 unzip $zip
-
-if [ -f GeoIPCountryWhois.csv ]
-then
-    cp GeoIPCountryWhois.csv $DESTDIR/GeoIPCountryWhois-$now.csv
-    ln -sf $DESTDIR/GeoIPCountryWhois-$now.csv $DESTDIR/GeoIPCountryWhois.csv
-fi
-
-
-
-
+cd $CURRDIR
+echo "creating csv file of ips country wise"
+python3 MMCreateGeoIP.py
 
 echo "Done"
 
