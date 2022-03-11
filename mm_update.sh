@@ -43,6 +43,7 @@ now=`date +%Y%m%d`
 csv_url="https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&license_key=$key&suffix=zip"
 zip="geoip_download?edition_id=GeoLite2-Country-CSV&license_key=$key&suffix=zip"
 wget $csv_url
+wget https://dev.maxmind.com/static/csv/codes/country_continent.csv?lang=en
 unzip $zip
 cd $CURRDIR
 echo "creating csv file of ips country wise"
