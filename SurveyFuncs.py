@@ -9,8 +9,8 @@ import geoip2.database
 # maxmind useful functions
 mmdbpath = 'code/surveys/mmdb/'
 mmdbir = os.environ['HOME'] + '/' + mmdbpath
-print(mmdbir)
 
+#sets up API calls in mmdb directory
 def mm_setup():
     global asnreader
     global cityreader
@@ -21,12 +21,14 @@ def mm_setup():
     cityreader = geoip2.database.Reader(mmdbir + 'GeoLite2-City.mmdb')
     countryreader = geoip2.database.Reader(mmdbir + 'GeoLite2-Country.mmdb')
     countrycodes = []
+
     with open(mmdbir + 'countrycodes.csv') as ccf:
         for line in ccf:
             cc = line.strip()
             countrycodes.append(cc)
         ccf.close
 
+#returns back the ip address information in the database
 def mm_info(ip):
     rv = {}
     rv['ip'] = ip
@@ -36,12 +38,9 @@ def mm_info(ip):
         rv['asn']=asnresponse.autonomous_system_organization
         cityresponse=cityreader.city(ip)
         countryresponse=countryreader.country(ip)
-        print(asnresponse)
-        print(cityresponse)
         rv['lat']=cityresponse.location.latitude
         rv['long']=cityresponse.location.longitude
         print("\n\n")
-        print(countryresponse)
         rv['cc']=cityresponse.country.iso_code
 
         if cityresponse.country.iso_code != countryresponse.country.iso_code:
@@ -59,15 +58,13 @@ def mm_info(ip):
 def mm_ipcc(ip, cc):
     if cc == "XX":
         return True
-    if cc not in countrycodes:
-        return False
-    countryresponse = countryreader.country(ip)
-    if cc == countryresponse.country.iso_code:
-        return True
+    elif cc not in countrycodes:
+        countryresponse = countryreader.country(ip)
+        if cc == countryresponse.country.iso_code:
+            return True
+        else:
+            return False
     else:
         return False
     
 
-
-
-mm_setup()
