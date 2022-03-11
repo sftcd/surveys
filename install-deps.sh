@@ -39,6 +39,7 @@ sudo apt-get -y install zmap
 ./mm_update.sh
 
 sudo -H pip install  testresources
+sudo -H pip install  pandas
 sudo -H pip install  argparse
 sudo -H pip install  datetime
 sudo -H pip install  python-dateutil
