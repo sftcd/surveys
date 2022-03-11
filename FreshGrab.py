@@ -4,7 +4,7 @@ import time
 import subprocess
 import copy
 from SurveyFuncs import *
-import io
+from netaddr import IPNetwork
 
 #Port list
 # 22 - ssh
@@ -39,22 +39,24 @@ parser.add_argument('-c','--country',
 args=parser.parse_args()
 
 defports=['22', '25', '80' '110', '143', '443']
+ztimeout=' -timeout 2'
 
 # default country 
 def_country='IE'
 country=def_country
 
 # default timeout for zgrab, in seconds
-ztimeout=' -timeout 2'
+ztimeout=' -t 2'
 
 # port parameters
 pparms={ 
-        '22': 'ssh',
-        '25': 'smtp',
-        '80': 'http',
-        '110': 'pop3',
-        '143': 'imap',
-        '443': 'tls',
+        '22': 'ssh -p 22',
+        '25': 'smtp -p 25',
+        '110': 'pop3 -p 110',
+        '143': 'imap -p 143',
+        '443': 'http -p 443 --use-https',
+        '587': 'smtp -p 587 --smtps',
+        '993': 'imap -p 993 --imaps',
         }
 
 def usage():
@@ -112,12 +114,18 @@ if os.path.isfile(args.outfile):
 
 out_f=open(args.outfile,"a")
 
+mm_setup()
 
 with open(args.infile,'r') as f:
     checkcount=0
     ooc=0
     for ip in f:
+        #print(ip)
         ip=ip.strip() # lose the CRLF
+        #if not mm_ipcc(ip,country):
+            #print (sys.stderr, "Bad country (fg)" + ip + " is not in " + country + " - skipping")
+            #ooc+=1
+            #continue
 
         ipstart=time.time()
         jthing={}
@@ -125,7 +133,7 @@ with open(args.infile,'r') as f:
         jthing['writer']="FreshGrab.py"
         for port in ports:
             try:
-                cmd='./zgrab2 '+  pparms[port]
+                cmd='./zgrab2 '+  pparms[port] + ztimeout
                 proc=subprocess.Popen(cmd.split(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
                 pc=proc.communicate(input=ip.encode())
                 lines=pc[0].split(b'\n')
