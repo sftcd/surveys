@@ -88,6 +88,7 @@ if dov4:
         writer = csv.writer(of)
         for row in readCSV:
             if row[2]==country:
+              cidr = row[0]
               data = [cidr]
               writer.writerow(data)
                 mc+=1
