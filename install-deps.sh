@@ -68,30 +68,25 @@ sudo apt-get -y install zmap
 # maxmind - enough to just use our update tool
 ./mm_update.sh
 
-# install pip
-sudo apt-get -y install python-pip graphviz
+# install python & pip
+sudo apt-get -y install python3 python3-pip
 
 # install finddup - needed for fp2cert.sh
 sudo apt install perforate
 
-sudo -H pip install --upgrade pip
- 
-# install python modules needed, these are currently imported modules
-# but seems like some are built-in or dragged-in via dependencies, we
-# leave the list as-in anyway as it does no harm other than some 
-# warnings
-sudo -H pip install  testresources
-sudo -H pip install  argparse
-sudo -H pip install  datetime
-sudo -H pip install  python-dateutil
-sudo -H pip install  geoip2
-sudo -H pip install  graphviz
-sudo -H pip install  jsonpickle
-sudo -H pip install  pympler
-sudo -H pip install  pytz
-sudo -H pip install  netaddr
-sudo -H pip install  cryptography
-sudo -H pip install  wordcloud
+sudo -H  apt -y install  python3-testresources
+sudo -H  apt -y install  python3-geoip2
+sudo -H  apt -y install  python3-graphviz
+sudo -H  apt -y install  python3-dateutil
+sudo -H  apt -y install  python3-jsonpickle
+sudo -H  apt -y install  python3-pympler
+sudo -H  apt -y install  python3-netaddr
+sudo -H  apt -y install  python3-cryptography
+sudo -H  apt -y install  python3-wordcloud
+sudo -H  apt -y install  python3-plotly
+sudo -H  apt -y install  python3-networkx
+
+
 
 # these are imports that I don't think need a pip install
 # but not sure:-)
@@ -146,7 +141,7 @@ cd $HOME/code/surveys/clustertools
 if [ ! -f mapping-rfc.txt ]
 then
 	echo "Getting TLS ciphersuite names"
-	wget https://testssl.sh/mapping-rfc.txt
+	wget https://testssl.sh/etc/cipher-mapping.txt
 fi
 
 # clean up
