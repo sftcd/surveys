@@ -294,9 +294,7 @@ else
 	then
 		echo "starting zmap"
 		echo "starting zmap" >>$logf
-
-		echo "Running command: sudo zmap $zmap_parms -p $zmport --whitelist-file=$TELLTALE_MM >$TELLTALE_ZMAP"
-		sudo zmap $zmap_parms -p $zmport --whitelist-file=$TELLTALE_MM >$TELLTALE_ZMAP 2>>$logf
+		sudo zmap $zmap_parms -p $zmport --whitelist-file=$TELLTALE_MM --blacklist-file="$srcdir/blacklist.conf" >$TELLTALE_ZMAP 2>>$logf
 		ln -s $TELLTALE_ZMAP $TELLTALE_GRAB
 		SKIP_GRAB="yes"
 		echo "zmap done"
@@ -305,7 +303,7 @@ else
 	then
 		echo "starting zmap"
 		echo "starting zmap" >>$logf
-		sudo zmap $zmap_parms -p $zmport --whitelist-file=$TELLTALE_MM >$TELLTALE_ZMAP 2>>$logf
+		sudo zmap $zmap_parms -p $zmport --whitelist-file=$TELLTALE_MM --blacklist-file="$srcdir/blacklist.conf" >$TELLTALE_ZMAP 2>>$logf
 		ln -s $TELLTALE_ZMAP $TELLTALE_GRAB
 		echo "zmap done"
 		echo "zmap done" >>$logf
