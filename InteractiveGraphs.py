@@ -113,7 +113,6 @@ def createGraph(data, name, outdirectory):
 
     for i in groups:
         color = random.choice(colors)
-        colors.remove(color)
         for j in groups[i]:
             G.add_nodes_from([(j["ip"], {"asn": j["asn"], "rdns":j["rdns"], "fprints":j["fprints"], "collisions":j["collisions"],"ip":j["ip"], "color":color})])
 
