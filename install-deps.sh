@@ -85,6 +85,7 @@ sudo -H  apt -y install  python3-cryptography
 sudo -H  apt -y install  python3-wordcloud
 sudo -H  apt -y install  python3-plotly
 sudo -H  apt -y install  python3-networkx
+sudo -H  apt -y install  python3-scipy
 
 
 
