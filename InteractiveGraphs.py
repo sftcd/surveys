@@ -192,8 +192,6 @@ def createGraph(data, name, outdirectory):
     for edge in G.edges:
         x0, y0 = pos[edge[0]]
         x1, y1 = pos[edge[1]]
-        #line with hover text
-        hovertext = "test"
         fig.add_trace(go.Scatter(x=[x0, x1], y=[y0, y1], mode="lines", line=dict(color="black")))
 
     fig.write_html(outdirectory + "/"+ name+".html", auto_open=False)
@@ -214,7 +212,7 @@ def readClusterFiles(directory):
                 except:
                     pass
                 outdata.append({"ip": i["ip"], "asn": i["asn"], "fprints": i["fprints"], "rdns": rdns})
-            createGraph(outdata, sanFileName)
+            createGraph(outdata, sanFileName, directory)
             print("Finished "+filename)
             
 
