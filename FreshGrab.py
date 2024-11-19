@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (C) 2018 Stephen Farrell, stephen.farrell@cs.tcd.ie
 # 
@@ -49,6 +49,9 @@ parser.add_argument('-s','--sleep',
 parser.add_argument('-c','--country',     
                     dest='country',
                     help='country in which we\'re interested')
+parser.add_argument('-d', '--mmdbdir',    
+                    dest='mmdbdir',
+                    help='directory in which to find mmdb files')
 args=parser.parse_args()
 
 # default (all) ports to scan - added in 587 for fun (wasn't in original scans)
@@ -75,7 +78,7 @@ pparms={
         }
 
 def usage():
-    print >>sys.stderr, "usage: " + sys.argv[0] + " -i <infile> -o <putfile> [-p <portlist>] [-s <sleepsecs>]"
+    print("usage: " + sys.argv[0] + " -i <infile> -o <putfile> [-p <portlist>] [-s <sleepsecs>]", file=sys.stderr)
     sys.exit(1)
 
 ports=defports
@@ -87,10 +90,10 @@ if args.infile is None or args.outfile is None:
 
 # checks - can we read/write 
 if not os.access(args.infile,os.R_OK):
-    print >> sys.stderr, "Can't read input file " + args.infile + " - exiting"
+    print("Can't read input file " + args.infile + " - exiting", file=sys.stderr)
     sys.exit(1)
 if os.path.isfile(args.outfile) and not os.access(args.outfile,os.W_OK):
-    print >> sys.stderr, "Can't write to output file " + args.outfile + " - exiting"
+    print("Can't write to output file " + args.outfile + " - exiting", file=sys.stderr)
     sys.exit(1)
 
 err_fn="/dev/null"
@@ -100,12 +103,14 @@ if args.errfile is not None:
 # default to a 100ms wait between zgrab calls
 defsleep=0.1
 
-print >>sys.stderr, "Running ",sys.argv[0:]," starting at",time.asctime(time.localtime(time.time()))
+print("Running ",sys.argv[0:]," starting at",time.asctime(time.localtime(time.time())), file=sys.stderr)
+print("Will scan ports: " + str(ports), file=sys.stderr)
+print("Current working directory is: " + os.getcwd(), file=sys.stderr)
 
 sleepval=defsleep
 if args.sleepsecs is not None:
     sleepval=float(args.sleepsecs)
-    print >>sys.stderr, "Will sleep for " + str(sleepval) + " seconds between zgrabs"
+    print("Will sleep for " + str(sleepval) + " seconds between zgrabs", file=sys.stderr)
 
 # keep track of how long this is taking per ip
 peripaverage=0
@@ -125,16 +130,16 @@ if os.path.isfile(args.outfile):
                     pre_ips += 1
     except Exception as e:
         # we might hit a non-decoding last line or other badness, not unexpected
-        print >>sys.stderr, "Excetion",args.outfile,"might end badly:",str(e)
+        print("Exception",args.outfile,"might end badly:",str(e), file=sys.stderr)
         pass
     f.close()
-    print >>sys.stderr, "Loaded",str(pre_ips),"previously fetched records from",args.outfile
+    print("Loaded",str(pre_ips),"previously fetched records from",args.outfile, file=sys.stderr)
 
 # now go get more...
 out_f=open(args.outfile,"a")
 
 # initialise mm
-mm_setup()
+mm_setup(args.mmdbdir)
 
 with open(args.infile,'r') as f:
     checkcount=0
@@ -144,14 +149,14 @@ with open(args.infile,'r') as f:
 
         # if we have this one we're done
         if ip in ipdone:
-            print >>sys.stderr, ip,"is in ipdone - skipping"
+            print(ip,"is in ipdone - skipping", file=sys.stderr)
             continue
         else: 
             pass
             #print >>sys.stderr, "Doing",ip
         # check country matches
         if not mm_ipcc(ip,country):
-            print >>sys.stderr, "Bad country (fg)" + ip + " is not in " + country + " - skipping"
+            print("Bad country (fg)" + ip + " is not in " + country + " - skipping", file=sys.stderr)
             ooc+=1
             continue
         ipstart=time.time()
@@ -163,7 +168,7 @@ with open(args.infile,'r') as f:
                 cmd='zgrab '+  pparms[port] + ztimeout
                 proc=subprocess.Popen(cmd.split(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
                 pc=proc.communicate(input=ip.encode())
-                lines=pc[0].split('\n')
+                lines=pc[0].decode("utf-8").split('\n')
                 jinfo=json.loads(lines[1])
                 jres=json.loads(lines[0])
                 #print jinfo
@@ -193,12 +198,12 @@ with open(args.infile,'r') as f:
         checkcount += 1
         #if checkcount % 100 == 0:
         if checkcount % 5 == 0:
-            print >> sys.stderr, "Freshly grabbing... did: " + str(checkcount) + " most recent ip " + ip + " average time/ip: " + str(peripaverage)
+            print("Freshly grabbing... did: " + str(checkcount) + " most recent ip " + ip + " average time/ip: " + str(peripaverage), file=sys.stderr)
         if checkcount % 1000 == 0:
             gc.collect()
 
 out_f.close()
 
-print >>sys.stderr, "FreshGrab: Out of country: " + str(ooc)
+print("FreshGrab: Out of country: " + str(ooc), file=sys.stderr)
 
-print >>sys.stderr, "Ran ",sys.argv[0:]," finished at",time.asctime(time.localtime(time.time())),"average seconds/ip:",peripaverage
+print("Ran ",sys.argv[0:]," finished at",time.asctime(time.localtime(time.time())),"average seconds/ip:",peripaverage, file=sys.stderr)

@@ -40,9 +40,10 @@ class OneFP():
                     'asndec',
                     'fprints',
                     'csize',
-                    'nsrc',
+                    'nrcs',
                     'rcs',
-                    'analysis']
+                    'analysis',
+                    'clusternum']
     def __init__(self):
         self.writer='unknown'
         self.ip_record=-1
@@ -80,7 +81,7 @@ CERTTYPE_OTHER=5            # oddbballs, don't expect any
 MAXSAN=100
 
 def printOneFP(f):
-    print jsonpickle.encode(f)
+    print(jsonpickle.encode(f))
 
 def j2o(jthing):
     ot=OneFP()
@@ -160,8 +161,8 @@ def indexport(index):
 def portindex(pname):
     for pind in range(0,len(portstrings)):
         if portstrings[pind]==pname:
-            return pind
-    print >>sys.stderr, "Error - unknown port: " + pname
+            return pind 
+    print ("Error - unknown port: " + pname, file=sys.stderr)
     return -1
 
 def checkmask(mask,k1,k2):
@@ -174,7 +175,7 @@ def checkmask(mask,k1,k2):
             match=True
         #print "\t\tcheckmask ",mask,k1,k2,"result is: ", str(match)
     except Exception as e: 
-        print >> sys.stderr, "checkmask exception, k1: " + k1 + " k2: " + k2 + " mask:" + mask + " exception: " + str(e)  
+        print("checkmask exception, k1: " + k1 + " k2: " + k2 + " mask:" + mask + " exception: " + str(e), file=sys.stderr)
         pass
     return match
 
@@ -186,7 +187,7 @@ def collmask(mask,k1,k2):
         intmask |= (1<<(rp+8*lp)) 
         newmask="0x%016x" % intmask
     except Exception as e: 
-        print >> sys.stderr, "collmask exception, k1: " + k1 + " k2: " + k2 + " lp:" + str(lp) + " rp: " + str(rp) + " exception: " + str(e)  
+        print("collmask exception, k1: " + k1 + " k2: " + k2 + " lp:" + str(lp) + " rp: " + str(rp) + " exception: " + str(e), file=sys.stderr)  
         pass
     return newmask
 
@@ -208,7 +209,7 @@ def readfprints(fname):
         f.close()
         return fp
     except Exception as e: 
-        print >> sys.stderr, "exception reading " + fname + " exception: " + str(e)  
+        print("exception reading " + fname + " exception: " + str(e), file=sys.stderr)
         return None
 
 def getnextfprint(fp):
@@ -291,18 +292,18 @@ def file_in_mem(fname):
 
 def load_file_to_mem(fname):
     global giantbuffer
-    print >>sys.stderr, "Reading " + fname + " into RAM"
+    print("Reading " + fname + " into RAM", file=sys.stderr)
     fp=open(fname)
     giantbuffer=fp.read()
     fp.close()
-    print >>sys.stderr, "Done reading " + fname + " into RAM"
-    print len(giantbuffer)
+    print("Done reading " + fname + " into RAM", file=sys.stderr)
+    print(len(giantbuffer))
 
 def readline_mem():
     global offset
     start_offset=offset
     if offset >= len(giantbuffer):
-        print >>sys.stderr, "Offset "+str(offset)+" >= "+str(len(giantbuffer))+"!"
+        print("Offset "+str(offset)+" >= "+str(len(giantbuffer))+"!", file=sys.stderr)
         return ""
     while giantbuffer[offset]!='\n':
         offset += 1
@@ -474,14 +475,16 @@ def edgename(ip1,ip2):
 
 # MaxMind stuff
 
-mmdbpath='code/surveys/mmdb/'
-mmdbdir=os.environ['HOME']+'/'+mmdbpath
+mmdbdir=''
 
-def mm_setup():
+def mm_setup(mmdb_dir):
     global asnreader
     global cityreader
     global countryreader
     global countrycodes
+    if mmdb_dir[-1] != '/':
+        mmdb_dir += '/'
+    mmdbdir=mmdb_dir
     asnreader=geoip2.database.Reader(mmdbdir+'GeoLite2-ASN.mmdb')
     cityreader=geoip2.database.Reader(mmdbdir+'GeoLite2-City.mmdb')
     countryreader=geoip2.database.Reader(mmdbdir+'GeoLite2-Country.mmdb')
@@ -512,7 +515,7 @@ def mm_info(ip):
         if cityresponse.country.iso_code != countryresponse.country.iso_code:
             rv['cc-city']=cityresponse.country.iso_code
     except Exception as e: 
-        print >>sys.stderr, "mm_info exception for " + ip + str(e)
+        print("mm_info exception for " + ip + str(e), file=sys.stderr)
         rv['asndec']='unknown'
         rv['asn']=-1
         rv['cc']='unknown'
@@ -559,8 +562,8 @@ def get_tls(writer,portstr,tls,ip,tlsdets,scandate):
                 else:
                     tlsdets['spkialg']=spki['key_algorithm']['name']
             except:
-                print >>sys.stderr, "RSA exception for ip: " + ip + "spki:" + \
-                                str(tls['server_certificates']['certificate']['parsed']['subject_key_info']) 
+                print ("RSA exception for ip: " + ip + "spki:" + \
+                                str(tls['server_certificates']['certificate']['parsed']['subject_key_info']), file=sys.stderr)
                 tlsdets['spkialg']="unknown"
 
         else:
@@ -580,8 +583,8 @@ def get_tls(writer,portstr,tls,ip,tlsdets,scandate):
                 else:
                     tlsdets['spkialg']=spki['key_algorithm']['name']
             except:
-                print >>sys.stderr, "RSA exception for ip: " + ip + "spki:" + \
-                                str(tls['server_certificates']['certificate']['parsed']['subject_key_info']) 
+                print("RSA exception for ip: " + ip + "spki:" + \
+                                str(tls['server_certificates']['certificate']['parsed']['subject_key_info']), file=sys.stderr)
                 tlsdets['spkialg']="unknown"
 
         if (notbefore <= scandate and notafter > scandate):
@@ -592,7 +595,7 @@ def get_tls(writer,portstr,tls,ip,tlsdets,scandate):
             tlsdets['timely']=False
         #tlsdets['ip']=ip
     except Exception as e: 
-        print >>sys.stderr, "get_tls exception for " + ip + ":" + portstr + str(e)
+        print("get_tls exception for " + ip + ":" + portstr + str(e), file=sys.stderr)
         pass
     return True
 
@@ -615,7 +618,7 @@ def dn2cn(dn):
         cnstr=dn[start_pos:end_pos]
         #print "dn2cn " + cnstr + " d: " + dn + " s: " + str(start_pos) + " e: " + str(end_pos) 
     except Exception as e: 
-        print >> sys.stderr, "dn2cn exception " + str(e)
+        print("dn2cn exception " + str(e), file=sys.stderr)
         return ''
     return cnstr
 
@@ -700,10 +703,10 @@ def get_fqdns(blob):
         # name from reverse DNS
         rdnsrec=socket.gethostbyaddr(ip)
         rdns=rdnsrec[0]
-        print "FQDN reverse: " + str(rdns)
+        print("FQDN reverse: " + str(rdns))
         nameset['rdns']=rdns
     except Exception as e: 
-        print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + ip
+        print("FQDN reverse exception " + str(e) + " for record:" + ip, file=sys.stderr)
         nameset['rdns']=''
     # name from banner
     p25=blob['p25']
@@ -745,7 +748,7 @@ def get_fqdns(blob):
             if sancount >= MAXSAN:
                 toobig=str(len(san_fqdns))
                 nameset['san'+str(sancount+1)]="Bollox-eoo-many-sans-" + toobig
-                print >> sys.stderr, "Too many bleeding ( " + toobig + ") sans for " + ip 
+                print("Too many bleeding ( " + toobig + ") sans for " + ip, file=sys.stderr)
                 break
     except Exception as e: 
         #these are v. common
@@ -778,7 +781,7 @@ def get_fqdns(blob):
     nameset['besty']=besty
     #meta['enddate']=str(datetime.datetime.utcnow())
     #nameset['meta']=meta
-    print nameset
+    print(nameset)
     return nameset
 
 def get_certnames(portstring,cert,nameset):
@@ -806,7 +809,7 @@ def get_certnames(portstring,cert,nameset):
             if sancount >= MAXSAN:
                 toobig=str(len(san_fqdns))
                 nameset['san'+str(sancount+1)]="Bollox-eoo-many-sans-1-" + toobig
-                print >> sys.stderr, "Too many bleeding ( " + toobig + ") sans "
+                print("Too many bleeding ( " + toobig + ") sans ", file=sys.stderr)
                 break
     except Exception as e: 
         #these are v. common
@@ -832,7 +835,7 @@ def guess_product(banner):
         if banner.lower().find('microsoft')!=-1:
             return 'Microsoft'
     except Exception as e: 
-        print >> sys.stderr, "guess_product exception: " + str(e)
+        print("guess_product exception: " + str(e), file=sys.stderr)
         return 'guess_exception'
     return 'noguess'
 
@@ -859,7 +862,7 @@ def get_banner(count,p25,ip):
             banner['product']=guess_product(bannerstr)
         #print "get_banner: " + str(bsplit) + " for record: " + str(count)
     except Exception as e: 
-        print >> sys.stderr, "get_banner error getting SMTP banner for ip: " + ip + " record:" + str(count) + " " + str(e)
+        print("get_banner error getting SMTP banner for ip: " + ip + " record:" + str(count) + " " + str(e), file=sys.stderr)
 
     #banner['meta']=meta
     return banner

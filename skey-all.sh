@@ -52,7 +52,7 @@ ipssrc=''
 pdir=''
 domm='no'
 dpath=`grep mmdbpath $HOME/code/surveys/SurveyFuncs.py  | head -1 | awk -F\' '{print $2}' | sed -e 's/\/$//'`
-mmdbdir=$HOME/$dpath
+mmdbdir=mmdb
 zmport="25"
 skips=""
 
@@ -93,6 +93,7 @@ do
 	shift
 done
 
+
 if [ "$srcdir" == "" ]
 then
 	echo "No <code-directory> set"
@@ -111,7 +112,10 @@ then
 	usage
 fi
 
+mmdbdir=$srcdir/$mmdbdir
+
 # check if country is known
+echo "Checking country $country in dir $mmdbdir"
 cknown=`grep $country $mmdbdir/countrycodes.txt`
 if [[ "$country" != "$cknown" && "$country" != "XX" ]]
 then
@@ -266,7 +270,13 @@ else
 	then
 		echo "starting maxmind"
 		echo "starting maxmind" >>$logf
-		$srcdir/IPsFromMM.py -c $country >>$logf 2>&1 
+		echo "srcdir is $srcdir"
+		$srcdir/IPsFromMM.py -c $country -i $mmdbdir >>$logf 2>&1
+		if [ "$?" != "0" ]
+		then
+			echo "Error ($?) from IPsFromMM.py"
+			echo "Error ($?) from IPsFromMM.py" >>$logf
+		fi
 		echo "maxmind done"
 		echo "maxmind done" >>$logf
 	fi
@@ -278,11 +288,13 @@ then
 	echo "Skipping zmap" >>$logf
 else
 	# only if we've done the mm thing
+	echo "The current directory is: $PWD"
+	echo "The current directory is: $PWD" >>$logf
 	if [[ "$domm" == "yes" && -f $TELLTALE_MM ]]
 	then
 		echo "starting zmap"
 		echo "starting zmap" >>$logf
-		sudo zmap $zmap_parms -p $zmport --whitelist-file=$TELLTALE_MM >$TELLTALE_ZMAP 2>>$logf
+		sudo zmap $zmap_parms -p $zmport --whitelist-file=$TELLTALE_MM --blacklist-file="$srcdir/blacklist.conf" >$TELLTALE_ZMAP 2>>$logf
 		ln -s $TELLTALE_ZMAP $TELLTALE_GRAB
 		SKIP_GRAB="yes"
 		echo "zmap done"
@@ -291,7 +303,7 @@ else
 	then
 		echo "starting zmap"
 		echo "starting zmap" >>$logf
-		sudo zmap $zmap_parms -p $zmport --whitelist-file=$TELLTALE_MM >$TELLTALE_ZMAP 2>>$logf
+		sudo zmap $zmap_parms -p $zmport --whitelist-file=$TELLTALE_MM --blacklist-file="$srcdir/blacklist.conf" >$TELLTALE_ZMAP 2>>$logf
 		ln -s $TELLTALE_ZMAP $TELLTALE_GRAB
 		echo "zmap done"
 		echo "zmap done" >>$logf
@@ -360,7 +372,7 @@ else
 	echo "Getting fresh records" 
 	echo "Getting fresh records" >>$logf 
 	# this takes a looooooooooong time - maybe >1 day! 
-	$srcdir/FreshGrab.py -i $TELLTALE_GRAB -o $TELLTALE_FRESH -c $country >>$logf 2>&1 
+	$srcdir/FreshGrab.py -i $TELLTALE_GRAB -o $TELLTALE_FRESH -c $country -d $mmdbdir >>$logf 2>&1 
 	if [ "$?" != "0" ]
 	then
 		echo "Error ($?) from FreshGrab.py"
@@ -378,7 +390,7 @@ else
 	echo "Clustering records" 
 	echo "Clustering records" >>$logf 
 	# this takes a few minutes at least
-	$srcdir/SameKeys.py -i $TELLTALE_FRESH -o $TELLTALE_CLUSTER -c $country >>$logf 2>&1 
+	$srcdir/SameKeys.py -i $TELLTALE_FRESH -o $TELLTALE_CLUSTER -c $country -m $mmdbdir >>$logf 2>&1 
 	if [ "$?" != "0" ]
 	then
 		echo "Error ($?) from SameKeys.py"
@@ -397,9 +409,9 @@ else
 	echo "Graphing records" >>$logf 
 	# this takes a few minutes at least
 	# with legend
-	# $srcdir/ReportReuse.py -f $TELLTALE_CLUSTER -a -l -o . -c $country >>$logf 2>&1 
+	$srcdir/ReportReuse.py -f $TELLTALE_CLUSTER -a -l -o . -c $country >>$logf 2>&1 
 	# without legend
-	$srcdir/ReportReuse.py -f $TELLTALE_CLUSTER -a -o . -c $country >>$logf 2>&1 
+	#$srcdir/ReportReuse.py -f $TELLTALE_CLUSTER -a -o . -c $country >>$logf 2>&1 
 	if [ "$?" != "0" ]
 	then
 		echo "Error ($?) from ReportReuse.py"
