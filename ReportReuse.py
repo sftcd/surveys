@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (C) 2018 Stephen Farrell, stephen.farrell@cs.tcd.ie
 # 
@@ -68,7 +68,7 @@ def rendergraph(cnum,gvgraph,dynleg,legendwanted,odir,dorender):
         glen=len(gvgraph.source)
         if not dorender or glen > maxglen:
             if dorender:
-                print >>sys.stderr, "Not rendering graph for cluster "+ str(cnum) + " - too long: " + str(glen)
+                print("Not rendering graph for cluster "+ str(cnum) + " - too long: " + str(glen), file=sys.stderr)
             gvgraph.save(odir + "/graph"+str(cnum)+".dot")
             if not dorender:
                 return True
@@ -78,9 +78,9 @@ def rendergraph(cnum,gvgraph,dynleg,legendwanted,odir,dorender):
             gvgraph.render(odir + "/graph"+str(cnum)+".dot")
             return True
     except Exception as e: 
-        print >> sys.stderr, "Ecxeption rendering cluster: " + str(cnum) 
-        print >> sys.stderr, "Exception: " + str(e)
-        print >> sys.stderr, "Maybe you got bored and killed a process?"
+        print("Exception rendering cluster: " + str(cnum), file=sys.stderr)
+        print("Exception: " + str(e), file=sys.stderr)
+        print("Maybe you got bored and killed a process?", file=sys.stderr)
         return False
 
 
@@ -113,12 +113,12 @@ parser.add_argument('-r','--restart',
 args=parser.parse_args()
 
 # default render graphs == off (due to diskspace)
-dorendergraph=False
+dorendergraph=True
 # if this then just print legend
 if args.rendergraph:
     dorendergraph=True
 
-print "Dorender=",dorendergraph
+print("Dorender=",dorendergraph, file=sys.stderr)
 
 doanon=False
 if args.anonymise:
@@ -132,7 +132,7 @@ if args.country is not None:
 
 # if this then just print legend
 if args.fname is None and args.legend:
-    print args
+    print(args)
     printlegend()
     sys.exit(0)
 
@@ -153,11 +153,11 @@ try:
     testfile = tempfile.TemporaryFile(dir = outdir)
     testfile.close()
 except Exception as e:
-    print >> sys.stderr, "Can't create output directory " + outdir + " - exiting:" + str(e)
+    print("Can't create output directory " + outdir + " - exiting:" + str(e), file=sys.stderr)
     sys.exit(1)
 
 if not os.access(outdir,os.W_OK):
-    print >> sys.stderr, "Can't write to output directory " + outdir + " - exiting"
+    print("Can't write to output directory " + outdir + " - exiting", file=sys.stderr)
     sys.exit(1)
 
 # main line processing ...
@@ -222,7 +222,7 @@ while f:
     # if in re-start mode, skip this one if the relevant clusterfile exists
     # in the CWD
     if args.restart and os.path.exists("cluster"+str(cnum)+".json"):
-        print >>sys.stderr, "Skipping  cluster " + str(cnum) + " as restart mode set"
+        print("Skipping  cluster " + str(cnum) + " as restart mode set", file=sys.stderr)
         # read next fp
         checkcount += 1
         del f
@@ -230,7 +230,7 @@ while f:
         f=nfp()
         continue
     if cnum in clipsdone and clipsdone[cnum]==-1:
-        print >>sys.stderr, "Rendered cluster " + str(cnum) + " already"
+        print("Rendered cluster " + str(cnum) + " already", file=sys.stderr)
         # read next fp
         checkcount += 1
         del f
@@ -254,7 +254,7 @@ while f:
             if args.legend:
                 dynlegs[cnum]=dynleg
             #print >>sys.stderr, "\tnew graph for cluster " + str(cnum) + " size is: " + str(asizeof.asizeof(gvgraph))
-            print >>sys.stderr, "New graph for cluster " + str(cnum) 
+            print("New graph for cluster " + str(cnum), file=sys.stderr)
         else:
             gvgraph=grr[cnum]
             if args.legend:
@@ -273,7 +273,7 @@ while f:
             f.asndec=asninfo['asndec']
             if asninfo['cc'] != country:
                 # TODO: what to actually if the country-code is (now) wrong?
-                print >>sys.stderr, "Bad country for ip",f.ip,"ASN-CC:",asninfo['cc'],"Asked for CC:",country
+                print("Bad country for ip",f.ip,"ASN-CC:",asninfo['cc'],"Asked for CC:",country, file=sys.stderr)
 
         asncol=asn2colour(f.asndec)
         mainind=str(len(ipdone))
@@ -337,22 +337,22 @@ while f:
     if cnum in clipsdone:
         clipsdone[cnum] += 1
         if clipsdone[cnum]%100==0:
-            print >>sys.stderr, "\tsizeof graph for cluster " + str(cnum) +  \
+            print ("\tsizeof graph for cluster " + str(cnum) +  \
                 "  with " + str(clipsdone[cnum]) + " of " + str(csize) +  \
                 " done is: " + str(asizeof.asizeof(gvgraph)) +  \
                 " legend:"  + str(asizeof.asizeof(dynleg)) +   \
-                " Added " + str(edgesadded) + " edges"
+                " Added " + str(edgesadded) + " edges", file=sys.stderr)
         if clipsdone[cnum] == csize:
             try:
                 repf=open("cluster"+str(cnum)+".json","w")
-                print >>repf, creps[cnum]
-                print >>repf, "\n]\n"
+                print (creps[cnum], file=repf)
+                print ("\n]\n", file=repf)
                 repf.close()
                 del creps[cnum]
                 clipsdone[cnum] = -1
-                print >>sys.stderr, "Wrote cluster"+str(cnum)+".json"
+                print ("Wrote cluster"+str(cnum)+".json", file=sys.stderr)
             except:
-                print >>sys.stderr, "Failed to write json file for cluster " + str(cnum)
+                print ("Failed to write cluster"+str(cnum)+".json", file=sys.stderr)
 
             rv=rendergraph(cnum,gvgraph,dynleg,args.legend,outdir,dorendergraph)
             if rv:
@@ -360,7 +360,7 @@ while f:
                 del grr[cnum]
             else:
                 notrendered.append(cnum)
-                print >>sys.stderr, "Failed to graph cluster " + str(cnum)
+                print("Failed to graph cluster " + str(cnum), file=sys.stderr)
     else:
         clipsdone[cnum] = 1
 
@@ -372,9 +372,9 @@ while f:
     now=datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
     checkcount += 1
     if checkcount % 100 == 0:
-        print >> sys.stderr, "Creating graphs, fingerprint: " + str(checkcount) + " most recent cluster " + str(cnum) + \
+        print ("Creating graphs, fingerprint: " + str(checkcount) + " most recent cluster " + str(cnum) + \
                     " IPs: " + str(len(ipdone)) + " edges: " + str(len(edgedone)) + " #clusters: " + str(len(actualcnums)) + \
-                    " at: " + str(now)
+                    " at: " + str(now), file=sys.stderr)
     if checkcount % 1000 == 0:
         gc.collect()
 
@@ -390,12 +390,12 @@ if domem==False:
 del grr
 
 summary_fp=open(outdir+"/summary.txt","a+")
-print >> summary_fp, "collisions: " + str(checkcount) + "\n\t" + \
+print ("collisions: " + str(checkcount) + "\n\t" + \
         "total clusters: " + str(clustercount) + "\n\t" + \
-        "graphs not rendered: " + str(notrendered)
+        "graphs not rendered: " + str(notrendered), file=summary_fp)
 summary_fp.close()
 
-print >> sys.stderr, "collisions: " + str(checkcount) + "\n\t" + \
+print("collisions: " + str(checkcount) + "\n\t" + \
         "total clusters: " + str(clustercount) + "\n\t" + \
-        "graphs not rendered: " + str(notrendered)
+        "graphs not rendered: " + str(notrendered), file=sys.stderr)
 

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (C) 2018 Stephen Farrell, stephen.farrell@cs.tcd.ie
 # 
@@ -25,7 +25,7 @@
 
 import os, sys, argparse, tempfile, gc
 import csv
-import netaddr
+import ipaddress
 
 # command line arg handling 
 parser=argparse.ArgumentParser(description='Write out IP ranges from the country in question')
@@ -55,8 +55,9 @@ args=parser.parse_args()
 def_country="IE"
 def_indir=os.environ['HOME']+'/code/surveys/mmdb'
 def_outfile="mm-ips."+def_country
-def_v4file='GeoIPCountryWhois.csv'
-def_v6file='GeoIPv6.csv'
+def_v4file='GeoLite2-Country-Blocks-IPv4.csv'
+def_v6file='GeoLite2-Country-Blocks-IPv6.csv'
+def_countryLocationsFile = 'GeoLite2-Country-Locations-en.csv'
 
 country=def_country
 indir=def_indir
@@ -82,6 +83,9 @@ if args.v6file is not None:
 else:
     v6file=indir+'/'+def_v6file
 
+
+countryLocationsFile = indir+'/'+def_countryLocationsFile
+
 dov4=True
 if args.nov4:
     dov4=False
@@ -99,22 +103,39 @@ nov6=False
 if not os.access(v6file,os.R_OK):
     nov6=True
 
+if not os.access(countryLocationsFile,os.R_OK):
+    print("Can't read country locations file " + countryLocationsFile + " - exiting", file=sys.stderr)
+    sys.exit(1)
+
 if dov4 and nov4:
-    print >> sys.stderr, "Can't read IPv4 input file " + v4file + " - exiting"
+    print("Can't read IPv4 input file " + v4file + " - exiting", file=sys.stderr)
     sys.exit(1)
 
 if dov6 and nov6:
-    print >> sys.stderr, "Can't read IPv6 input file " + v6file + " - exiting"
+    print("Can't read IPv6 input file " + v6file + " - exiting", file=sys.stderr)
     sys.exit(1)
 
 # can we write output?
 if os.path.isfile(outfile) and not os.access(outfile,os.W_OK):
-    print >> sys.stderr, "Can't write onput file " + outfile + " - exiting"
+    print("Can't write output file " + outfile + " - exiting", file=sys.stderr)
     sys.exit(1)
 
 #print "4: " + v4file + " do: " + str(dov4)
 #print "6: " + v6file + " do: " + str(dov6)
 #print "outfile: " + outfile + "[.v4|.v6]"
+    
+
+countryGeoNameId = None
+with open(countryLocationsFile) as csvfile:
+    readCSV = csv.reader(csvfile, delimiter=',')
+    for row in readCSV:
+        if row[4]==country:
+            countryGeoNameId=row[0]
+            break
+
+if countryGeoNameId is None:
+    print("Can't find GeoNameId for country " + country + " - exiting", file=sys.stderr)
+    sys.exit(1)
 
 if dov4:
     lc=0 # lines count
@@ -124,17 +145,15 @@ if dov4:
     with open(v4file) as csvfile:
         readCSV = csv.reader(csvfile, delimiter=',')
         for row in readCSV:
-            if row[4]==country:
-                startip=row[0]
-                endip=row[1]
-                for cidr in netaddr.iprange_to_cidrs(startip,endip):
-                    print >>of, cidr
+            if row[1]==countryGeoNameId:
+                network=row[0]
+                print(network, file=of)
                 mc+=1
             lc+=1
             if (lc%1000)==0:
-                print >>sys.stderr, "v4: read " + str(lc) + " records, " + str(mc) + " matching"
+                print("v4: read " + str(lc) + " records, " + str(mc) + " matching", file=sys.stderr)
         of.close()
-    print >>sys.stderr, "v4: read " + str(lc) + " records, " + str(mc) + " matching"
+    print("v4: read " + str(lc) + " records, " + str(mc) + " matching", file=sys.stderr)
 
 if dov6:
     lc=0 # lines count
@@ -144,18 +163,14 @@ if dov6:
     with open(v6file) as csvfile:
         readCSV = csv.reader(csvfile, delimiter=',')
         for row in readCSV:
-            if row[4][2:-1]==country:
-                startip=row[0]
-                endip=row[1][2:-1]
-                print startip
-                print endip
-                for cidr in netaddr.iprange_to_cidrs(startip,endip):
-                    print >>of, cidr
+            if row[1]==countryGeoNameId:
+                network=row[0]
+                print(network, file=of)
                 mc+=1
             lc+=1
             if (lc%1000)==0:
-                print >>sys.stderr, "v6: read " + str(lc) + " records, " + str(mc) + " matching"
+                print("v6: read " + str(lc) + " records, " + str(mc) + " matching", file=sys.stderr)
         of.close()
-    print >>sys.stderr, "v6: read " + str(lc) + " records, " + str(mc) + " matching"
+    print("v6: read " + str(lc) + " records, " + str(mc) + " matching", file=sys.stderr)
 
 

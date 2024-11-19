@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 # Copyright (C) 2018 Stephen Farrell, stephen.farrell@cs.tcd.ie
 # 
@@ -60,6 +60,9 @@ argparser.add_argument('-c','--country',
 argparser.add_argument('-f','--fps',     
                     dest='fpfile',
                     help='pre-existing fingerprints file')
+argparser.add_argument('-m','--mmdb',     
+                    dest='mmdb',
+                    help='maxmind db folder')
 args=argparser.parse_args()
 
 # scandate is needed to determine certificate validity, so we support
@@ -69,20 +72,25 @@ if args.scandatestring is None:
     #print >> sys.stderr, "No (or bad) scan time provided, using 'now'"
 else:
     scandate=dparser.parse(args.scandatestring).replace(tzinfo=pytz.UTC)
-    print >> sys.stderr, "Scandate: using " + args.scandatestring + "\n"
+    print("Scandate: using " + args.scandatestring + "\n",file=sys.stderr)
 
 
 def_country='IE'
 country=def_country
 if args.country is not None:
     country=args.country
-    print >>sys.stderr, "Doing a " + country + "run"
+    print("Doing a " + country + "run",file=sys.stderr)
 
 if args.infile is not None:
     infile=args.infile
 
 if args.outfile is not None:
     outfile=args.outfile
+
+if args.mmdb is None:
+    mmdb=os.environ['HOME']+'/code/surveys/mmdb'
+else:
+    mmdb=args.mmdb
 
 # this is an array to hold the set of keys we find
 fingerprints=[]
@@ -102,13 +110,13 @@ if args.fpfile is not None:
     # read fingerprints from fpfile
     fpf=open(args.fpfile,"r")
     f=getnextfprint(fpf)
-    print f
+    print(f)
     fpcount=0
     while f:
         fingerprints.append(f)
         fpcount+=1
         if fpcount % 100 == 0:
-            print >>sys.stderr, "Read " + str(fpcount) + " fingerprints from " + args.fpfile
+            print("Read " + str(fpcount) + " fingerprints from " + args.fpfile,file=sys.stderr)
         f=getnextfprint(fpf)
     fpf.close()
 else:
@@ -135,13 +143,13 @@ else:
                 thisone.asndec=asndec
                 if country != 'XX' and j_content['location']['country_code'] != country:
                     badrec=True
-                    print >>sys.stderr, "Bad country for ip",thisone.ip,"location:",j_content['location']['country_code'],"Asked for CC:",country
+                    print("Bad country for ip",thisone.ip,"location:",j_content['location']['country_code'],"Asked for CC:",country,file=sys.stderr)
                     j_content['wrong_country']=j_content['location']['country_code'] 
             except:
                 # look that chap up ourselves
                 mm_inited=False
                 if not mm_inited:
-                    mm_setup()
+                    mm_setup(mmdb)
                     mm_inited=True
                 asninfo=mm_info(thisone.ip)
                 #print "fixing up asn info",asninfo
@@ -150,7 +158,7 @@ else:
                 if country != 'XX' and asninfo['cc'] != country:
                     # just record as baddy if the country-code is (now) wrong?
                     # mark it so we can revisit later too
-                    print >>sys.stderr, "Bad country for ip",thisone.ip,"asn:",asninfo['cc'],"Asked for CC:",country
+                    print("Bad country for ip",thisone.ip,"asn:",asninfo['cc'],"Asked for CC:",country,file=sys.stderr)
                     j_content['wrong_country']=asninfo['cc']
                     badrec=True
     
@@ -344,10 +352,10 @@ else:
             thistime=ipend-ipstart
             peripaverage=((overallcount*peripaverage)+thistime)/(overallcount+1)
             if overallcount % 5 == 0:
-                print >> sys.stderr, "Reading fingerprints and rdns, did: " + str(overallcount) + \
+                print("Reading fingerprints and rdns, did: " + str(overallcount) + \
                         " most recent ip " + thisone.ip + \
                         " average time/ip: " + str(peripaverage) \
-                        + " last time: " + str(thistime)
+                        + " last time: " + str(thistime),file=sys.stderr)
             del j_content
             del thisone
     f.close()
@@ -459,7 +467,7 @@ for i in range(0,fl):
     checkcount += 1
 
     if checkcount % 100 == 0:
-        print >> sys.stderr, "Checking colisions, did: " + str(checkcount) + " found: " + str(colcount) + " remote collisions"
+        print("Checking colisions, did: " + str(checkcount) + " found: " + str(colcount) + " remote collisions",file=sys.stderr)
 
     if checkcount % 1000 == 0:
         gc.collect()
@@ -486,21 +494,21 @@ for f in fingerprints:
 
 histogram={}
 clusterf=open("clustersizes.csv","w")
-print >>clusterf, "clusternum,size"
+print("clusternum,size",file=clusterf)
 for c in clustersizes:
-    print >> clusterf, str(c) + ", " + str(clustersizes[c])
+    print(str(c) + ", " + str(clustersizes[c]),file=clusterf)
     if clustersizes[c] in histogram:
         histogram[clustersizes[c]]= histogram[clustersizes[c]]+1
     else:
         histogram[clustersizes[c]]=1
-print >>clusterf, "\n"
-print >>clusterf, "clustersize,#clusters,collider"
+print("\n", file=clusterf)
+print("clustersize,#clusters,collider", file=clusterf)
 # "collider" is y or n, so we mark the special "no-external collisions cluster" with an "n"
 for h in histogram:
     if h==clustersizes[0]:
-        print >> clusterf, str(h) + "," + str(histogram[h]) + ",n"
+        print(str(h) + "," + str(histogram[h]) + ",n", file=clusterf)
     else:
-        print >> clusterf, str(h) + "," + str(histogram[h]) + ",y"
+        print(str(h) + "," + str(histogram[h]) + ",y", file=clusterf)
 del clustersizes
 clusterf.close()
 
@@ -529,9 +537,9 @@ try:
         if accumcount % 100 == 0:
             # exit early for debug purposes
             #break
-            print >> sys.stderr, "Saving collisions, did: " + str(accumcount) + " found: " + str(colcount) + " IP's with remote collisions"
+            print("Saving collisions, did: " + str(accumcount) + " found: " + str(colcount) + " IP's with remote collisions",file=sys.stderr)
 except Exception as e: 
-    print >> sys.stderr, "Saving exception " + str(e)
+    print("Saving exception " + str(e),file=sys.stderr)
 
 # this gets crapped on each time (for now)
 colf.write('\n]\n')
@@ -540,8 +548,7 @@ mergedclusternum=len(mergedclusternums)
 
 del fingerprints
 
-
-print >> sys.stderr, "\toverall: " + str(overallcount) + "\n\t" + \
+print("\toverall: " + str(overallcount) + "\n\t" + \
         "good: " + str(goodcount) + "\n\t" + \
         "bad: " + str(badcount) + "\n\t" + \
         "remote collisions: " + str(colcount) + "\n\t" + \
@@ -549,4 +556,4 @@ print >> sys.stderr, "\toverall: " + str(overallcount) + "\n\t" + \
         "most collisions: " + str(mostcollisions) + " for record: " + str(biggestcollider) + "\n\t" + \
         "non-merged total clusters: " + str(clusternum) + "\n\t" + \
         "merged total clusters: " + str(mergedclusternum) + "\n\t" + \
-        "Scandate used is: " + str(scandate)
+        "Scandate used is: " + str(scandate), file=sys.stderr)

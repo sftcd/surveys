@@ -20,91 +20,97 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# grab and explode updated versions of maxmind's free DBs
+function usage()
+{
+	echo "$0 [-k <licence-key] [-o <output-directory>] [-h <help>]"
+	echo "	-k means is the licence key for the mm database"
+	echo "	output-directory defaults ./mmdb"
+  echo "	help displays this message"
+	exit 99
+}
 
-# set -x
+function downloadBinaryDB() 
+{
+  echo "Downloading mm $1 binary database"
+  wget -O $output/mmdb.zip "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-$1&license_key=$key&suffix=tar.gz"
+  tar -xzf $output/mmdb.zip -C $output
+  rm $output/mmdb.zip
+  sortOutput
+  echo "Finished downloading mm $1 binary database"
+}
 
-# for testing
-#skipwget=false
-#if [ "$1" == "SkipWget" ]
-#then
-	#skipwget=true
-#fi
+function sortOutput() 
+{
+  # Remove nested directory, move all files in subdirectories to output directory
+  find $output -mindepth 2 -type f -print -exec mv {} $output \;
+  # Remove nested directory
+  find $output -mindepth 1 -maxdepth 1 -type d -print -exec rm -rf {} \;
+}
 
-# just configure that directory in one place
-dpath=`grep mmdbpath $HOME/code/surveys/SurveyFuncs.py  | head -1 | awk -F\' '{print $2}' | sed -e 's/\/$//'`
-DESTDIR=$HOME/$dpath
-# for testing
-#DESTDIR=$PWD/db
+key=""
+output="./mmdb"
 
-if [ ! -d $DESTDIR ]
-then
-	mkdir -p $DESTDIR
-fi
-if [ ! -d $DESTDIR ]
-then
-	echo "Can't create $DESTDIR - exiting"
-	exit 11
-fi
-
-TMPD=`mktemp -d /tmp/mmdbXXXX`
-
-pushd $TMPD
-
-for db in City Country ASN
-do
-	tarball="GeoLite2-$db.tar.gz"
-	url="http://geolite.maxmind.com/download/geoip/database/$tarball"
-	echo "Getting $url"
-	#if (( $skipwget ))
-	#then
-		wget -q $url
-	#else
-		#echo "Skipping wget $url as requsted"
-	#fi
-	if [ "$?" != "0" ]
-	then
-		echo "Failed to download $url"
-	else
-		tar xzvf $tarball
-		dbdate=`ls -d "GeoLite2-$db"_* | awk -F"_" '{print $2}'`
-		dirname="GeoLite2-$db"_"$dbdate"
-		fname="GeoLite2-$db"
-		cp $dirname/$fname.mmdb $DESTDIR/$fname-$dbdate.mmdb
-		# update link
-		ln -sf $DESTDIR/$fname-$dbdate.mmdb $DESTDIR/$fname.mmdb
-	fi
+while getopts "k:o:h" opt; do
+  case $opt in
+    k)
+      key=$OPTARG
+      ;;
+    o)
+      output=$OPTARG
+      ;;
+    h)
+      usage
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      usage
+      ;;
+  esac
 done
 
 
-# get the CSV for countries (also for IPv6!) so we can start our own zmap 
-# if we want
-now=`date +%Y%m%d`
-#wget http://geolite.maxmind.com/download/geoip/database/GeoIPCountryCSV.zip
-#unzip GeoIPCountryCSV.zip 
-wget https://geolite.maxmind.com/download/geoip/database/GeoLite2-Country-CSV.zip
-unzip GeoLite2-Country-CSV.zip
-# This file seems to no longer be shipped, not sure if it's needed though
-# and I guess that means we need to re-test all the geoip stuff (sigh)
-if [ -f GeoIPCountryWhois.csv ]
-then
-    cp GeoIPCountryWhois.csv $DESTDIR/GeoIPCountryWhois-$now.csv
-    ln -sf $DESTDIR/GeoIPCountryWhois-$now.csv $DESTDIR/GeoIPCountryWhois.csv
+if [ -z "$key" ]; then
+  echo "No licence key specified"
+  usage
 fi
 
-wget http://geolite.maxmind.com/download/geoip/database/GeoIPv6.csv.gz
-gunzip GeoIPv6.csv.gz
-cp GeoIPv6.csv $DESTDIR/GeoIPv6-$now.csv
-ln -sf $DESTDIR/GeoIPv6-$now.csv $DESTDIR/GeoIPv6.csv 
+if [ ! -d "$output" ]; then
+  mkdir -p $output
+fi
 
-# create a list of country codes from that (who knows, it might change
-# over time:-)
-cat GeoIPv6.csv | awk -F, '{print $5}' | sort | uniq | sed -e 's/ "//' | sed -e 's/"//g' >$DESTDIR/countrycodes-$now.txt
-ln -sf $DESTDIR/countrycodes-$now.txt $DESTDIR/countrycodes.txt
+if [ ! -d "$output" ]; then
+  echo "Could not create output directory $output"
+  exit 99
+fi
 
-popd
-# clean up
-rm -rf $TMPD
-echo "Done"
+echo "Clearing folder $output"
+rm -rf $output/*
 
+echo "Updating mm database"
+echo "Licence key: $key"
+echo "Output directory: $output"
 
+echo "Downloading mm country database"
+wget -O $output/mmdb.zip "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&license_key=$key&suffix=zip"
+unzip -o $output/mmdb.zip -d $output
+rm $output/mmdb.zip
+sortOutput
+echo "Finished downloading mm country database"
+
+downloadBinaryDB ASN
+downloadBinaryDB City
+downloadBinaryDB Country
+
+echo "Removing unnecessary files"
+rm $output/*.txt
+
+echo "Finished downloading"
+
+filepath=$output/GeoLite2-Country-Locations-en.csv
+echo "Creating countrycodes.txt"
+
+tail -n +2 $filepath | while read line; do
+  echo $line | awk -F "\"*,\"*" '{print $5}' >> $output/countrycodes.txt
+done
+
+echo "Finished creating countrycodes.txt"
