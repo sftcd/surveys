@@ -1,0 +1,149 @@
+nohup: ignoring input
+++ whenisitagain
+++ date -u +%Y%m%d-%H%M%S
++ NOW=20250708-200737
+++ /bin/pwd
++ startdir=/home/zhangt8/surveys
++ echo 'Running ./skey-all.sh at 20250708-200737'
+Running ./skey-all.sh at 20250708-200737
++ srcdir=/home/zhangt8/code/surveys
++ country=IE
++ outdir=/home/zhangt8/data/smtp/runs
++ ipssrc=
++ pdir=
++ domm=no
+++ awk '-F'\''' '{print $2}'
+++ sed -e 's/\/$//'
+++ head -1
+++ grep mmdbpath /home/zhangt8/code/surveys/SurveyFuncs.py
++ dpath=
++ mmdbdir=mmdb
++ zmport=25
++ skips=
++ [[ '' == '' ]]
++ zmap_parms='-B 100K'
+++ getopt -s bash -o ms:r:c:i:p:z:k:h -l mm,srcdir:,resdir:,country:,ips:,process:,zmap:,skips:,help -- -c IE -k mm -p IE-20250621-223528/ -r .
++ options=' -c '\''IE'\'' -k '\''mm'\'' -p '\''IE-20250621-223528/'\'' -r '\''.'\'' --'
++ eval set -- ' -c '\''IE'\'' -k '\''mm'\'' -p '\''IE-20250621-223528/'\'' -r '\''.'\'' --'
+++ set -- -c IE -k mm -p IE-20250621-223528/ -r . --
++ '[' 9 -gt 0 ']'
++ case "$1" in
++ country=IE
++ shift
++ shift
++ '[' 7 -gt 0 ']'
++ case "$1" in
++ skips=mm
++ shift
++ shift
++ '[' 5 -gt 0 ']'
++ case "$1" in
++ pdir=IE-20250621-223528/
++ shift
++ shift
++ '[' 3 -gt 0 ']'
++ case "$1" in
++ outdir=.
++ shift
++ shift
++ '[' 1 -gt 0 ']'
++ case "$1" in
++ shift
++ break
++ '[' /home/zhangt8/code/surveys == '' ']'
++ '[' '!' -d /home/zhangt8/code/surveys ']'
++ '[' . == '' ']'
++ mmdbdir=/home/zhangt8/code/surveys/mmdb
++ echo 'Checking country IE in dir /home/zhangt8/code/surveys/mmdb'
+Checking country IE in dir /home/zhangt8/code/surveys/mmdb
+++ grep IE /home/zhangt8/code/surveys/mmdb/countrycodes.txt
++ cknown=IE
++ [[ IE != \I\E ]]
++ resdir=./IE-20250708-200737
++ '[' IE-20250621-223528/ == '' ']'
++ resdir=IE-20250621-223528/
++ '[' '!' -d IE-20250621-223528/ ']'
++ cd IE-20250621-223528/
++ cp /home/zhangt8/code/surveys/Makefile .
++ logf=20250708-200737.out
++ run=20250708-200737
++ echo 'Starting at 20250708-200737, log in 20250708-200737.out'
+Starting at 20250708-200737, log in 20250708-200737.out
++ echo 'Starting at 20250708-200737, log in 20250708-200737.out'
++ unset SKIP_MM
++ unset SKIP_ZMAP
++ unset SKIP_GRAB
++ unset SKIP_FRESH
++ unset SKIP_CLUSTER
++ unset SKIP_GRAPH
++ TELLTALE_MM=mm-ips.IE.v4
++ TELLTALE_ZMAP=zmap.ips
++ TELLTALE_GRAB=input.ips
++ TELLTALE_FRESH=records.fresh
++ TELLTALE_CLUSTER=collisions.json
++ TELLTALE_GRAPH=graph.done
++ '[' IE-20250621-223528/ '!=' '' ']'
++ '[' -f mm-ips.IE.v4 ']'
++ SKIP_MM=yes
++ '[' -f zmap.ips ']'
++ SKIP_ZMAP=yes
++ '[' -f input.ips ']'
++ SKIP_GRAB=yes
++ '[' -f records.fresh ']'
++ SKIP_FRESH=yes
++ '[' -f collisions.json ']'
++ SKIP_CLUSTER=yes
++ '[' -f graphs.done ']'
++ [[ mm != '' ]]
++ echo '|mm|'
+|mm|
++ OFS=' 	
+'
++ IFS=,
++ for skip in $skips
++ echo 'Checking mm'
+Checking mm
++ [[ mm == \m\m ]]
++ SKIP_MM=yes
++ [[ mm == \g\r\a\b ]]
++ [[ mm == \z\m\a\p ]]
++ [[ mm == \f\r\e\s\h ]]
++ [[ mm == \c\l\u\s\t\e\r ]]
++ [[ mm == \g\r\a\p\h ]]
++ IFS=' 	
+'
++ '[' yes ']'
++ echo 'Skipping maxmind'
+Skipping maxmind
++ echo 'Skipping maxmind'
++ '[' yes ']'
++ echo 'Skipping zmap'
+Skipping zmap
++ echo 'Skipping zmap'
++ '[' yes ']'
++ echo 'Skipping grab'
+Skipping grab
++ echo 'Skipping grab'
++ '[' yes ']'
++ echo 'Skipping fresh'
+Skipping fresh
++ echo 'Skipping fresh'
++ '[' yes ']'
++ echo 'Skipping cluster'
+Skipping cluster
++ echo 'Skipping cluster'
++ '[' '' ']'
++ echo 'Graphing records'
+Graphing records
++ echo 'Graphing records'
++ /home/zhangt8/code/surveys/ReportReuse.py -f collisions.json -a -l -o . -c IE
++ '[' 0 '!=' 0 ']'
++ touch graph.done
++ echo 'Done graphing records'
+Done graphing records
++ echo 'Done graphing records'
+++ whenisitagain
+++ date -u +%Y%m%d-%H%M%S
++ NOW=20250708-201151
++ echo 'Overall Finished at 20250708-201151'
++ cd /home/zhangt8/surveys
