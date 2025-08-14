@@ -20,11 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# set -x
+set -x
 
 # count how many IPs were zmap'd, how many p25 listeners and percentages
 
-TOP="$HOME/data/smtp/runs"
+#TOP="$HOME/data/smtp/runs"
+TOP="/home/zhangt8/surveys"
 
 portstrings="p22 p25 p110 p143 p443 p587 p993"
 akfile="fingerprints.json"
@@ -44,7 +45,7 @@ declare -A empties_arr
 declare -A nonempties_arr
 declare -A dodgy_arr
 
-for rundir in $TOP/??-201[89]*
+for rundir in $TOP/??-20[0-9][0-9]*
 do
 	runname=`basename $rundir | awk -F'-' '{print $1"-"$2}'`
 	for port in $portstrings
@@ -53,9 +54,10 @@ do
 		empties_arr["$runname,$port"]=0
 		nonempties_arr["$runname,$port"]=0
 	done
+  dodgy_arr["$runname"]=0
 done
 
-for rundir in $TOP/??-201[89]*
+for rundir in $TOP/??-20[0-9][0-9]*
 do
 	runname=`basename $rundir | awk -F'-' '{print $1"-"$2}'`
 	echo "Checking $rundir"
@@ -68,12 +70,19 @@ do
 	then
 		for port in $portstrings
 		do
-			overall=`grep -c '"'$port'"[ ]*: {' $rundir/$f2c`
-			empties=`grep -c '"'$port'"[ ]*:[ ]* {}' $rundir/$f2c`
-			nonempties=$((overall-empties))
-			overall_arr["$runname,$port"]=$overall
-			empties_arr["$runname,$port"]=$empties
-			nonempties_arr["$runname,$port"]=$nonempties
+#      overall=`grep -c "\"$port\"[ ]*: {" $rundir/$f2c`
+      overall=$(grep -F -c "\"$port\": {" "$rundir/$f2c")
+      overall=${overall:-0}
+#      empties=`grep -c "\"$port\"[[:space:]]*:[[:space:]]*\{\}" $rundir/$f2c`
+      empties=$(grep -F -c "\"$port\": {}" "$rundir/$f2c")
+      empties=${empties:-0}
+      echo "[DEBUG] port=$port overall='$overall' empties='$empties'" >&2
+      nonempties=$(( overall - empties ))
+      
+      overall_arr["$runname,$port"]=$overall
+      empties_arr["$runname,$port"]=$empties
+      nonempties_arr["$runname,$port"]=$nonempties
+
 			#echo "$runname: has $overall IPs with $nonempties doing crypto on $port and $empties without"
 		done 
 		dcount=`grep   '"ip"' $rundir/dodgy.json  | grep , | sed -e 's/ //g' | sort | uniq | wc -l`
@@ -119,7 +128,7 @@ do
 done
 
 # print it out
-for rundir in $TOP/??-201[89]*
+for rundir in $TOP/??-20[0-9][0-9]*
 do
 	runname=`basename $rundir | awk -F'-' '{print $1"-"$2}'`
 	echo -n "\\hline $runname "
@@ -147,7 +156,7 @@ do
 	echo -n " & $portstotal & ${overall_arr["$runname,p25"]} & ${dodgy_arr[$runname]} & $iptotal"
 	grandportstotal=$((grandportstotal+portstotal))
 	grandsomecryptototal=$((grandsomecryptototal+${overall_arr["$runname,p25"]}))
-	grandnocryptototal=$((grandnocryptototal+${dodgy_arr[$runname]}))
+	grandnocryptototal=$((grandnocryptototal+${dodgy_arr[$runname]:-0}))
 	grandtotal=$((grandtotal+$iptotal))
 	echo "\\\\"
 done

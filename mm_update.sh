@@ -20,97 +20,74 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-function usage()
-{
-	echo "$0 [-k <licence-key] [-o <output-directory>] [-h <help>]"
-	echo "	-k means is the licence key for the mm database"
-	echo "	output-directory defaults ./mmdb"
-  echo "	help displays this message"
-	exit 99
+set -euo pipefail
+
+function usage() {
+    cat <<EOF
+Usage: $0 [-k <license-key>] [-o <output-directory>] [-h]
+
+    -k <license-key>     MaxMind License Key (can also be provided via env MAXMIND_LICENSE_KEY)
+    -o <output-directory>  Directory to store mmdb files (default: ./mmdb)
+    -h                    Show this help message and exit
+EOF
+    exit 1
 }
 
-function downloadBinaryDB() 
-{
-  echo "Downloading mm $1 binary database"
-  wget -O $output/mmdb.zip "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-$1&license_key=$key&suffix=tar.gz"
-  tar -xzf $output/mmdb.zip -C $output
-  rm $output/mmdb.zip
-  sortOutput
-  echo "Finished downloading mm $1 binary database"
-}
-
-function sortOutput() 
-{
-  # Remove nested directory, move all files in subdirectories to output directory
-  find $output -mindepth 2 -type f -print -exec mv {} $output \;
-  # Remove nested directory
-  find $output -mindepth 1 -maxdepth 1 -type d -print -exec rm -rf {} \;
-}
-
-key=""
 output="./mmdb"
+key="${MAXMIND_LICENSE_KEY:-}"
 
 while getopts "k:o:h" opt; do
-  case $opt in
-    k)
-      key=$OPTARG
-      ;;
-    o)
-      output=$OPTARG
-      ;;
-    h)
-      usage
-      ;;
-    \?)
-      echo "Invalid option: -$OPTARG" >&2
-      usage
-      ;;
-  esac
+    case "$opt" in
+        k) key="$OPTARG" ;;
+        o) output="$OPTARG" ;;
+        h) usage ;;
+        *) usage ;;
+    esac
 done
-
 
 if [ -z "$key" ]; then
-  echo "No licence key specified"
-  usage
+    echo "[ERROR] No MaxMind license key specified."
+    usage
 fi
 
-if [ ! -d "$output" ]; then
-  mkdir -p $output
+mkdir -p "$output"
+rm -rf "${output:?}/"*
+
+echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] Starting GeoLite2 update"
+echo "  License Key: $key"
+echo "  Output Dir : $output"
+
+echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] Downloading GeoLite2-Country-CSV..."
+wget -qO "$output"/country.zip \
+  "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&license_key=${key}&suffix=zip"
+unzip -q -o "$output"/country.zip -d "$output"
+rm -f "$output"/country.zip
+find "$output" -mindepth 2 -type f -exec mv {} "$output"/ \;
+find "$output" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} \;
+
+download_binary_db() {
+    local edition="$1"
+    echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] Downloading GeoLite2-${edition}-tar.gz..."
+    wget -qO "$output"/"${edition,,}".tar.gz \
+      "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-${edition}&license_key=${key}&suffix=tar.gz"
+    tar -xzf "$output"/"${edition,,}".tar.gz -C "$output"
+    rm -f "$output"/"${edition,,}".tar.gz
+    find "$output" -mindepth 2 -type f -exec mv {} "$output"/ \;
+    find "$output" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} \;
+    echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] Finished GeoLite2-${edition}"
+}
+
+download_binary_db ASN
+download_binary_db City
+download_binary_db Country
+
+echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] Generating countrycodes.txt..."
+csv_file=$(find "$output" -maxdepth 1 -name 'GeoLite2-Country-Locations-*.csv' | head -n1)
+if [ -f "$csv_file" ]; then
+    tail -n +2 "$csv_file" | awk -F',' '{ gsub(/"/,""); print $5 }' > "$output"/countrycodes.txt
+    echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] Generated $output/countrycodes.txt"
+else
+    echo "[WARN] CSV file not found; skipping countrycodes.txt generation"
 fi
 
-if [ ! -d "$output" ]; then
-  echo "Could not create output directory $output"
-  exit 99
-fi
-
-echo "Clearing folder $output"
-rm -rf $output/*
-
-echo "Updating mm database"
-echo "Licence key: $key"
-echo "Output directory: $output"
-
-echo "Downloading mm country database"
-wget -O $output/mmdb.zip "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&license_key=$key&suffix=zip"
-unzip -o $output/mmdb.zip -d $output
-rm $output/mmdb.zip
-sortOutput
-echo "Finished downloading mm country database"
-
-downloadBinaryDB ASN
-downloadBinaryDB City
-downloadBinaryDB Country
-
-echo "Removing unnecessary files"
-rm $output/*.txt
-
-echo "Finished downloading"
-
-filepath=$output/GeoLite2-Country-Locations-en.csv
-echo "Creating countrycodes.txt"
-
-tail -n +2 $filepath | while read line; do
-  echo $line | awk -F "\"*,\"*" '{print $5}' >> $output/countrycodes.txt
-done
-
-echo "Finished creating countrycodes.txt"
+echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')] GeoLite2 update complete."
