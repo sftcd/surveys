@@ -137,6 +137,13 @@ go build
 # put it on PATH
 sudo ln -sf $HOME/go/src/github.com/zmap/zgrab/zgrab /usr/local/bin
 
+# add zdns
+go get github.com/zmap/zdns
+cd $GOPATH/src/github.com/zmap/zdns/zdns
+go build
+# add to path
+sudo ln -sf $HOME/go/src/github.com/zmap/zdns/zdns/zdns /usr/local/bin
+
 # get ciphersuite stuff
 cd $HOME/code/surveys/clustertools
 if [ ! -f mapping-rfc.txt ]
