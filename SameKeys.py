@@ -26,7 +26,7 @@
 # figure out if we can get port 587 ever - looks like not, for now anyway
 # my FreshGrab's do have that but we don't for censys.io's Nov 2017 scans
 
-import os, sys, argparse, tempfile, gc
+import os, sys, argparse, tempfile, gc, subprocess
 import json
 import jsonpickle # install via  "$ sudo pip install -U jsonpickle"
 import time, datetime
@@ -34,7 +34,38 @@ from dateutil import parser as dparser  # for parsing time from comand line and 
 import pytz # for adding back TZ info to allow comparisons
 
 # our own stuff
-from SurveyFuncs import *  
+from SurveyFuncs import *
+
+
+def zdns_ptr_bulk(ips):
+    # Create a zdns subprocess for a lookup (100 in a batch) 
+    # Returns {ip: rdns}.
+    try:
+        proc=subprocess.Popen(['zdns','PTR'],
+                              stdin=subprocess.PIPE,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
+        out,_=proc.communicate(input=("\n".join(ips)+"\n").encode())
+    except FileNotFoundError:
+        raise RuntimeError("Issue with zdns, check the command works")
+    result={}
+    for line in out.decode("utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            obj=json.loads(line)
+        except Exception:
+            continue
+        ip=obj.get('name')
+        ptr=obj.get('results',{}).get('PTR',{})
+        if ptr.get('status')!='NOERROR':
+            continue
+        for a in ptr.get('data',{}).get('answers',[]):
+            if a.get('type')=='PTR':
+                result[ip]=a.get('answer','').rstrip('.')
+                break
+    return result
+
 
 # default values
 infile="records.fresh"
@@ -123,7 +154,19 @@ else:
     bads={}
     # keep track of how long this is taking per ip
     peripaverage=0
-    
+
+    # using zdns to do a reverse-DNS lookup in bulk
+    ptr_ips=[]
+    with open(infile,'r') as f:
+        for line in f:
+            try:
+                ptr_ips.append(json.loads(line)['ip'].strip())
+            except Exception:
+                pass
+    print("zdns PTR for "+str(len(ptr_ips))+" IPs...",file=sys.stderr)
+    ptr_dict=zdns_ptr_bulk(ptr_ips)
+    print("zdns PTR got "+str(len(ptr_dict))+" answers",file=sys.stderr)
+
     with open(infile,'r') as f:
         for line in f:
             ipstart=time.time()
@@ -167,16 +210,10 @@ else:
     
             thisone.analysis['nameset']={}
             nameset=thisone.analysis['nameset']
-            try:
-                # name from reverse DNS
-                rdnsrec=socket.gethostbyaddr(thisone.ip)
-                rdns=rdnsrec[0]
-                #print "FQDN reverse: " + str(rdns)
+            # name from reverse DNS (looked up in bulk by zdns before the loop)
+            rdns=ptr_dict.get(thisone.ip)
+            if rdns is not None:
                 nameset['rdns']=rdns
-            except Exception as e: 
-                #print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + thisone.ip
-                #nameset['rdns']=''
-                pass
     
             # name from banner
             try:
