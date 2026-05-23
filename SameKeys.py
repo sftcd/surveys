@@ -67,6 +67,86 @@ def zdns_ptr_bulk(ips):
     return result
 
 
+def zdns_a_bulk(names):
+    # Create a zdns subprocess for a forward A lookup (100 in a batch)
+    # Returns {name: ip}.
+    names=[n for n in names if n]
+    if not names:
+        return {}
+    try:
+        proc=subprocess.Popen(['zdns','A'],
+                              stdin=subprocess.PIPE,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
+        out,_=proc.communicate(input=("\n".join(names)+"\n").encode())
+    except FileNotFoundError:
+        raise RuntimeError("Issue with zdns, check the command works")
+    result={}
+    for line in out.decode("utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            obj=json.loads(line)
+        except Exception:
+            continue
+        name=obj.get('name')
+        ar=obj.get('results',{}).get('A',{})
+        if ar.get('status')!='NOERROR':
+            continue
+        for a in ar.get('data',{}).get('answers',[]):
+            if a.get('type')=='A':
+                result[name]=a.get('answer','')
+                break
+    return result
+
+
+def candidate_names_for_blob(blob):
+    # Mirror the main loop's name extraction. Returns a set of candidate
+    # hostnames from p25 banner plus cert DN/SANs across all scanned ports.
+    names=set()
+    writer=blob.get('writer','')
+    # banner from p25
+    try:
+        if writer=='FreshGrab.py':
+            banner=blob['p25']['data']['banner']
+        else:
+            banner=blob['p25']['smtp']['starttls']['banner']
+        ts=banner.split()
+        if ts[0]=='220':
+            names.add(ts[1])
+        elif ts[0].startswith('220-'):
+            names.add(ts[0][4:])
+    except Exception:
+        pass
+    # cert names from each port - mirror the main loop's cert paths exactly
+    tmp={}
+    for port in ('p25','p110','p143','p443','p587','p993'):
+        try:
+            if writer=='FreshGrab.py':
+                if port=='p443':
+                    cert=blob[port]['data']['http']['response']['request']['tls_handshake']['server_certificates']['certificate']
+                else:
+                    cert=blob[port]['data']['tls']['server_certificates']['certificate']
+            else:
+                if port=='p25':
+                    cert=blob[port]['smtp']['starttls']['tls']['certificate']
+                elif port in ('p110','p143'):
+                    cert=blob[port]['pop3']['starttls']['tls']['certificate']
+                elif port=='p443':
+                    cert=blob[port]['https']['tls']['certificate']
+                elif port=='p993':
+                    cert=blob[port]['imaps']['tls']['tls']['certificate']['parsed']
+                else:
+                    continue
+            get_certnames(port,cert,tmp)
+        except Exception:
+            pass
+    for v in tmp.values():
+        if v:
+            names.add(v)
+    return names
+
+
 # default values
 infile="records.fresh"
 outfile="collisions.json"
@@ -166,6 +246,20 @@ else:
     print("zdns PTR for "+str(len(ptr_ips))+" IPs...",file=sys.stderr)
     ptr_dict=zdns_ptr_bulk(ptr_ips)
     print("zdns PTR got "+str(len(ptr_dict))+" answers",file=sys.stderr)
+
+    # using zdns to do a forward-DNS lookup in bulk
+    candidate_names=set()
+    candidate_names.update(v for v in ptr_dict.values() if v)
+    with open(infile,'r') as f:
+        for line in f:
+            try:
+                blob=json.loads(line)
+            except Exception:
+                continue
+            candidate_names.update(candidate_names_for_blob(blob))
+    print("zdns A for "+str(len(candidate_names))+" names...",file=sys.stderr)
+    forward_dict=zdns_a_bulk(candidate_names)
+    print("zdns A got "+str(len(forward_dict))+" answers",file=sys.stderr)
 
     with open(infile,'r') as f:
         for line in f:
@@ -353,24 +447,20 @@ else:
             besty=[]
             nogood=True # assume none are good
             tmp={}
-            # try verify names a bit
+            # try verify names a bit (forward A looked up in bulk by zdns before the loop)
             for k in nameset:
                 v=nameset[k]
                 #print "checking: " + k + " " + v
                 # see if we can verify the value as matching our give IP
                 if v != '' and not fqdn_bogon(v):
-                    try:
-                        rip=socket.gethostbyname(v)
+                    rip=forward_dict.get(v)
+                    if rip is not None:
                         if rip == thisone.ip:
                             besty.append(k)
                         else:
                             tmp[k+'-ip']=rip
                         # some name has an IP, even if not what we expect
                         nogood=False
-                    except Exception as e: 
-                        #oddly, an NXDOMAIN seems to cause an exception, so these happen
-                        #print >> sys.stderr, "Error making DNS query for " + v + " for ip:" + thisone.ip + " " + str(e)
-                        pass
             for k in tmp:
                 nameset[k]=tmp[k]
             nameset['allbad']=nogood
