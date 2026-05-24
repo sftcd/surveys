@@ -137,13 +137,13 @@ go build
 # put it on PATH
 sudo ln -sf $HOME/go/src/github.com/zmap/zgrab/zgrab /usr/local/bin
 
-# add zdns - install disabled, current zdns needs Go >=1.25 (this
-# script still pins Go 1.10) and the repo layout has changed.
-# Recipe will be reinstated by the zgrab2 PR once the Go pin is bumped.
-#go get github.com/zmap/zdns
-#cd $GOPATH/src/github.com/zmap/zdns/zdns
-#go build
-#sudo ln -sf $HOME/go/src/github.com/zmap/zdns/zdns/zdns /usr/local/bin
+# add zdns
+go install github.com/zmap/zdns/v2@latest
+sudo ln -sf $HOME/go/bin/zdns /usr/local/bin/zdns
+
+# add zgrab2
+go install github.com/zmap/zgrab2@latest
+sudo ln -sf $HOME/go/bin/zgrab2 /usr/local/bin/zgrab2
 
 # get ciphersuite stuff
 cd $HOME/code/surveys/clustertools
