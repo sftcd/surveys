@@ -37,7 +37,7 @@ import pytz # for adding back TZ info to allow comparisons
 from SurveyFuncs import *
 
 
-def zdns_ptr_bulk(ips):
+def zdns_ptr(ips):
     # Create a zdns subprocess for a PTR lookup (100 in a batch)
     # Returns {ip: rdns}.
     try:
@@ -67,7 +67,7 @@ def zdns_ptr_bulk(ips):
     return result
 
 
-def zdns_a_bulk(names):
+def zdns_a(names):
     # Create a zdns subprocess for a forward A lookup (100 in a batch)
     # Returns {name: ip}.
     names=[n for n in names if n]
@@ -233,7 +233,7 @@ else:
     # keep track of how long this is taking per ip
     peripaverage=0
 
-    # using zdns to do a reverse-DNS lookup in bulk
+    # using zdns to do a reverse-DNS lookup
     ptr_ips=[]
     with open(infile,'r') as f:
         for line in f:
@@ -242,10 +242,10 @@ else:
             except Exception:
                 pass
     print("zdns PTR for "+str(len(ptr_ips))+" IPs...",file=sys.stderr)
-    ptr_dict=zdns_ptr_bulk(ptr_ips)
+    ptr_dict=zdns_ptr(ptr_ips)
     print("zdns PTR got "+str(len(ptr_dict))+" answers",file=sys.stderr)
 
-    # using zdns to do a forward-DNS lookup in bulk
+    # using zdns to do a forward-DNS lookup
     candidate_names=set()
     candidate_names.update(v for v in ptr_dict.values() if v)
     with open(infile,'r') as f:
@@ -256,7 +256,7 @@ else:
                 continue
             candidate_names.update(get_hostnames(blob))
     print("zdns A for "+str(len(candidate_names))+" names...",file=sys.stderr)
-    forward_dict=zdns_a_bulk(candidate_names)
+    forward_dict=zdns_a(candidate_names)
     print("zdns A got "+str(len(forward_dict))+" answers",file=sys.stderr)
 
     with open(infile,'r') as f:
@@ -302,7 +302,7 @@ else:
     
             thisone.analysis['nameset']={}
             nameset=thisone.analysis['nameset']
-            # name from reverse DNS (looked up in bulk by zdns before the loop)
+            # name from reverse DNS (looked up by zdns before the loop)
             rdns=ptr_dict.get(thisone.ip)
             if rdns is not None:
                 nameset['rdns']=rdns
@@ -445,7 +445,7 @@ else:
             besty=[]
             nogood=True # assume none are good
             tmp={}
-            # try verify names a bit (forward A looked up in bulk by zdns before the loop)
+            # try verify names a bit (forward A looked up by zdns before the loop)
             for k in nameset:
                 v=nameset[k]
                 #print "checking: " + k + " " + v
