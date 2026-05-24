@@ -107,17 +107,17 @@ sudo -H  apt -y install  python3-scipy
 # better get wget
 sudo apt-get -y install wget
 
-if [ ! -d /usr/lib/go-1.10 ]
+if [ ! -d /usr/lib/go-1.25 ]
 then
 mkdir -p $HOME/code/golang
 	cd $HOME/code/golang
-	GOTARBALL=go1.10.linux-amd64.tar.gz
+	GOTARBALL=go1.25.0.linux-amd64.tar.gz
 	GOURL=https://dl.google.com/go/$GOTARBALL
 	wget $GOURL
 	tar xzvf $GOTARBALL
-	sudo mv go /usr/lib/go-1.10
-	sudo ln -sf /usr/lib/go-1.10 /usr/lib/go
-	sudo ln -sf /usr/lib/go-1.10/bin/go /usr/bin/go
+	sudo mv go /usr/lib/go-1.25
+	sudo ln -sf /usr/lib/go-1.25 /usr/lib/go
+	sudo ln -sf /usr/lib/go-1.25/bin/go /usr/bin/go
 
 	# add GOPATH to .bashrc
 	donealready=`grep GOPATH $HOME/.bashrc`
