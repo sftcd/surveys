@@ -38,7 +38,7 @@ from SurveyFuncs import *
 
 
 def zdns_ptr_bulk(ips):
-    # Create a zdns subprocess for a lookup (100 in a batch) 
+    # Create a zdns subprocess for a PTR lookup (100 in a batch)
     # Returns {ip: rdns}.
     try:
         proc=subprocess.Popen(['zdns','PTR'],
@@ -100,9 +100,8 @@ def zdns_a_bulk(names):
     return result
 
 
-def candidate_names_for_blob(blob):
-    # Mirror the main loop's name extraction. Returns a set of candidate
-    # hostnames from p25 banner plus cert DN/SANs across all scanned ports.
+def get_hostnames(blob):
+    # Returns a set of hostnames from p25 banner and DN/SANs across all scanned ports.
     names=set()
     writer=blob.get('writer','')
     # banner from p25
@@ -118,7 +117,6 @@ def candidate_names_for_blob(blob):
             names.add(ts[0][4:])
     except Exception:
         pass
-    # cert names from each port - mirror the main loop's cert paths exactly
     tmp={}
     for port in ('p25','p110','p143','p443','p587','p993'):
         try:
@@ -256,7 +254,7 @@ else:
                 blob=json.loads(line)
             except Exception:
                 continue
-            candidate_names.update(candidate_names_for_blob(blob))
+            candidate_names.update(get_hostnames(blob))
     print("zdns A for "+str(len(candidate_names))+" names...",file=sys.stderr)
     forward_dict=zdns_a_bulk(candidate_names)
     print("zdns A got "+str(len(forward_dict))+" answers",file=sys.stderr)
