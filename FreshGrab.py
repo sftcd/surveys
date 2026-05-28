@@ -77,7 +77,7 @@ pparms={
         '993': 'imap --port 993 --imaps',
         }
 
-def translate_v2(port, v2_result):
+def zgrab2_to_v1(port, v2_result):
     try:
         data=v2_result.get('data',{})
         module=next(iter(data))
@@ -92,9 +92,9 @@ def translate_v2(port, v2_result):
     if module == 'http':
         try:
             req=result['response']['request']
-            tl=req.get('tls_log',{}).get('handshake_log')
-            if tl is not None:
-                req['tls_handshake']=tl
+            hl=req.get('tls_log',{}).get('handshake_log')
+            if hl is not None:
+                req['tls_handshake']=hl
                 del req['tls_log']
         except (KeyError, TypeError):
             pass
@@ -198,7 +198,7 @@ with open(args.infile,'r') as f:
                 pc=proc.communicate(input=(ip+',localhost').encode())
                 out=pc[0].decode("utf-8").strip()
                 jres=json.loads(out)
-                jres=translate_v2(port, jres)
+                jres=zgrab2_to_v1(port, jres)
                 jthing['p'+port]=jres
             except Exception as e:
                 # something goes wrong, we just record what
