@@ -137,11 +137,11 @@ go build
 # put it on PATH
 sudo ln -sf $HOME/go/src/github.com/zmap/zgrab/zgrab /usr/local/bin
 
-# add zdns
+# add zdns and put on path
 go install github.com/zmap/zdns/v2@latest
 sudo ln -sf $HOME/go/bin/zdns /usr/local/bin/zdns
 
-# add zgrab2
+# add zgrab2 and put on path
 go install github.com/zmap/zgrab2@latest
 sudo ln -sf $HOME/go/bin/zgrab2 /usr/local/bin/zgrab2
 
