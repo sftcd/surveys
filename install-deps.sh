@@ -130,13 +130,6 @@ mkdir -p $HOME/code/golang
 
 fi
 
-# got get stuff
-go get github.com/zmap/zgrab
-cd $GOPATH/src/github.com/zmap/zgrab
-go build
-# put it on PATH
-sudo ln -sf $HOME/go/src/github.com/zmap/zgrab/zgrab /usr/local/bin
-
 # add zdns and put on path
 go install github.com/zmap/zdns/v2@latest
 sudo ln -sf $HOME/go/bin/zdns /usr/local/bin/zdns
