@@ -72,7 +72,7 @@ pparms={
         '25': 'smtp --port 25',
         '110': 'pop3 --port 110 --starttls',
         '143': 'imap --port 143 --starttls',
-        '443': 'http --port 443 --use-https',
+        '443': 'http --port 443 --use-https --max-redirects=5',
         '587': 'smtp --port 587',
         '993': 'imap --port 993 --imaps',
         }
