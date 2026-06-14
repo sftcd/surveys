@@ -41,7 +41,7 @@ function usage()
 	echo "	inter-directory is a directory with intermediate results we process further"
 	echo "	ips-src is a file with json lines like censys.io's (original censys.io input used if not supplied"
 	echo "  zmap-port (default 25) is the port we use to decide what to scan"
-	echo "	skips is a comma-sep list of stages to skip: mm,zmap,grab,fresh,cluster,graph"
+	echo "	skips is a comma-sep list of stages to skip: mm,zmap,grab,fresh,cluster,graph,enhanced"
 	exit 99
 }
 
@@ -177,6 +177,7 @@ unset SKIP_GRAB
 unset SKIP_FRESH
 unset SKIP_CLUSTER
 unset SKIP_GRAPH
+unset SKIP_ENHANCED
 
 # files uses as tell-tales
 TELLTALE_MM="mm-ips."$country".v4"
@@ -185,6 +186,7 @@ TELLTALE_GRAB="input.ips"
 TELLTALE_FRESH="records.fresh"
 TELLTALE_CLUSTER="collisions.json"
 TELLTALE_GRAPH="graph.done"
+TELLTALE_ENHANCED="enhanced.done"
 
 if [ "$pdir" != "" ]
 then
@@ -216,6 +218,11 @@ then
 	if [ -f graphs.done ]
 	then
 		SKIP_GRAPH=yes
+	fi
+	# if we've already done the enhanced graphs no need to redo
+	if [ -f $TELLTALE_ENHANCED ]
+	then
+		SKIP_ENHANCED=yes
 	fi
 fi
 
@@ -251,6 +258,10 @@ then
 		if [[ "$skip" == "graph" ]]
 		then
 			SKIP_GRAPH="yes"
+		fi
+		if [[ "$skip" == "enhanced" ]]
+		then
+			SKIP_ENHANCED="yes"
 		fi
 	done
 	IFS=$OFS
@@ -409,17 +420,46 @@ else
 	echo "Graphing records" >>$logf 
 	# this takes a few minutes at least
 	# with legend
-	$srcdir/ReportReuse.py -f $TELLTALE_CLUSTER -a -l -o . -c $country >>$logf 2>&1 
+	$srcdir/ReportReuse.py -f $TELLTALE_CLUSTER -a -l -o . -c $country >>$logf 2>&1
 	# without legend
-	#$srcdir/ReportReuse.py -f $TELLTALE_CLUSTER -a -o . -c $country >>$logf 2>&1 
+	#$srcdir/ReportReuse.py -f $TELLTALE_CLUSTER -a -o . -c $country >>$logf 2>&1
 	if [ "$?" != "0" ]
 	then
 		echo "Error ($?) from ReportReuse.py"
 	else
 		touch $TELLTALE_GRAPH
 	fi
-	echo "Done graphing records" 
-	echo "Done graphing records" >>$logf 
+	echo "Done graphing records"
+	echo "Done graphing records" >>$logf
+fi
+
+# 4b. Post-process the graph*.dot files from ReportReuse.py into
+# enhanced cluster graphs (hub/bridge highlighting, cross-ASN edges,
+# per-cluster analytics). Runs whenever graph*.dot files exist
+# (TELLTALE_GRAPH from this run or a previous one), independent of
+# whether step 4 itself ran this time - so it can be re-run on its
+# own (e.g. -k mm,zmap,grab,fresh,cluster,graph) without redoing
+# ReportReuse.py.
+if [ "$SKIP_ENHANCED" ]
+then
+	echo "Skipping enhanced graphs"
+	echo "Skipping enhanced graphs" >>$logf
+elif [ ! -f $TELLTALE_GRAPH ]
+then
+	echo "No $TELLTALE_GRAPH - skipping enhanced graphs"
+	echo "No $TELLTALE_GRAPH - skipping enhanced graphs" >>$logf
+else
+	echo "Generating enhanced cluster graphs"
+	echo "Generating enhanced cluster graphs" >>$logf
+	$srcdir/EnhancedClustersViz.py -i . -o enhanced_graphs --summary >>$logf 2>&1
+	if [ "$?" != "0" ]
+	then
+		echo "Error ($?) from EnhancedClustersViz.py"
+	else
+		touch $TELLTALE_ENHANCED
+	fi
+	echo "Done generating enhanced cluster graphs"
+	echo "Done generating enhanced cluster graphs" >>$logf
 fi
 #$srcdir/SameKeys.py $file >$NOW.out 2>&1 
 
