@@ -68,7 +68,7 @@ ztimeout=' -t 2s'
 
 # port parameters (zgrab2 module syntax)
 pparms={
-        '22': 'ssh --port 22 --host-key-algorithms ecdsa-sha2-nistp256,ssh-rsa,ecdsa-sha2-nistp521,ssh-ed25519,ecdsa-sha2-nistp384,ssh-dss',
+        '22': 'ssh --port 22 --host-key-algorithms ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,ssh-rsa,ssh-dss,ssh-ed25519',
         '25': 'smtp --port 25',
         '110': 'pop3 --port 110 --starttls',
         '143': 'imap --port 143 --starttls',
