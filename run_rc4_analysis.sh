@@ -19,14 +19,7 @@ run() {
     echo
 }
 
-run rc4_hygiene_index.py
-run rc4_hygiene_figures.py
-run rc4_software_hygiene.py
-run rc4_software_hygiene_figures.py
-run rc4_hygiene_advanced.py
-run rc4_hygiene_advanced_figures.py
-run rc4_anomaly_report.py
-run rc4_anomaly_report_figures.py
-run rc4_cluster43_deepdive.py
+run rc4_hygiene_pipeline.py
+run rc4_figures.py
 
 echo "All done. Outputs in rc4/ and rc4_hygiene_charts/"
