@@ -543,7 +543,7 @@ def run_anomaly_report(args, host_scores, rc4_ips, rc4_ip_info):
     md_path = os.path.join(args.anomaly_outdir, 'rc4_anomaly_report.md')
     with open(md_path, 'w') as f:
         f.write("# RC4 Remediation Outreach Report\n\n")
-        f.write("Generated from `results/IE-20260317-171424`. For internal use ahead of "
+        f.write(f"Generated from `{args.results}`. For internal use ahead of "
                 "supervisor consultation — do not contact providers without sign-off.\n\n")
         f.write(f"- {len(rc4_ips)} hosts running RC4 ciphers in total\n")
         f.write(f"- {len(rc4_in_clusters)} are in {len(rc4_cluster_nums)} key-reuse clusters\n")
@@ -575,9 +575,11 @@ def run_anomaly_report(args, host_scores, rc4_ips, rc4_ip_info):
 
 def main():
     ap = argparse.ArgumentParser(description='RC4 / TLS Hygiene Index pipeline')
-    ap.add_argument('--records',          default='results/IE-20260317-171424/records.fresh')
+    ap.add_argument('--results',          default='',
+                        help='Scan results directory, e.g. results/IE-20260317-171424 '
+                             '(auto-detected if omitted)')
+    ap.add_argument('--records',          default='')
     ap.add_argument('--rc4',              default='rc4/rc4_analysis.json')
-    ap.add_argument('--results',          default='results/IE-20260317-171424')
     ap.add_argument('--asn-db',           default='mmdb/GeoLite2-ASN.mmdb')
     ap.add_argument('--hygiene-outdir',   default='rc4/hygiene')
     ap.add_argument('--software-outdir',  default='rc4/software_hygiene')
@@ -587,6 +589,12 @@ def main():
     ap.add_argument('--k',                type=int, default=4)
     ap.add_argument('--limit',            type=int, default=0, help='debug: first N hosts only')
     args = ap.parse_args()
+
+    if not args.results:
+        candidates = sorted(glob.glob('results/*/'), reverse=True)
+        args.results = candidates[0].rstrip('/') if candidates else 'results'
+    if not args.records:
+        args.records = os.path.join(args.results, 'records.fresh')
 
     with open(args.rc4) as f:
         rc4_data = json.load(f)

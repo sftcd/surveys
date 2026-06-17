@@ -36,13 +36,29 @@ import matplotlib.colors as mcolors
 import numpy as np
 
 ap = argparse.ArgumentParser(description='RC4/Hygiene Index figures')
+ap.add_argument('--results',      default='',
+                help='Results directory, e.g. results/IE-20260317-171424 '
+                     '(auto-detected if omitted)')
 ap.add_argument('--hygiene-dir',  default='rc4/hygiene')
 ap.add_argument('--software-dir', default='rc4/software_hygiene')
 ap.add_argument('--advanced-dir', default='rc4/hygiene_advanced')
 ap.add_argument('--anomaly-dir',  default='rc4/anomaly_report')
-ap.add_argument('--cluster',      default='results/IE-20260317-171424/cluster43.json')
+ap.add_argument('--cluster',      default='',
+                help='Path to cluster JSON for the cross-ASN RC4 deep-dive figure '
+                     '(auto-derived from --results if omitted)')
 ap.add_argument('--outdir',       default='rc4_hygiene_charts')
 args = ap.parse_args()
+
+# Auto-detect results directory if not given
+if not args.results:
+    import glob as _glob
+    candidates = sorted(_glob.glob('results/*/'), reverse=True)
+    args.results = candidates[0].rstrip('/') if candidates else 'results'
+
+# Auto-derive cluster path if not given
+if not args.cluster:
+    args.cluster = os.path.join(args.results, 'cluster43.json')
+
 os.makedirs(args.outdir, exist_ok=True)
 
 RED    = '#e74c3c'
