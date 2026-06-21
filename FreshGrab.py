@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import os, sys, argparse, tempfile, gc
+import os, sys, argparse, tempfile, gc, socket
 import json, jsonpickle
 import time
 import subprocess
@@ -66,15 +66,21 @@ if args.country is not None:
 # default timeout for zgrab2, in seconds
 ztimeout=' -t 2s'
 
+# find our own IP, used as the EHLO/HELO name on the SMTP ports
+s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+s.connect(('8.8.8.8',53))
+myip=s.getsockname()[0]
+s.close()
+
 # port parameters (zgrab2 module syntax)
 pparms={
         '22': 'ssh --port 22 --host-key-algorithms ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,ssh-rsa,ssh-dss,ssh-ed25519',
-        '25': 'smtp --port 25',
-        '110': 'pop3 --port 110 --starttls',
-        '143': 'imap --port 143 --starttls',
-        '443': 'http --port 443 --use-https --max-redirects=5',
-        '587': 'smtp --port 587',
-        '993': 'imap --port 993 --imaps',
+        '25': 'smtp --port 25 --max-version=771',
+        '110': 'pop3 --port 110 --starttls --max-version=771',
+        '143': 'imap --port 143 --starttls --max-version=771',
+        '443': 'http --port 443 --use-https --max-version=771',
+        '587': 'smtp --port 587 --max-version=771',
+        '993': 'imap --port 993 --imaps --max-version=771',
         }
 
 def zgrab2_to_v1(port, v2_result):
@@ -195,7 +201,10 @@ with open(args.infile,'r') as f:
             try:
                 cmd='zgrab2 '+  pparms[port] + ztimeout
                 proc=subprocess.Popen(cmd.split(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-                pc=proc.communicate(input=(ip+',localhost').encode())
+                # for SMTP ports send our own  IP as the EHLO name;
+                # all other ports send the target IP so http/TLS hits the real host
+                name='['+myip+']' if port in ('25','587') else ip
+                pc=proc.communicate(input=(ip+','+name).encode())
                 out=pc[0].decode("utf-8").strip()
                 jres=json.loads(out)
                 jres=zgrab2_to_v1(port, jres)
