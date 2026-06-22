@@ -125,13 +125,13 @@ def compute_analytics(G):
 # =============================================================================
 # Generate enhanced graph
 # =============================================================================
-def generate_enhanced(dot_path, cnum, outdir, legend_map, the_format='svg', the_engine='sfdp'):
+def generate_enhanced(dot_path, cnum, outdir, legend_map, the_format='svg', the_engine='sfdp', max_edges=20000):
     t0 = time.time()
     G, dot_legend = parse_dot(dot_path)
 
     if len(G.nodes()) == 0:
         log(f"    Cluster {cnum}: empty, skipping"); return None
-    if len(G.edges()) > 20000:
+    if len(G.edges()) > max_edges:
         log(f"    Cluster {cnum}: {len(G.edges())} edges, skipping"); return None
 
     log(f"    Cluster {cnum}: {len(G.nodes())} nodes, {len(G.edges())} edges — computing analytics...")
@@ -366,7 +366,7 @@ def main():
         path = os.path.join(args.input_dir, df)
         log(f"  [{i+1}/{len(dots)}] Cluster {cnum}...")
         result = generate_enhanced(path, cnum, args.output_dir,
-                                   {}, args.format, args.engine)
+                                   {}, args.format, args.engine, args.max_edges)
         if result: ok += 1
         else: skip += 1
 
