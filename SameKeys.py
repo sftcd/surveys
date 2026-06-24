@@ -26,7 +26,7 @@
 # figure out if we can get port 587 ever - looks like not, for now anyway
 # my FreshGrab's do have that but we don't for censys.io's Nov 2017 scans
 
-import os, sys, argparse, tempfile, gc
+import os, sys, argparse, tempfile, gc, subprocess
 import json
 import jsonpickle # install via  "$ sudo pip install -U jsonpickle"
 import time, datetime
@@ -34,7 +34,116 @@ from dateutil import parser as dparser  # for parsing time from comand line and 
 import pytz # for adding back TZ info to allow comparisons
 
 # our own stuff
-from SurveyFuncs import *  
+from SurveyFuncs import *
+
+
+def zdns_ptr(ips):
+    # Create a zdns subprocess for a PTR lookup (100 in a batch)
+    # Returns {ip: rdns}.
+    try:
+        proc=subprocess.Popen(['zdns','PTR'],
+                              stdin=subprocess.PIPE,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
+        out,_=proc.communicate(input=("\n".join(ips)+"\n").encode())
+    except FileNotFoundError:
+        raise RuntimeError("Issue with zdns, check the command works")
+    result={}
+    for line in out.decode("utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            obj=json.loads(line)
+        except Exception:
+            continue
+        ip=obj.get('name')
+        ptr=obj.get('results',{}).get('PTR',{})
+        if ptr.get('status')!='NOERROR':
+            continue
+        for a in ptr.get('data',{}).get('answers',[]):
+            if a.get('type')=='PTR':
+                result[ip]=a.get('answer','').rstrip('.')
+                break
+    return result
+
+
+def zdns_a(names):
+    # Create a zdns subprocess for a forward A lookup (100 in a batch)
+    # Returns {name: ip}.
+    names=[n for n in names if n]
+    if not names:
+        return {}
+    try:
+        proc=subprocess.Popen(['zdns','A'],
+                              stdin=subprocess.PIPE,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
+        out,_=proc.communicate(input=("\n".join(names)+"\n").encode())
+    except FileNotFoundError:
+        raise RuntimeError("Issue with zdns, check the command works")
+    result={}
+    for line in out.decode("utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            obj=json.loads(line)
+        except Exception:
+            continue
+        name=obj.get('name')
+        ar=obj.get('results',{}).get('A',{})
+        if ar.get('status')!='NOERROR':
+            continue
+        for a in ar.get('data',{}).get('answers',[]):
+            if a.get('type')=='A':
+                result[name]=a.get('answer','')
+                break
+    return result
+
+
+def get_hostnames(blob):
+    # Returns a set of hostnames from p25 banner and DN/SANs across all scanned ports.
+    names=set()
+    writer=blob.get('writer','')
+    # banner from p25
+    try:
+        if writer=='FreshGrab.py':
+            banner=blob['p25']['data']['banner']
+        else:
+            banner=blob['p25']['smtp']['starttls']['banner']
+        ts=banner.split()
+        if ts[0]=='220':
+            names.add(ts[1])
+        elif ts[0].startswith('220-'):
+            names.add(ts[0][4:])
+    except Exception:
+        pass
+    tmp={}
+    for port in ('p25','p110','p143','p443','p587','p993'):
+        try:
+            if writer=='FreshGrab.py':
+                if port=='p443':
+                    cert=blob[port]['data']['http']['response']['request']['tls_handshake']['server_certificates']['certificate']
+                else:
+                    cert=blob[port]['data']['tls']['server_certificates']['certificate']
+            else:
+                if port=='p25':
+                    cert=blob[port]['smtp']['starttls']['tls']['certificate']
+                elif port in ('p110','p143'):
+                    cert=blob[port]['pop3']['starttls']['tls']['certificate']
+                elif port=='p443':
+                    cert=blob[port]['https']['tls']['certificate']
+                elif port=='p993':
+                    cert=blob[port]['imaps']['tls']['tls']['certificate']['parsed']
+                else:
+                    continue
+            get_certnames(port,cert,tmp)
+        except Exception:
+            pass
+    for v in tmp.values():
+        if v:
+            names.add(v)
+    return names
+
 
 # default values
 infile="records.fresh"
@@ -123,7 +232,33 @@ else:
     bads={}
     # keep track of how long this is taking per ip
     peripaverage=0
-    
+
+    # using zdns to do a reverse-DNS lookup
+    ptr_ips=[]
+    with open(infile,'r') as f:
+        for line in f:
+            try:
+                ptr_ips.append(json.loads(line)['ip'].strip())
+            except Exception:
+                pass
+    print("zdns PTR for "+str(len(ptr_ips))+" IPs...",file=sys.stderr)
+    ptr_dict=zdns_ptr(ptr_ips)
+    print("zdns PTR got "+str(len(ptr_dict))+" answers",file=sys.stderr)
+
+    # using zdns to do a forward-DNS lookup
+    candidate_names=set()
+    candidate_names.update(v for v in ptr_dict.values() if v)
+    with open(infile,'r') as f:
+        for line in f:
+            try:
+                blob=json.loads(line)
+            except Exception:
+                continue
+            candidate_names.update(get_hostnames(blob))
+    print("zdns A for "+str(len(candidate_names))+" names...",file=sys.stderr)
+    forward_dict=zdns_a(candidate_names)
+    print("zdns A got "+str(len(forward_dict))+" answers",file=sys.stderr)
+
     with open(infile,'r') as f:
         for line in f:
             ipstart=time.time()
@@ -167,16 +302,10 @@ else:
     
             thisone.analysis['nameset']={}
             nameset=thisone.analysis['nameset']
-            try:
-                # name from reverse DNS
-                rdnsrec=socket.gethostbyaddr(thisone.ip)
-                rdns=rdnsrec[0]
-                #print "FQDN reverse: " + str(rdns)
+            # name from reverse DNS (looked up by zdns before the loop)
+            rdns=ptr_dict.get(thisone.ip)
+            if rdns is not None:
                 nameset['rdns']=rdns
-            except Exception as e: 
-                #print >> sys.stderr, "FQDN reverse exception " + str(e) + " for record:" + thisone.ip
-                #nameset['rdns']=''
-                pass
     
             # name from banner
             try:
@@ -316,24 +445,20 @@ else:
             besty=[]
             nogood=True # assume none are good
             tmp={}
-            # try verify names a bit
+            # try verify names a bit (forward A looked up by zdns before the loop)
             for k in nameset:
                 v=nameset[k]
                 #print "checking: " + k + " " + v
                 # see if we can verify the value as matching our give IP
                 if v != '' and not fqdn_bogon(v):
-                    try:
-                        rip=socket.gethostbyname(v)
+                    rip=forward_dict.get(v)
+                    if rip is not None:
                         if rip == thisone.ip:
                             besty.append(k)
                         else:
                             tmp[k+'-ip']=rip
                         # some name has an IP, even if not what we expect
                         nogood=False
-                    except Exception as e: 
-                        #oddly, an NXDOMAIN seems to cause an exception, so these happen
-                        #print >> sys.stderr, "Error making DNS query for " + v + " for ip:" + thisone.ip + " " + str(e)
-                        pass
             for k in tmp:
                 nameset[k]=tmp[k]
             nameset['allbad']=nogood
