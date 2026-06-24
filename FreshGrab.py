@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import os, sys, argparse, tempfile, gc
+import os, sys, argparse, tempfile, gc, socket
 import json, jsonpickle
 import time
 import subprocess
@@ -63,19 +63,53 @@ country=def_country
 if args.country is not None:
     country=args.country
 
-# default timeout for zgrab, in seconds
-ztimeout=' -timeout 2'
+# default timeout for zgrab2, in seconds
+ztimeout=' -t 2s'
 
-# port parameters
-pparms={ 
-        '22': '-port 22 -xssh',
-        '25': '-port 25 -smtp -starttls -banners',
-        '110': '-port 110 -pop3 -starttls -banners',
-        '143': '-port 143 -imap -starttls -banners',
-        '443': '-port 443 -tls -http /',
-        '587': '-port 587 -smtp -starttls -banners',
-        '993': '-port 993 -imap -tls -banners',
+# find our own IP, used as the EHLO/HELO name on the SMTP ports
+s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+s.connect(('8.8.8.8',53))
+myip=s.getsockname()[0]
+s.close()
+
+# port parameters (zgrab2 module syntax)
+pparms={
+        '22': 'ssh --port 22 --host-key-algorithms ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,ssh-rsa,ssh-dss,ssh-ed25519',
+        '25': 'smtp --port 25 --max-version=771',
+        '110': 'pop3 --port 110 --starttls --max-version=771',
+        '143': 'imap --port 143 --starttls --max-version=771',
+        '443': 'http --port 443 --use-https --max-version=771',
+        '587': 'smtp --port 587 --max-version=771',
+        '993': 'imap --port 993 --imaps --max-version=771',
         }
+
+def zgrab2_to_v1(port, v2_result):
+    try:
+        data=v2_result.get('data',{})
+        module=next(iter(data))
+        result=data[module].get('result',{})
+    except Exception:
+        return v2_result
+    if 'tls' in result:
+        hl=result['tls'].get('handshake_log')
+        if hl is not None:
+            result['tls']=hl
+    v1={'ip': v2_result.get('ip','')}
+    if module == 'http':
+        try:
+            req=result['response']['request']
+            hl=req.get('tls_log',{}).get('handshake_log')
+            if hl is not None:
+                req['tls_handshake']=hl
+                del req['tls_log']
+        except (KeyError, TypeError):
+            pass
+        v1['data']={'http': result}
+    elif module == 'ssh':
+        v1['data']={'xssh': result}
+    else:
+        v1['data']=result
+    return v1
 
 def usage():
     print("usage: " + sys.argv[0] + " -i <infile> -o <putfile> [-p <portlist>] [-s <sleepsecs>]", file=sys.stderr)
@@ -165,14 +199,15 @@ with open(args.infile,'r') as f:
         jthing['writer']="FreshGrab.py"
         for port in ports:
             try:
-                cmd='zgrab '+  pparms[port] + ztimeout
+                cmd='zgrab2 '+  pparms[port] + ztimeout
                 proc=subprocess.Popen(cmd.split(),stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-                pc=proc.communicate(input=ip.encode())
-                lines=pc[0].decode("utf-8").split('\n')
-                jinfo=json.loads(lines[1])
-                jres=json.loads(lines[0])
-                #print jinfo
-                #print jres
+                # for SMTP ports send our own  IP as the EHLO name;
+                # all other ports send the target IP so http/TLS hits the real host
+                name='['+myip+']' if port in ('25','587') else ip
+                pc=proc.communicate(input=(ip+','+name).encode())
+                out=pc[0].decode("utf-8").strip()
+                jres=json.loads(out)
+                jres=zgrab2_to_v1(port, jres)
                 jthing['p'+port]=jres
             except Exception as e:
                 # something goes wrong, we just record what
