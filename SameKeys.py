@@ -39,7 +39,7 @@ from SurveyFuncs import *
 
 def zdns_ptr(ips):
     # Create a zdns subprocess for a PTR lookup (100 in a batch)
-    # Returns {ip: rdns}.
+    # Returns ({ip: rdns}, {ip: timestamp}).
     try:
         proc=subprocess.Popen(['zdns','PTR'],
                               stdin=subprocess.PIPE,
@@ -49,6 +49,7 @@ def zdns_ptr(ips):
     except FileNotFoundError:
         raise RuntimeError("Issue with zdns, check the command works")
     result={}
+    seen={}
     for line in out.decode("utf-8").splitlines():
         if not line.strip():
             continue
@@ -63,16 +64,17 @@ def zdns_ptr(ips):
         for a in ptr.get('data',{}).get('answers',[]):
             if a.get('type')=='PTR':
                 result[ip]=a.get('answer','').rstrip('.')
+                seen[ip]=ptr.get('timestamp','')
                 break
-    return result
+    return result,seen
 
 
 def zdns_a(names):
     # Create a zdns subprocess for a forward A lookup (100 in a batch)
-    # Returns {name: ip}.
+    # Returns ({name: ip}, {name: timestamp}).
     names=[n for n in names if n]
     if not names:
-        return {}
+        return {},{}
     try:
         proc=subprocess.Popen(['zdns','A'],
                               stdin=subprocess.PIPE,
@@ -82,6 +84,7 @@ def zdns_a(names):
     except FileNotFoundError:
         raise RuntimeError("Issue with zdns, check the command works")
     result={}
+    seen={}
     for line in out.decode("utf-8").splitlines():
         if not line.strip():
             continue
@@ -96,8 +99,9 @@ def zdns_a(names):
         for a in ar.get('data',{}).get('answers',[]):
             if a.get('type')=='A':
                 result[name]=a.get('answer','')
+                seen[name]=ar.get('timestamp','')
                 break
-    return result
+    return result,seen
 
 
 def get_hostnames(blob):
@@ -242,7 +246,7 @@ else:
             except Exception:
                 pass
     print("zdns PTR for "+str(len(ptr_ips))+" IPs...",file=sys.stderr)
-    ptr_dict=zdns_ptr(ptr_ips)
+    ptr_dict,ptr_seen=zdns_ptr(ptr_ips)
     print("zdns PTR got "+str(len(ptr_dict))+" answers",file=sys.stderr)
 
     # using zdns to do a forward-DNS lookup
@@ -256,7 +260,7 @@ else:
                 continue
             candidate_names.update(get_hostnames(blob))
     print("zdns A for "+str(len(candidate_names))+" names...",file=sys.stderr)
-    forward_dict=zdns_a(candidate_names)
+    forward_dict,forward_seen=zdns_a(candidate_names)
     print("zdns A got "+str(len(forward_dict))+" answers",file=sys.stderr)
 
     with open(infile,'r') as f:
@@ -306,6 +310,7 @@ else:
             rdns=ptr_dict.get(thisone.ip)
             if rdns is not None:
                 nameset['rdns']=rdns
+                nameset['rdns_seen']=ptr_seen.get(thisone.ip,'')
     
             # name from banner
             try:
@@ -457,6 +462,7 @@ else:
                             besty.append(k)
                         else:
                             tmp[k+'-ip']=rip
+                        tmp[k+'-seen']=forward_seen.get(v,'')
                         # some name has an IP, even if not what we expect
                         nogood=False
             for k in tmp:
