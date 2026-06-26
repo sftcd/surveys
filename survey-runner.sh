@@ -38,6 +38,12 @@
 # the main point of this is to isolate all the many dependencies into 
 # the VM so they don't pollute your base macnine
 
+# prerequisites for this:
+#   sudo apt install debvm debian-archive-keyring
+#   sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys  6ED0E7B82643E131 78DBA3BC47EF2265
+# You might need different keys, if running this fails because of that
+# you'll see the key ids needed
+
 # set -x
 
 : ${FSFILE:="survey-vm.ext4"}
@@ -82,6 +88,7 @@ if [[ "$run" == "yes" ]]
 then
     echo "Login with e.g.:"
     echo "    $ ssh -o NoHostAuthenticationForLocalhost=yes -i ~/.ssh/new-eddsa.priv -p 2222 user@127.0.0.1"
+    echo "you might need to add '-o IdentitiesOnly=yes' to the above"
     # start with SSH - you should've added an authorized keys file
     debvm-run -i $FSFILE -s 2222 -g -- -m 2G -display none  \
         -virtfs local,security_model=none,path=$SHARED_DIR,mount_tag=guest_tag
