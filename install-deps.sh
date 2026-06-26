@@ -1,17 +1,17 @@
 #!/bin/bash
 
 # Copyright (C) 2018 Stephen Farrell, stephen.farrell@cs.tcd.ie
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -42,7 +42,7 @@ sudo apt-get -y install git unzip
 if [ ! -d $HOME/code ]
 then
 	mkdir -p $HOME/code
-fi 
+fi
 if [ ! -d $HOME/code/surveys ]
 then
 	cd $HOME/code
@@ -54,7 +54,7 @@ else
 fi
 
 # make a place for stuff..
-for subdir in runs IE EE 
+for subdir in runs IE EE
 do
 	if [ ! -d $HOME/data/smtp/$subdir ]
 	then
@@ -87,23 +87,6 @@ sudo -H  apt -y install  python3-plotly
 sudo -H  apt -y install  python3-networkx
 sudo -H  apt -y install  python3-scipy
 
-
-
-# these are imports that I don't think need a pip install
-# but not sure:-)
-#sudo -H pip install  gc
-#sudo -H pip install  copy
-#sudo -H pip install  os
-#sudo -H pip install  sys
-#sudo -H pip install  json
-#sudo -H pip install  socket
-#sudo -H pip install  subprocess
-#sudo -H pip install  time
-#sudo -H pip install  tempfile
-# golang, zmap and zgrab 
-# ubuntu's golang version isn't currently recent enough, need to go for
-# a stable version from upstream
-
 # better get wget
 sudo apt-get -y install wget
 
@@ -130,21 +113,27 @@ mkdir -p $HOME/code/golang
 
 fi
 
-# add zdns and put on path
+# add zdns
 go install github.com/zmap/zdns/v2@latest
-sudo ln -sf $HOME/go/bin/zdns /usr/local/bin/zdns
+# put go bin on PATH
+export PATH=$PATH:$HOME/go/bin
+# add zgrab2
+cd $HOME/code/
+git clone https://github.com/zmap/zgrab2.git
+cd zgrab2
+make
+sudo make install
 
-# add zgrab2 and put on path
-go install github.com/zmap/zgrab2@latest
-sudo ln -sf $HOME/go/bin/zgrab2 /usr/local/bin/zgrab2
 
 # get ciphersuite stuff
-cd $HOME/code/surveys/clustertools
-if [ ! -f mapping-rfc.txt ]
-then
-	echo "Getting TLS ciphersuite names"
-	wget https://testssl.sh/etc/cipher-mapping.txt
-fi
+# this needs a substantive revisit - things have changed since 2018 due to
+# TLSv1.3 and PQ
+# cd $HOME/code/surveys/clustertools
+# if [ ! -f mapping-rfc.txt ]
+# then
+	# echo "Getting TLS ciphersuite names"
+	# wget https://testssl.sh/etc/cipher-mapping.txt
+# fi
 
 # clean up
 cd $starddir
