@@ -1,17 +1,17 @@
 #!/bin/bash
 
-# Copyright (C) 2018 Stephen Farrell, stephen.farrell@cs.tcd.ie
-# 
+# Copyright (C) 2018,2026 Stephen Farrell, stephen.farrell@cs.tcd.ie
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -20,26 +20,29 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+# set -x
+
 function usage()
 {
 	echo "$0 [-k <licence-key] [-o <output-directory>] [-h <help>]"
 	echo "	-k means is the licence key for the mm database"
 	echo "	output-directory defaults ./mmdb"
-  echo "	help displays this message"
+    echo "	help displays this message"
 	exit 99
 }
 
-function downloadBinaryDB() 
+function downloadBinaryDB()
 {
   echo "Downloading mm $1 binary database"
-  wget -O $output/mmdb.zip "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-$1&license_key=$key&suffix=tar.gz"
-  tar -xzf $output/mmdb.zip -C $output
-  rm $output/mmdb.zip
-  sortOutput
+  curl -J -L -u $ACCOUNT_ID:$LICENSE_KEY -o $output/mmdb-$1.zip\
+        "https://download.maxmind.com/geoip/databases/GeoLite2-$1-CSV/download?suffix=zip"
+  unzip -o $output/mmdb-$1.zip -d $output
+  # rm $output/mmdb-$1.zip
+  flattenOutput
   echo "Finished downloading mm $1 binary database"
 }
 
-function sortOutput() 
+function flattenOutput()
 {
   # Remove nested directory, move all files in subdirectories to output directory
   find $output -mindepth 2 -type f -print -exec mv {} $output \;
@@ -50,10 +53,13 @@ function sortOutput()
 key=""
 output="./mmdb"
 
-while getopts "k:o:h" opt; do
+while getopts "a:k:o:h" opt; do
   case $opt in
+    a)
+      ACCOUNT_ID=$OPTARG
+      ;;
     k)
-      key=$OPTARG
+      LICENSE_KEY=$OPTARG
       ;;
     o)
       output=$OPTARG
@@ -69,15 +75,22 @@ while getopts "k:o:h" opt; do
 done
 
 
-if [ -z "$key" ]; then
+if [ -z "$LICENSE_KEY" ]; then
   echo "No licence key specified"
+  usage
+fi
+if [ -z "$ACCOUNT_ID" ]; then
+  echo "No account ID specified"
+  usage
+fi
+if [ -z "$output" ]; then
+  echo "No output directory specified"
   usage
 fi
 
 if [ ! -d "$output" ]; then
   mkdir -p $output
 fi
-
 if [ ! -d "$output" ]; then
   echo "Could not create output directory $output"
   exit 99
@@ -91,10 +104,11 @@ echo "Licence key: $key"
 echo "Output directory: $output"
 
 echo "Downloading mm country database"
-wget -O $output/mmdb.zip "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&license_key=$key&suffix=zip"
-unzip -o $output/mmdb.zip -d $output
-rm $output/mmdb.zip
-sortOutput
+curl -J -L -u $ACCOUNT_ID:$LICENSE_KEY -o $output/mmdb-Country-CSV.zip \
+    "https://download.maxmind.com/geoip/databases/GeoLite2-Country-CSV/download?suffix=zip"
+unzip -o $output/mmdb-Country-CSV.zip -d $output
+# rm $output/mmdb-Country-CSV.zip
+flattenOutput
 echo "Finished downloading mm country database"
 
 downloadBinaryDB ASN
@@ -102,7 +116,7 @@ downloadBinaryDB City
 downloadBinaryDB Country
 
 echo "Removing unnecessary files"
-rm $output/*.txt
+# rm $output/*.txt
 
 echo "Finished downloading"
 
