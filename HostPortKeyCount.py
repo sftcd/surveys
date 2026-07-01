@@ -33,8 +33,6 @@ import gc
 import copy
 import argparse
 
-from pympler import asizeof
-
 from SurveyFuncs import *
 
 # install via  "$ sudo pip install -U jsonpickle"

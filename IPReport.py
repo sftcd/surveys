@@ -33,8 +33,6 @@ import dns.resolver #import the module
 from dateutil import parser as dparser  # for parsing time from comand line and certs
 import pytz # for adding back TZ info to allow comparisons
 
-from pympler import asizeof
-
 from SurveyFuncs import *
 
 # install via  "$ sudo pip install -U jsonpickle"
