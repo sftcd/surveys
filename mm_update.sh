@@ -24,36 +24,43 @@
 
 function usage()
 {
-	echo "$0 [-k <licence-key] [-o <output-directory>] [-h <help>]"
-	echo "	-k means is the licence key for the mm database"
-	echo "	output-directory defaults ./mmdb"
-    echo "	help displays this message"
+	echo "$0 [-k <licence-key] [-a account-id] [-o <output-directory>] [-n] [-h]"
+	echo "	-k key - the licence key for the mm database"
+	echo "	-a account - the licence key for the mm database"
+	echo "	-n - don't re-do downloads"
+	echo "	-o output-directory - defaults ./mmdb"
+    echo "	-h displays this message"
 	exit 99
-}
-
-function downloadBinaryDB()
-{
-  echo "Downloading mm $1 binary database"
-  curl -J -L -u $ACCOUNT_ID:$LICENSE_KEY -o $output/mmdb-$1.zip\
-        "https://download.maxmind.com/geoip/databases/GeoLite2-$1-CSV/download?suffix=zip"
-  unzip -o $output/mmdb-$1.zip -d $output
-  # rm $output/mmdb-$1.zip
-  flattenOutput
-  echo "Finished downloading mm $1 binary database"
 }
 
 function flattenOutput()
 {
   # Remove nested directory, move all files in subdirectories to output directory
-  find $output -mindepth 2 -type f -print -exec mv {} $output \;
+  find "$output" -mindepth 2 -type f -print -exec mv {} "$output" \;
   # Remove nested directory
-  find $output -mindepth 1 -maxdepth 1 -type d -print -exec rm -rf {} \;
+  find "$output" -mindepth 1 -maxdepth 1 -type d -print -exec rm -rf {} \;
+}
+
+function downloadBinaryDB()
+{
+  if [[ "$download" == "yes" ]]
+  then
+    echo "Downloading mm $1 binary database"
+    curl -J -L -u "$ACCOUNT_ID:$LICENSE_KEY" -o "$output/mmdb-$1-CSV.zip" \
+            "https://download.maxmind.com/geoip/databases/GeoLite2-$1-CSV/download?suffix=zip"
+    curl -J -L -u "$ACCOUNT_ID:$LICENSE_KEY" -o "$output/mmdb-$1.tgz" \
+            "https://download.maxmind.com/geoip/databases/GeoLite2-$1/download?suffix=tar.gz"
+    echo "Finished downloading mm $1 binary database"
+  fi
+  unzip -o "$output/mmdb-$1-CSV.zip" -d "$output"
+  tar -C "$output" -xzvf "$output/mmdb-$1.tgz"
 }
 
 key=""
 output="./mmdb"
+download="yes"
 
-while getopts "a:k:o:h" opt; do
+while getopts "a:k:no:h" opt; do
   case $opt in
     a)
       ACCOUNT_ID=$OPTARG
@@ -63,6 +70,9 @@ while getopts "a:k:o:h" opt; do
       ;;
     o)
       output=$OPTARG
+      ;;
+    n)
+      download="no"
       ;;
     h)
       usage
@@ -89,42 +99,38 @@ if [ -z "$output" ]; then
 fi
 
 if [ ! -d "$output" ]; then
-  mkdir -p $output
+  mkdir -p "$output"
 fi
 if [ ! -d "$output" ]; then
   echo "Could not create output directory $output"
   exit 99
 fi
 
-echo "Clearing folder $output"
-rm -rf $output/*
-
 echo "Updating mm database"
 echo "Licence key: $key"
 echo "Output directory: $output"
 
-echo "Downloading mm country database"
-curl -J -L -u $ACCOUNT_ID:$LICENSE_KEY -o $output/mmdb-Country-CSV.zip \
-    "https://download.maxmind.com/geoip/databases/GeoLite2-Country-CSV/download?suffix=zip"
-unzip -o $output/mmdb-Country-CSV.zip -d $output
-# rm $output/mmdb-Country-CSV.zip
-flattenOutput
-echo "Finished downloading mm country database"
+if [[ "$download" == "yes" ]]
+then
+    echo "Downloading mm country database"
+    curl -J -L -u "$ACCOUNT_ID:$LICENSE_KEY" -o "$output"/mmdb-Country-CSV.zip \
+        "https://download.maxmind.com/geoip/databases/GeoLite2-Country-CSV/download?suffix=zip"
+    unzip -o "$output"/mmdb-Country-CSV.zip -d "$output"
+    echo "Finished downloading mm country database"
+fi
 
 downloadBinaryDB ASN
 downloadBinaryDB City
 downloadBinaryDB Country
-
-echo "Removing unnecessary files"
-# rm $output/*.txt
-
 echo "Finished downloading"
 
-filepath=$output/GeoLite2-Country-Locations-en.csv
+flattenOutput
+
+filepath="$output"/GeoLite2-Country-Locations-en.csv
 echo "Creating countrycodes.txt"
 
-tail -n +2 $filepath | while read line; do
-  echo $line | awk -F "\"*,\"*" '{print $5}' >> $output/countrycodes.txt
+tail -n +2 "$filepath" | while read -r line; do
+  echo "$line" | awk -F "\"*,\"*" '{print $5}' >> "$output"/countrycodes.txt
 done
 
 echo "Finished creating countrycodes.txt"
