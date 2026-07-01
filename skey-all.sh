@@ -22,6 +22,9 @@
 
 #set -x
 
+# set local go stuff on path
+export PATH=$PATH:$HOME/go/bin
+
 function whenisitagain()
 {
 	date -u +%Y%m%d-%H%M%S
